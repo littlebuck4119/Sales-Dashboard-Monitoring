@@ -50,21 +50,25 @@ days_in_month = [i for i in range(1, last_day + 1)]
 # 2. ดึงรายชื่อสาขา
 try:
     conn = pymysql.connect(**DB_CONFIG)
+    # เพิ่ม charset='utf8' ในการ Query รายชื่อสาขาด้วย
     all_shops = pd.read_sql("SELECT ProductLevelName FROM productlevel WHERE isshop=1 AND deleted=0 AND ismonitorsales=1", conn)
     conn.close()
     shop_list = sorted(all_shops['ProductLevelName'].tolist())
-except:
+except Exception as e:
+    st.error(f"Error connecting to DB for Shop List: {e}") # แสดง Error ให้เห็นถ้าต่อไม่ได้
     shop_list = sorted(df['Shop'].unique()) if not df.empty else []
 
+
 # 3. สร้างโครงตาราง (ใช้ dtype=object เพื่อป้องกัน TypeError เลข '2')
-grid_df = pd.DataFrame("N/A", index=shop_list, columns=days_in_month, dtype=object)
+grid_df = pd.DataFrame("N/A", index=shop_list, columns=[str(i) for i in days_in_month], dtype=object)
 
 # 4. นำข้อมูล Status มาวางทับ (ถ้ามี)
 if not df.empty:
-    df['Day'] = pd.to_datetime(df['Date']).dt.day
+    df['Day'] = pd.to_datetime(df['Date']).dt.day.astype(str) # แปลงเป็น String ให้ตรงกับ Columns
     for _, row in df.iterrows():
         if row['Shop'] in grid_df.index and row['Day'] in grid_df.columns:
-            grid_df.at[row['Shop'], row['Day']] = row['Status']
+            # แปลงสถานะเป็นเลขจำนวนเต็ม (int) เพื่อให้ฟังก์ชัน format_status ทำงานได้
+            grid_df.at[row['Shop'], row['Day']] = int(row['Status'])
 
 # 5. ฟังก์ชันจัดการการแสดงผล
 def format_status(val):
