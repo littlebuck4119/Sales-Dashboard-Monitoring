@@ -4,7 +4,7 @@ import requests
 from datetime import datetime
 import calendar
 
-# คืนค่า Layout มาตรฐาน
+# กลับมาใช้ Layout มาตรฐานที่รันผ่าน
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 
 API_URL = "https://api.npoint.io/506e2020f13e6d515726"
@@ -13,8 +13,11 @@ API_URL = "https://api.npoint.io/506e2020f13e6d515726"
 def get_data_from_api():
     try:
         res = requests.get(API_URL, timeout=10)
-        return pd.DataFrame(res.json()) if res.status_code == 200 else pd.DataFrame()
-    except: return pd.DataFrame()
+        if res.status_code == 200:
+            return pd.DataFrame(res.json())
+        return pd.DataFrame()
+    except:
+        return pd.DataFrame()
 
 st.title("📊 Eat Am Are - Sales Monitoring Heatmap")
 
@@ -32,7 +35,7 @@ if not df.empty:
     _, last_day = calendar.monthrange(y, m)
     days = list(range(1, last_day + 1))
     
-    # สร้าง Grid แบบเดิม
+    # สร้าง Grid ตารางเปล่าๆ
     grid_df = pd.DataFrame("N/A", index=shop_list, columns=days)
     
     mask = (df['sync_date'].dt.month == m) & (df['sync_date'].dt.year == y)
@@ -50,5 +53,5 @@ if not df.empty:
         return "N/A"
 
     st.subheader(f"🗓️ ประจำเดือน {m_name} {y}")
-    # ใช้ st.dataframe แบบปกติ ไม่ต้องบีบช่อง ข้อมูลจะได้ไม่ error
+    # ใช้ฟังก์ชันดั้งเดิม ข้อมูลไม่พังแน่นอน
     st.dataframe(grid_df.style.format(format_status), use_container_width=True, height=800)
