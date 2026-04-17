@@ -20,11 +20,16 @@ DB_CONFIG = {
 def get_data(year, month):
     try:
         conn = pymysql.connect(**DB_CONFIG)
-        query = f"SELECT shop_name as Shop, sync_date as Date, status_code as Status FROM monitor_sync_log WHERE MONTH(sync_date) = {month} AND YEAR(sync_date) = {year}"
+        query = f"""
+            SELECT shop_name as Shop, sync_date as Date, status_code as Status 
+            FROM monitor_sync_log 
+            WHERE MONTH(sync_date) = {month} AND YEAR(sync_date) = {year}
+        """
         df = pd.read_sql(query, conn)
         conn.close()
         return df
-    except: return pd.DataFrame()
+    except Exception as e:
+        return pd.DataFrame()
 
 # --- UI ---
 st.title("📊 Eat Am Are - Sales Monitoring Heatmap")
@@ -37,54 +42,70 @@ with st.sidebar:
     m = month_names.index(m_name) + 1
 
 df = get_data(y, m)
+
+# 1. คำนวณหาจำนวนวันในเดือนที่เลือก (อิงตามปฏิทินจริง)
 _, last_day = calendar.monthrange(y, m)
-# ใช้เลขวันที่ 1-31 เป็นหัว Column
 days_in_month = [i for i in range(1, last_day + 1)]
 
-# ดึงรายชื่อสาขา
+# 2. ดึงรายชื่อสาขา
 try:
     conn = pymysql.connect(**DB_CONFIG)
     all_shops = pd.read_sql("SELECT ProductLevelName FROM productlevel WHERE isshop=1 AND deleted=0 AND ismonitorsales=1", conn)
     conn.close()
     shop_list = sorted(all_shops['ProductLevelName'].tolist())
-except: 
+except:
     shop_list = sorted(df['Shop'].unique()) if not df.empty else []
 
-# สร้างโครงตารางเริ่มต้นด้วย "N/A" เหมือนในรูปต้นฉบับ
-grid_df = pd.DataFrame("N/A", index=shop_list, columns=days_in_month)
+# 3. สร้างโครงตาราง (ใช้ dtype=object เพื่อป้องกัน TypeError เลข '2')
+grid_df = pd.DataFrame("N/A", index=shop_list, columns=days_in_month, dtype=object)
 
-# นำข้อมูลจาก DB มาใส่ในตาราง
+# 4. นำข้อมูล Status มาวางทับ (ถ้ามี)
 if not df.empty:
     df['Day'] = pd.to_datetime(df['Date']).dt.day
     for _, row in df.iterrows():
         if row['Shop'] in grid_df.index and row['Day'] in grid_df.columns:
-            grid_df.at[row['Shop'], row['Day']] = int(row['Status'])
+            grid_df.at[row['Shop'], row['Day']] = row['Status']
 
+# 5. ฟังก์ชันจัดการการแสดงผล
 def format_status(val):
-    if val == 2: return "✅"
-    if val == 1: return "⚠️"
-    if val == 0: return "❌"
-    return "N/A" # แสดง N/A สำหรับช่องที่ไม่มีข้อมูลเหมือนในรูป
+    if val == 2 or val == 2.0: return "✅"
+    if val == 1 or val == 1.0: return "⚠️"
+    if val == 0 or val == 0.0: return "❌"
+    return "N/A"
 
 def style_grid(val):
-    # สไตล์พื้นฐาน: ตัวอักษรเล็กลง สีจางลงสำหรับ N/A
-    base = 'text-align: center; font-size: 11px;'
+    base_style = 'background-color: #f8f9fa; text-align: center; border: 1px solid #ffffff;'
     if val == "N/A":
-        return base + ' color: #adb5bd; background-color: #ffffff;'
-    # ถ้ามีข้อมูล (เป็นตัวเลขสถานะ) ให้ทำพื้นหลังสีขาวแต่ตัวอักษรเข้ม
-    return base + ' background-color: #ffffff;'
+        return base_style + ' color: #adb5bd; font-size: 8px;'
+    return base_style
 
+# --- ส่วนการแสดงผลตาราง ---
 st.subheader(f"🗓️ ประจำเดือน {m_name} {y}")
 
-# แสดงผลด้วย st.dataframe พร้อมบีบความกว้าง Column
+styled_grid = grid_df.style.map(style_grid).format(format_status)
+
 st.dataframe(
-    grid_df.style.map(style_grid).format(format_status), 
+    styled_grid, 
     use_container_width=True, 
     height=800,
     column_config={
-        # วนลูปบีบความกว้างทุก Column วันที่ให้เล็กที่สุด (30-40 pixels)
-        day: st.column_config.Column(width=40) for day in days_in_month
+        str(i): st.column_config.Column(label=str(i), width=15) for i in days_in_month
     }
 )
+
+# 6. แก้ไขจุด Error: ใช้ st.html แทน st.markdown สำหรับ CSS ใน Streamlit รุ่นใหม่
+st.html("""
+<style>
+    div[data-testid="stTable"] td, div[data-testid="stTable"] th {
+        padding: 0px !important;
+        min-width: 15px !important;
+        max-width: 28px !important;
+    }
+    div[data-testid="stTable"] td {
+        font-size: 10px !important;
+    }
+    .stDataFrame { overflow-x: hidden !important; }
+</style>
+""")
 
 st.caption("✅ ปกติ | ⚠️ ยอดไม่ตรง | ❌ ไม่เข้า | N/A: ยังไม่มีข้อมูล")
