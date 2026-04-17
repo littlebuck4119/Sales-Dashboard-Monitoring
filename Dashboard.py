@@ -20,13 +20,11 @@ DB_CONFIG = {
 def get_data(year, month):
     try:
         conn = pymysql.connect(**DB_CONFIG)
-        # ตรวจสอบว่าชื่อตารางใน DB เป็นตัวพิมพ์เล็กหรือใหญ่
         query = f"SELECT shop_name as Shop, sync_date as Date, status_code as Status FROM monitor_sync_log WHERE MONTH(sync_date) = {month} AND YEAR(sync_date) = {year}"
         df = pd.read_sql(query, conn)
         conn.close()
         return df
-    except Exception as e:
-        return pd.DataFrame()
+    except: return pd.DataFrame()
 
 # --- UI ---
 st.title("📊 Eat Am Are - Sales Monitoring Heatmap")
@@ -40,7 +38,7 @@ with st.sidebar:
 
 df = get_data(y, m)
 _, last_day = calendar.monthrange(y, m)
-# ใช้เลขวันที่ 1-31 เป็นหัว Column (ต้องเป็น String เพื่อใช้กับ column_config)
+# ใช้หัวคอลัมน์เป็น String เพื่อให้ตรงกับ column_config และแก้ปัญหา empty บน Cloud
 days_in_month = [str(i) for i in range(1, last_day + 1)]
 
 # ดึงรายชื่อสาขา
@@ -52,41 +50,39 @@ try:
 except: 
     shop_list = sorted(df['Shop'].unique()) if not df.empty else []
 
-# สร้างโครงตารางเริ่มต้นด้วย "N/A"
-grid_df = pd.DataFrame("N/A", index=shop_list, columns=days_in_month)
+# สร้างโครงตาราง (ใช้ dtype=object เพื่อความยืดหยุ่น)
+grid_df = pd.DataFrame("N/A", index=shop_list, columns=days_in_month, dtype=object)
 
-# นำข้อมูลจาก DB มาวางทับ
 if not df.empty:
-    df['Day'] = pd.to_datetime(df['Date']).dt.day.astype(str) # แปลงเป็น String ให้ตรงกับ Columns
+    df['Day'] = pd.to_datetime(df['Date']).dt.day.astype(str)
     for _, row in df.iterrows():
         if row['Shop'] in grid_df.index and row['Day'] in grid_df.columns:
-            # แปลงค่า Status เป็น int เพื่อให้ format_status ทำงานได้ถูกต้อง
-            try:
-                grid_df.at[row['Shop'], row['Day']] = int(row['Status'])
-            except:
-                grid_df.at[row['Shop'], row['Day']] = row['Status']
+            # เก็บค่าเป็นตัวเลขเพื่อให้ style_grid เช็คสีได้ง่าย
+            grid_df.at[row['Shop'], row['Day']] = int(row['Status'])
 
 def format_status(val):
-    if val == 2 or val == "2": return "✅"
-    if val == 1 or val == "1": return "⚠️"
-    if val == 0 or val == "0": return "❌"
+    if val == 2: return "✅"
+    if val == 1: return "⚠️"
+    if val == 0: return "❌"
     return "N/A"
 
 def style_grid(val):
-    base = 'text-align: center; font-size: 12px;'
-    if val == "N/A":
-        return base + ' color: #adb5bd;'
-    return base
+    # กำหนดสีพื้นหลังตามสถานะ (Heatmap Style)
+    base = 'text-align: center; font-size: 11px; border: 1px solid #eee;'
+    if val == 2: return base + 'background-color: #2e7d32; color: white;' # เขียว
+    if val == 1: return base + 'background-color: #fbc02d; color: black;' # เหลือง
+    if val == 0: return base + 'background-color: #d32f2f; color: white;' # แดง
+    return base + 'background-color: #ffffff; color: #adb5bd;' # N/A
 
 st.subheader(f"🗓️ ประจำเดือน {m_name} {y}")
 
-# แสดงผลตารางพร้อมบีบความกว้างคอลัมน์
+# แสดงผลโดยใช้ column_config บีบขนาดวันที่ให้เล็ก (กว้าง 35px)
 st.dataframe(
     grid_df.style.map(style_grid).format(format_status), 
     use_container_width=True, 
     height=800,
     column_config={
-        day: st.column_config.Column(width="small") for day in days_in_month
+        day: st.column_config.Column(width=35) for day in days_in_month
     }
 )
 
