@@ -30,7 +30,7 @@ st.markdown("""
 
 BRAND_CONFIG = {
     "Eat Am Are": "506e2020f13e6d515726",
-    "JonesSalad": "ใส่_ID_npoint_ของ_JonesSalad_ที่นี่", 
+    "JonesSalad": "695d80e67b2a8c1ca2ee", 
 }
 
 with st.sidebar:
