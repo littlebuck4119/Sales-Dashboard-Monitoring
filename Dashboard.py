@@ -7,34 +7,33 @@ import calendar
 # --- CONFIG ---
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 
-# CSS: บังคับทุกอย่างให้ชิดขอบบนและจัดการ Sidebar ให้กลับมา
+# CSS: ปรับระยะให้พอดี ไม่ดันจนหาย
 st.markdown("""
     <style>
-    /* 1. ดันเนื้อหา Sidebar ขึ้นไปชิดขอบบนสุด */
+    /* 1. ปรับระยะ Sidebar ให้ลงมานิดนึง ไม่ให้หลุดขอบบน */
     [data-testid="stSidebarContent"] {
-        padding-top: 0.5rem !important;
+        padding-top: 1.5rem !important;
     }
     
-    /* 2. จัดการระยะห่างใน Sidebar ให้กระชับ */
+    /* 2. จัดระยะห่างระหว่างองค์ประกอบใน Sidebar */
     [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
-        gap: 0.2rem !important;
+        gap: 0.5rem !important;
     }
 
-    /* 3. ดันเนื้อหาฝั่งขวา (ตาราง) ขึ้นชิดบน */
+    /* 3. จัดหน้าเนื้อหาหลักให้ชิดบนพอดีๆ */
     .block-container { 
-        padding-top: 1.5rem !important;
+        padding-top: 2rem !important;
         padding-left: 1rem !important; 
         padding-right: 1rem !important; 
         padding-bottom: 0rem !important; 
     }
 
-    /* 4. สไตล์ตาราง: ตัวหนาและจัดกลาง */
+    /* 4. สไตล์ตารางตัวหนา */
     [data-testid="stDataFrame"] td:first-child, [data-testid="stDataFrame"] th {
         font-weight: 900 !important; color: #000000 !important;
     }
     [data-testid="stDataFrame"] td { text-align: center !important; }
 
-    /* ซ่อน Header/Footer ของ Streamlit */
     footer {visibility: hidden;}
     header {visibility: hidden;}
     </style>
@@ -62,14 +61,15 @@ def get_data_from_api(url):
 
 # --- SIDEBAR ---
 with st.sidebar:
-    # แสดง Logo (ตรวจสอบชื่อไฟล์ให้ตรงกับใน GitHub นะครับ)
+    # แสดง Logo (ใช้ชื่อไฟล์ที่พี่มีใน GitHub)
+    # ถ้าพี่ใช้ไฟล์โปร่งใสแล้ว อย่าลืมเช็กนามสกุล .png หรือ .JPG นะครับ
     logo_file = "synaturelogo.png" 
     try:
-        st.image(logo_file, width=120)
+        st.image(logo_file, width=130)
     except:
-        st.markdown("### Synature Technology")
+        st.write("### Synature Technology")
     
-    st.markdown("#### **ตัวเลือก**")
+    st.markdown("### **ตัวเลือก**")
     selected_brand = st.selectbox("เลือกแบรนด์", list(BRAND_CONFIG.keys()))
     API_URL = f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}"
     
@@ -130,20 +130,3 @@ if full_df is not None and not full_df.empty:
     # ตาราง Heatmap
     def format_status(val):
         if val == 2 or val == 2.0: return "✅"
-        if val == 1 or val == 1.0: return "⚠️"
-        if val == 0 or val == 0.0: return "❌"
-        return "N/A"
-
-    def style_grid(val):
-        base = 'background-color: #f8f9fa; border: 1px solid #ffffff;'
-        if val == "N/A": return base + ' color: #adb5bd; font-size: 8px;'
-        return base
-
-    styled_grid = grid_df.style.map(style_grid).format(format_status)
-    config = {day: st.column_config.Column(width=32) for day in days_in_month}
-    config[None] = st.column_config.Column(width="medium")
-
-    st.dataframe(styled_grid, use_container_width=True, height=1000, column_config=config)
-    st.caption("✅ ปกติ | ⚠️ ยอดไม่ตรง | ❌ ไม่เข้า | N/A: ยังไม่มีข้อมูล")
-else:
-    st.warning("⚠️ ไม่พบข้อมูล")
