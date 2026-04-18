@@ -7,35 +7,40 @@ import calendar
 # --- CONFIG ---
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 
-# CSS: เอาลูกศร Sidebar กลับมา และจัดระยะให้สวยงาม
+# CSS: คงค่า padding left/right เดิมของพี่ไว้ และเพิ่มสไตล์ Date Card
 st.markdown("""
     <style>
-    /* 1. จัดระยะ Sidebar ให้พอดี ไม่เบียดขอบ */
-    [data-testid="stSidebarContent"] {
-        padding-top: 2rem !important;
-    }
+    /* 1. จัดระยะ Sidebar และหน้าหลัก (ไม่แตะ Left/Right ตามสั่งครับ) */
+    [data-testid="stSidebarContent"] { padding-top: 1.5rem !important; }
     
-    /* 2. จัดหน้าเนื้อหาหลักให้สมดุล */
     .block-container { 
-        padding-top: 2rem !important;
-        padding-left: 1rem !important; 
-        padding-right: 1rem !important; 
+        padding-top: 2rem !important; 
+        padding-left: 1rem !important;   /* คงไว้ตามเดิม */
+        padding-right: 1rem !important;  /* คงไว้ตามเดิม */
         padding-bottom: 0rem !important; 
     }
 
+    /* 2. สไตล์ Date Card */
+    .date-card {
+        background-color: #ffffff;
+        padding: 15px;
+        border-radius: 12px;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0px 4px 6px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    .date-card .day-name { color: #ff4b4b; font-weight: bold; font-size: 0.9rem; text-transform: uppercase; }
+    .date-card .date-number { font-size: 2.2rem; font-weight: 800; color: #1f1f1f; line-height: 1; margin: 5px 0; }
+    .date-card .month-year { color: #555; font-size: 1rem; }
+    
     /* 3. สไตล์ตารางตัวหนาเข้ม */
     [data-testid="stDataFrame"] td:first-child, [data-testid="stDataFrame"] th {
         font-weight: 900 !important; color: #000000 !important;
     }
     [data-testid="stDataFrame"] td { text-align: center !important; }
 
-    /* ซ่อนเฉพาะ Footer แต่คง Header ไว้เพื่อให้มีลูกศรเปิด Sidebar */
     footer {visibility: hidden;}
-    
-    /* ปรับแต่งปุ่มเรียก Sidebar ให้เห็นชัดขึ้น (ถ้าต้องการ) */
-    .st-emotion-cache-15ec60s {
-        top: 0.5rem !important;
-    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -61,6 +66,19 @@ def get_data_from_api(url):
 
 # --- SIDEBAR ---
 with st.sidebar:
+    # --- Date Card แสดงวันที่ปัจจุบัน ---
+    now = datetime.now()
+    st.markdown(f"""
+        <div class="date-card">
+            <div class="day-name">{now.strftime('%A')}</div>
+            <div class="date-number">{now.day}</div>
+            <div class="month-year">{now.strftime('%B %Y')}</div>
+            <hr style="margin: 10px 0; border: none; border-top: 1px solid #eee;">
+            <div style="font-size: 0.75rem; color: #28a745; font-weight: bold;">
+                ● SYSTEM ONLINE
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
     
     st.header("ตัวเลือก")
     selected_brand = st.selectbox("เลือกแบรนด์", list(BRAND_CONFIG.keys()))
