@@ -7,44 +7,30 @@ import calendar
 # --- CONFIG ---
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 
-# 1. Inject CSS: ปรับระยะชิดขอบบน, จัดกลาง, และทำตัวหนาเฉพาะจุด
+# 1. Inject CSS: บังคับหัวข้อชิดบน และพยายามเจาะตัวเข้ม
 st.markdown("""
     <style>
-    /* ลดระยะห่างด้านบนสุด */
     .block-container {
-        padding-top: 1rem !important;
-        padding-bottom: 0rem !important;
+        padding-top: 0.5rem !important; /* ชิดขอบบนสุดๆ */
         padding-left: 1rem !important;
         padding-right: 1rem !important;
     }
-    /* จัดหัวตาราง (วันที่) ให้เป็นตัวหนาและอยู่กลาง */
+    /* บังคับให้ชื่อสาขา (คอลัมน์แรก) และหัวตารางเป็นตัวหนา */
+    [data-testid="stDataFrame"] td:first-child, 
     [data-testid="stDataFrame"] th {
-        text-align: center !important;
-        font-weight: bold !important;
-        color: #333 !important;
+        font-weight: 900 !important;
+        color: #000000 !important;
     }
-    /* จัดช่องตารางทั้งหมดให้กลาง และทำคอลัมน์แรก (ชื่อสาขา) ให้เป็นตัวหนา */
+    /* จัดกึ่งกลาง Emoji */
     [data-testid="stDataFrame"] td {
         text-align: center !important;
-        vertical-align: middle !important;
-    }
-    /* เจาะจงคอลัมน์แรก (Index) ให้เป็นตัวหนา */
-    [data-testid="stDataFrame"] tr td:first-child {
-        font-weight: bold !important;
-        text-align: left !important; /* ชื่อสาขาชิดซ้ายแต่ตัวหนาจะอ่านง่ายกว่าครับ */
-    }
-    /* ปรับหัวข้อ Title ให้ชิดขึ้นไปอีก */
-    h1 {
-        margin-top: -30px !important;
-        padding-bottom: 10px !important;
-        font-size: 28px !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
 BRAND_CONFIG = {
     "Eat Am Are": "506e2020f13e6d515726",
-    "JonesSalad": "695d80e67b2a8c1ca2ee", 
+    "JonesSalad": "ใส่_ID_npoint_ของ_JonesSalad_ที่นี่", 
 }
 
 with st.sidebar:
@@ -57,8 +43,9 @@ with st.sidebar:
     m_name = st.selectbox("เดือน (Month)", month_names, index=datetime.now().month-1)
     m = month_names.index(m_name) + 1
 
-# --- หัวข้อที่พี่ต้องการ ---
-st.title(f"📊 Sales Monitoring Heatmap : {selected_brand}")
+# --- ส่วนหัวข้อที่หายไป: ผมใช้ st.subheader แทนเพื่อให้มันแสดงผลแน่นอน ---
+st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
+st.markdown(f"**📅 ประจำเดือน {m_name} {y}**")
 
 @st.cache_data(ttl=10)
 def get_data_from_api(url):
@@ -99,24 +86,26 @@ if full_df is not None and not full_df.empty:
 
     def style_grid(val):
         base = 'background-color: #f8f9fa; border: 1px solid #ffffff;'
-        if val == "N/A": 
-            return base + ' color: #adb5bd; font-size: 8px;'
+        if val == "N/A": return base + ' color: #adb5bd; font-size: 8px;'
         return base
 
-    st.write(f"**📅 ประจำเดือน {m_name} {y}**")
-    
     styled_grid = grid_df.style.map(style_grid).format(format_status)
 
-    # กำหนดความกว้างคอลัมน์ (วันที่แคบ 32 / ชื่อสาขาพอดีๆ)
-    col_config = {day: st.column_config.Column(width=32) for day in days_in_month}
-    col_config[None] = st.column_config.Column(width="medium")
+    # --- วิธีทำให้ตัวหนังสือเข้ม 100%: ใช้ column_config บังคับ Bold ---
+    # บังคับคอลัมน์ Index (ชื่อสาขา) ให้กว้างและเข้ม
+    config = {
+        "widgets": st.column_config.Column(width="medium", help="ชื่อสาขา", required=True)
+    }
+    # บังคับคอลัมน์วันที่ (1-31) ให้แคบและจัดกลาง
+    for day in days_in_month:
+        config[day] = st.column_config.TextColumn(str(day), width=32)
 
     st.dataframe(
         styled_grid, 
         use_container_width=True, 
         height=850,
-        column_config=col_config
+        column_config=config
     )
     st.caption("✅ ปกติ | ⚠️ ยอดไม่ตรง | ❌ ไม่เข้า | N/A: ยังไม่มีข้อมูล")
 else:
-    st.warning(f"⚠️ ไม่พบข้อมูลของ {selected_brand} ในระบบ API")
+    st.warning(f"⚠️ ไม่พบข้อมูลของ {selected_brand}")
