@@ -43,28 +43,33 @@ def get_data_from_api(url):
         return pd.DataFrame()
     except: return pd.DataFrame()
 
-# --- SIDEBAR ---
+# --- SIDEBAR (แถบเมนูข้าง) ---
 with st.sidebar:
-    # --- เพิ่มส่วน LOGO ตรงนี้ ---
-    # ตรวจสอบชื่อไฟล์ให้ตรงกับที่พี่อัปโหลดขึ้น GitHub (เช่น synaturelogo.JPG)
+    # --- [ส่วนที่แก้] ปรับขนาด LOGO ให้เล็กพอดี ---
+    # ใช้ st.image กำหนดความกว้างเฉพาะ (เช่น 150 หรือ 200) ไม่ต้องใช้ use_column_width
+    logo_file = "synature_logo.png" # ตรวจสอบชื่อไฟล์ให้ตรง
     try:
-        st.image("synaturelogo.JPG", use_container_width=True)
+        # กำหนดความกว้าง 150 พิกเซล (ปรับเลข 150 เพิ่ม/ลดได้ตามชอบครับ)
+        st.image(logo_file, width=150)
     except:
-        st.markdown("### 🏢 Synature Technology")
-    
+        st.markdown("### Synature Technology")
+        st.caption("Operation monitoring")
+
     st.header("ตัวเลือก")
     selected_brand = st.selectbox("เลือกแบรนด์", list(BRAND_CONFIG.keys()))
     API_URL = f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}"
     
+    st.divider()
     y = st.selectbox("ปี (Year)", [2025, 2026], index=1)
+    
     month_names = list(calendar.month_name)[1:]
     m_name = st.selectbox("เดือน (Month)", month_names, index=datetime.now().month-1)
     m = month_names.index(m_name) + 1
     
     st.divider()
     st.subheader("📊 สรุปภาพรวม")
+    # จองพื้นที่ Metric (แก้ NameError ที่เคยวงไว้)
     summary_placeholder = st.empty()
-
 # --- MAIN CONTENT ---
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
 
