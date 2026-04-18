@@ -14,7 +14,7 @@ st.markdown("""
     [data-testid="stSidebarContent"] { padding-top: 1.5rem !important; }
     
     .block-container { 
-        padding-top: 1rem !important; 
+        padding-top: 2rem !important; 
         padding-left: 1rem !important;   /* คงไว้ตามเดิม */
         padding-right: 1rem !important;  /* คงไว้ตามเดิม */
         padding-bottom: 0rem !important; 
