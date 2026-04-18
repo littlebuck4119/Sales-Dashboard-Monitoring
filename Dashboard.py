@@ -7,21 +7,23 @@ import calendar
 # --- CONFIG ---
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 
-# 1. Inject CSS เพื่อบังคับให้ตารางจัดกลางเป๊ะๆ และลดช่องว่างส่วนเกิน
+# 1. Inject CSS: บังคับให้ทุกช่องในตารางจัดวางกึ่งกลางและเอา Padding ส่วนเกินออก
 st.markdown("""
     <style>
-    /* บังคับตัวอักษรใน Dataframe ให้อยู่ตรงกลางทุกช่อง */
-    [data-testid="stTable"] td, [data-testid="stDataFrame"] td {
+    /* จัดกึ่งกลางทั้งแนวตั้งและแนวนอน */
+    [data-testid="stDataFrame"] td, [data-testid="stDataFrame"] th {
         text-align: center !important;
+        vertical-align: middle !important;
     }
-    /* ลดขนาด Header ให้กระชับ */
-    [data-testid="stDataFrame"] th {
-        text-align: center !important;
+    /* บังคับความสูงแถวให้กระชับ */
+    [data-testid="stDataFrame"] div[role="gridcell"] {
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# รายชื่อแบรนด์ (พี่อย่าลืมอัปเดต ID JonesSalad นะครับ)
 BRAND_CONFIG = {
     "Eat Am Are": "506e2020f13e6d515726",
     "JonesSalad": "695d80e67b2a8c1ca2ee", 
@@ -77,22 +79,25 @@ if full_df is not None and not full_df.empty:
         return "N/A"
 
     def style_grid(val):
-        # เน้นพื้นหลังและระยะห่างที่สะอาดตา
         base = 'background-color: #f8f9fa; border: 1px solid #ffffff;'
         if val == "N/A": 
             return base + ' color: #adb5bd; font-size: 8px;'
         return base
 
     st.subheader(f"🗓️ ประจำเดือน {m_name} {y}")
-    
-    # ใช้ Style เดิมของพี่ แต่ตัด text-align ออกเพราะเราใช้ CSS คุมข้างบนแล้ว
     styled_grid = grid_df.style.map(style_grid).format(format_status)
 
-    # แสดงผลตาราง (ถอด column_config ออกเพื่อไม่ให้มันฝืนจัดกว้างเกินไป)
+    # 2. ตั้งค่าความกว้างคอลัมน์วันที่ (1-31) ให้เล็กจิ๋วที่ 35 พิกเซล
+    # วิธีนี้จะบีบช่องให้แคบลงจน Emoji ไม่มีที่ให้เยื้องเลยครับ
+    col_config = {day: st.column_config.Column(width=35) for day in days_in_month}
+    # สำหรับคอลัมน์ชื่อสาขา ให้กว้างตามปกติ
+    col_config[None] = st.column_config.Column(width="medium")
+
     st.dataframe(
         styled_grid, 
         use_container_width=True, 
-        height=800
+        height=800,
+        column_config=col_config
     )
     st.caption("✅ ปกติ | ⚠️ ยอดไม่ตรง | ❌ ไม่เข้า | N/A: ยังไม่มีข้อมูล")
 else:
