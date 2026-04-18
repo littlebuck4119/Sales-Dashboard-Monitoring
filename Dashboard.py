@@ -61,7 +61,7 @@ def get_data_from_api(url):
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.title("Synature")
+    st.title("Monthly Monitoring")
     st.caption("Operation monitoring")
     
     st.header("ตัวเลือก")
