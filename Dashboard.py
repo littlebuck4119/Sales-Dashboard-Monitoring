@@ -7,13 +7,38 @@ import calendar
 # --- CONFIG ---
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 
-# API URL สำหรับดึงข้อมูล
-API_URL = "https://api.npoint.io/506e2020f13e6d515726"
+# =========================================================
+# 1. เพิ่มสมุดรายชื่อแบรนด์ (พี่มาเพิ่มร้านใหม่ตรงนี้ได้เลย)
+# =========================================================
+BRAND_CONFIG = {
+    "Eat Am Are": "506e2020f13e6d515726",
+    "JonesSalad": "ใส่_ID_npoint_ของ_JonesSalad_ที่นี่",
+    "ร้านที่ 3": "ID_3",
+}
+
+# --- UI Sidebar ---
+with st.sidebar:
+    st.header("ตัวเลือก")
+    
+    # --- ส่วนที่เพิ่ม: สลับแบรนด์ ---
+    selected_brand = st.selectbox("เลือกแบรนด์", list(BRAND_CONFIG.keys()))
+    # เปลี่ยน API_URL ตามแบรนด์ที่เลือก
+    API_URL = f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}"
+    
+    st.divider()
+    
+    y = st.selectbox("ปี (Year)", [2025, 2026], index=1)
+    month_names = list(calendar.month_name)[1:]
+    m_name = st.selectbox("เดือน (Month)", month_names, index=datetime.now().month-1)
+    m = month_names.index(m_name) + 1
+
+# --- หัวข้อหน้าเว็บ (เปลี่ยนตามแบรนด์ที่เลือก) ---
+st.title(f"📊 {selected_brand} - Sales Monitoring Heatmap")
 
 @st.cache_data(ttl=10)
-def get_data_from_api():
+def get_data_from_api(url): # รับ url เป็น parameter เพื่อให้ดึงใหม่เวลาสลับแบรนด์
     try:
-        res = requests.get(API_URL, timeout=10)
+        res = requests.get(url, timeout=10)
         if res.status_code == 200:
             df = pd.DataFrame(res.json())
             df['sync_date'] = pd.to_datetime(df['sync_date'])
@@ -21,17 +46,8 @@ def get_data_from_api():
     except:
         return pd.DataFrame()
 
-# --- UI ---
-st.title("📊 Eat Am Are - Sales Monitoring Heatmap")
-
-with st.sidebar:
-    st.header("ตัวเลือก")
-    y = st.selectbox("ปี (Year)", [2025, 2026], index=1)
-    month_names = list(calendar.month_name)[1:]
-    m_name = st.selectbox("เดือน (Month)", month_names, index=datetime.now().month-1)
-    m = month_names.index(m_name) + 1
-
-full_df = get_data_from_api()
+# เรียกใช้ฟังก์ชันโดยส่ง API_URL ของแบรนด์ที่เลือกเข้าไป
+full_df = get_data_from_api(API_URL)
 
 if not full_df.empty:
     # 1. ดึงรายชื่อสาขาทั้งหมดที่มีประวัติใน API เพื่อสร้างแกน Y
@@ -53,7 +69,7 @@ if not full_df.empty:
             if row['shop_name'] in grid_df.index and row['Day'] in grid_df.columns:
                 grid_df.at[row['shop_name'], row['Day']] = row['status_code']
 
-    # --- ฟังก์ชันการแสดงผล (ตาม Style เดิมของพี่) ---
+    # --- ฟังก์ชันการแสดงผล (ใช้ตาม Style เดิมของพี่เป๊ะๆ) ---
     def format_status(val):
         if val == 2 or val == 2.0: return "✅"
         if val == 1 or val == 1.0: return "⚠️"
@@ -66,9 +82,12 @@ if not full_df.empty:
         return base
 
     st.subheader(f"🗓️ ประจำเดือน {m_name} {y}")
+    
+    # ส่วนของตารางและการจัด Format
     styled_grid = grid_df.style.map(style_grid).format(format_status)
 
+    # แสดงผลตาราง (ใช้ขนาดเดิม 800)
     st.dataframe(styled_grid, use_container_width=True, height=800)
     st.caption("✅ ปกติ | ⚠️ ยอดไม่ตรง | ❌ ไม่เข้า | N/A: ยังไม่มีข้อมูล")
 else:
-    st.warning("⚠️ ไม่พบข้อมูลใน API กรุณารันไฟล์เช็คยอดที่เครื่อง Local ก่อน")
+    st.warning(f"⚠️ ไม่พบข้อมูลของ {selected_brand} ใน API กรุณาเช็คการรันไฟล์ที่เครื่อง Local")
