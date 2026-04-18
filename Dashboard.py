@@ -50,7 +50,7 @@ with st.sidebar:
     logo_file = "synaturelogo.jpg" # ตรวจสอบชื่อไฟล์ให้ตรง
     try:
         # กำหนดความกว้าง 150 พิกเซล (ปรับเลข 150 เพิ่ม/ลดได้ตามชอบครับ)
-        st.image(logo_file, width=150)
+        st.image(logo_file, width=120)
     except:
         st.markdown("### Synature Technology")
         st.caption("Operation monitoring")
