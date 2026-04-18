@@ -7,39 +7,49 @@ import calendar
 # --- CONFIG ---
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 
-# CSS: คงค่า padding left/right เดิมของพี่ไว้ และเพิ่มสไตล์ Date Card
+# CSS: รวมความต้องการทั้งหมด (Sidebar ชิดบน, หน้าหลักคงเดิม, ไม่เปลี่ยน Padding L/R)
 st.markdown("""
     <style>
-    /* 1. จัดระยะ Sidebar และหน้าหลัก (ไม่แตะ Left/Right ตามสั่งครับ) */
-    [data-testid="stSidebarContent"] { padding-top: 1.5rem !important; }
+    /* 1. เจาะจงเฉพาะ Sidebar ให้ชิดขอบบนสุด 0px */
+    [data-testid="stSidebarContent"] {
+        padding-top: 0rem !important;
+    }
     
+    /* 2. จัดระเบียบช่องว่างภายใน Sidebar */
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+        gap: 0rem !important;
+    }
+
+    /* 3. หน้าหลักคงเดิม: Padding Top 2rem และ Left/Right 1rem (ห้ามเปลี่ยน) */
     .block-container { 
         padding-top: 2rem !important; 
-        padding-left: 1rem !important;   /* คงไว้ตามเดิม */
-        padding-right: 1rem !important;  /* คงไว้ตามเดิม */
+        padding-left: 1rem !important;   
+        padding-right: 1rem !important;  
         padding-bottom: 0rem !important; 
     }
 
-    /* 2. สไตล์ Date Card */
+    /* 4. สไตล์ Date Card สำหรับปิดพื้นที่โล่งใน Sidebar */
     .date-card {
         background-color: #ffffff;
         padding: 15px;
         border-radius: 12px;
         border: 1px solid #e0e0e0;
         box-shadow: 0px 4px 6px rgba(0,0,0,0.05);
+        margin-top: 10px; /* ขยับขึ้นไปชิดขอบบน */
         margin-bottom: 20px;
         text-align: center;
     }
     .date-card .day-name { color: #ff4b4b; font-weight: bold; font-size: 0.9rem; text-transform: uppercase; }
     .date-card .date-number { font-size: 2.2rem; font-weight: 800; color: #1f1f1f; line-height: 1; margin: 5px 0; }
     .date-card .month-year { color: #555; font-size: 1rem; }
-    
-    /* 3. สไตล์ตารางตัวหนาเข้ม */
+
+    /* 5. สไตล์ตารางตัวหนาเข้มและจัดกลาง */
     [data-testid="stDataFrame"] td:first-child, [data-testid="stDataFrame"] th {
         font-weight: 900 !important; color: #000000 !important;
     }
     [data-testid="stDataFrame"] td { text-align: center !important; }
 
+    /* ซ่อน Footer และคง Header ไว้เพื่อให้มีลูกศรเปิด Sidebar */
     footer {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
@@ -64,9 +74,9 @@ def get_data_from_api(url):
         return pd.DataFrame()
     except: return pd.DataFrame()
 
-# --- SIDEBAR ---
+# --- SIDEBAR (แถบเมนูข้าง) ---
 with st.sidebar:
-    # --- Date Card แสดงวันที่ปัจจุบัน ---
+    # --- Date Card: ปฏิทินแสดงวันที่ปัจจุบัน ---
     now = datetime.now()
     st.markdown(f"""
         <div class="date-card">
@@ -95,7 +105,7 @@ with st.sidebar:
     st.subheader("📊 สรุปภาพรวม")
     summary_placeholder = st.empty()
 
-# --- MAIN CONTENT ---
+# --- MAIN CONTENT (เนื้อหาหลัก) ---
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
 
 full_df = get_data_from_api(API_URL)
@@ -134,27 +144,4 @@ if full_df is not None and not full_df.empty:
         
         if not problematic_shops.empty:
             for shop, count in problematic_shops.items():
-                st.write(f"- {shop}: `{count}` ครั้ง")
-        else:
-            st.success("🎉 ยังไม่พบปัญหาในเดือนนี้")
-
-    # ตาราง Heatmap
-    def format_status(val):
-        if val == 2 or val == 2.0: return "✅"
-        if val == 1 or val == 1.0: return "⚠️"
-        if val == 0 or val == 0.0: return "❌"
-        return "N/A"
-
-    def style_grid(val):
-        base = 'background-color: #f8f9fa; border: 1px solid #ffffff;'
-        if val == "N/A": return base + ' color: #adb5bd; font-size: 8px;'
-        return base
-
-    styled_grid = grid_df.style.map(style_grid).format(format_status)
-    config = {day: st.column_config.Column(width=32) for day in days_in_month}
-    config[None] = st.column_config.Column(width="medium")
-
-    st.dataframe(styled_grid, use_container_width=True, height=850, column_config=config)
-    st.caption("✅ ปกติ | ⚠️ ยอดไม่ตรง | ❌ ไม่เข้า | N/A: ยังไม่มีข้อมูล")
-else:
-    st.warning("⚠️ ไม่พบข้อมูลสำหรับแบรนด์หรือเดือนที่เลือก")
+                st.write(f"- {shop
