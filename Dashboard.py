@@ -7,25 +7,37 @@ import calendar
 # --- CONFIG ---
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 
-# 1. Inject CSS: เพื่อขยับทุกอย่างชิดบน และขยายพื้นที่ให้กว้างขึ้น
+# 1. Inject CSS: ปรับระยะชิดขอบบน, จัดกลาง, และทำตัวหนาเฉพาะจุด
 st.markdown("""
     <style>
-    /* 1. ลดระยะห่างด้านบนสุด (Header gap) */
+    /* ลดระยะห่างด้านบนสุด */
     .block-container {
         padding-top: 1rem !important;
         padding-bottom: 0rem !important;
         padding-left: 1rem !important;
         padding-right: 1rem !important;
     }
-    /* 2. จัดกึ่งกลางทั้งแนวตั้งและแนวนอนในตาราง */
-    [data-testid="stDataFrame"] td, [data-testid="stDataFrame"] th {
+    /* จัดหัวตาราง (วันที่) ให้เป็นตัวหนาและอยู่กลาง */
+    [data-testid="stDataFrame"] th {
+        text-align: center !important;
+        font-weight: bold !important;
+        color: #333 !important;
+    }
+    /* จัดช่องตารางทั้งหมดให้กลาง และทำคอลัมน์แรก (ชื่อสาขา) ให้เป็นตัวหนา */
+    [data-testid="stDataFrame"] td {
         text-align: center !important;
         vertical-align: middle !important;
     }
-    /* 3. ปรับฟอนต์หัวข้อให้กระชับขึ้นเพื่อประหยัดที่ */
+    /* เจาะจงคอลัมน์แรก (Index) ให้เป็นตัวหนา */
+    [data-testid="stDataFrame"] tr td:first-child {
+        font-weight: bold !important;
+        text-align: left !important; /* ชื่อสาขาชิดซ้ายแต่ตัวหนาจะอ่านง่ายกว่าครับ */
+    }
+    /* ปรับหัวข้อ Title ให้ชิดขึ้นไปอีก */
     h1 {
         margin-top: -30px !important;
-        padding-top: 0px !important;
+        padding-bottom: 10px !important;
+        font-size: 28px !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -45,8 +57,8 @@ with st.sidebar:
     m_name = st.selectbox("เดือน (Month)", month_names, index=datetime.now().month-1)
     m = month_names.index(m_name) + 1
 
-# แสดงชื่อแบรนด์
-st.title(f"📊 {selected_brand}")
+# --- หัวข้อที่พี่ต้องการ ---
+st.title(f"📊 Sales Monitoring Heatmap : {selected_brand}")
 
 @st.cache_data(ttl=10)
 def get_data_from_api(url):
@@ -91,22 +103,20 @@ if full_df is not None and not full_df.empty:
             return base + ' color: #adb5bd; font-size: 8px;'
         return base
 
-    # ปรับ Subheader ให้ติดกับ Title
     st.write(f"**📅 ประจำเดือน {m_name} {y}**")
     
     styled_grid = grid_df.style.map(style_grid).format(format_status)
 
-    # ปรับความกว้างคอลัมน์วันที่ให้เล็กเพื่อประหยัดพื้นที่แนวขวาง
+    # กำหนดความกว้างคอลัมน์ (วันที่แคบ 32 / ชื่อสาขาพอดีๆ)
     col_config = {day: st.column_config.Column(width=32) for day in days_in_month}
     col_config[None] = st.column_config.Column(width="medium")
 
-    # แสดงตารางแบบขยายเต็มความกว้าง
     st.dataframe(
         styled_grid, 
         use_container_width=True, 
-        height=850, # เพิ่มความสูงขึ้นอีกนิด
+        height=850,
         column_config=col_config
     )
     st.caption("✅ ปกติ | ⚠️ ยอดไม่ตรง | ❌ ไม่เข้า | N/A: ยังไม่มีข้อมูล")
 else:
-    st.warning(f"⚠️ ไม่พบข้อมูลของ {selected_brand}")
+    st.warning(f"⚠️ ไม่พบข้อมูลของ {selected_brand} ในระบบ API")
