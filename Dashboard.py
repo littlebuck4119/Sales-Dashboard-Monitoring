@@ -43,23 +43,20 @@ def get_data_from_api(url):
     except: return pd.DataFrame()
 
 # --- SIDEBAR ---
-with summary_placeholder.container():
-        st.info(f"เดือนนี้มีทั้งหมด {last_day} วัน")
-        col1, col2 = st.columns(2)
-        col1.metric("ปกติ (✅)", f"{count_normal}")
-        col2.metric("ปัญหา (⚠️/❌)", f"{count_warning + count_error}")
-        
-        st.write("**⚠️ สาขาที่พบปัญหาบ่อย:**")
-        
-        # กรองเฉพาะสาขาที่มีปัญหาจริงๆ (มากกว่า 0 ครั้ง)
-        problematic_shops = top_problem_shops[top_problem_shops > 0]
-        
-        if not problematic_shops.empty:
-            for shop, count in problematic_shops.items():
-                st.write(f"- {shop}: `{count}` ครั้ง")
-        else:
-            # ถ้าไม่มีสาขาไหนมีปัญหาเลย ให้ขึ้นบรรทัดเดียวพอ
-            st.success("🎉 ยังไม่พบปัญหาในเดือนนี้")
+with st.sidebar:
+    st.header("ตัวเลือก")
+    selected_brand = st.selectbox("เลือกแบรนด์", list(BRAND_CONFIG.keys()))
+    API_URL = f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}"
+    
+    y = st.selectbox("ปี (Year)", [2025, 2026], index=1)
+    month_names = list(calendar.month_name)[1:]
+    m_name = st.selectbox("เดือน (Month)", month_names, index=datetime.now().month-1)
+    m = month_names.index(m_name) + 1
+    
+    st.divider()
+    st.subheader("📊 สรุปภาพรวม")
+    # ประกาศสร้างตัวแปรไว้ตรงนี้ เพื่อป้องกัน NameError
+    summary_placeholder = st.empty()
 
 # --- MAIN CONTENT ---
 st.subheader(f"📊 Sales Monitoring Heatmap : {selected_brand}")
