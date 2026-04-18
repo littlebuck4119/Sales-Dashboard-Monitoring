@@ -7,17 +7,24 @@ import calendar
 # --- CONFIG ---
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 
-# 1. Inject CSS: บังคับหัวข้อชิดบน และพยายามเจาะตัวเข้ม
+# 1. Inject CSS: ขยับชิดบน-ล่าง และทำตัวหนา
 st.markdown("""
     <style>
+    /* ขยับชิดขอบบนและล่างสุดๆ */
     .block-container {
-        padding-top: 1.5rem !important; /* ชิดขอบบนสุดๆ */
+        padding-top: 1.5rem !important;
+        padding-bottom: 0.5rem !important;
         padding-left: 1rem !important;
         padding-right: 1rem !important;
     }
-    /* บังคับให้ชื่อสาขา (คอลัมน์แรก) และหัวตารางเป็นตัวหนา */
-    [data-testid="stDataFrame"] td:first-child, 
-    [data-testid="stDataFrame"] th {
+    /* กำจัดระยะห่างส่วนเกินขององค์ประกอบภายใน */
+    [data-testid="stVerticalBlock"] > div {
+        padding-bottom: 0px !important;
+        margin-bottom: 0px !important;
+    }
+    /* บังคับตัวหนาสำหรับหัวตารางและชื่อสาขา */
+    [data-testid="stDataFrame"] th, 
+    [data-testid="stDataFrame"] td:first-child {
         font-weight: 900 !important;
         color: #000000 !important;
     }
@@ -25,6 +32,9 @@ st.markdown("""
     [data-testid="stDataFrame"] td {
         text-align: center !important;
     }
+    /* ซ่อน Footer ปกติของ Streamlit เพื่อประหยัดที่ */
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
@@ -43,7 +53,7 @@ with st.sidebar:
     m_name = st.selectbox("เดือน (Month)", month_names, index=datetime.now().month-1)
     m = month_names.index(m_name) + 1
 
-# --- ส่วนหัวข้อที่หายไป: ผมใช้ st.subheader แทนเพื่อให้มันแสดงผลแน่นอน ---
+# แสดงหัวข้อ (ใช้ Markdown เพื่อให้ประหยัดพื้นที่กว่า Title ปกติ)
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
 st.markdown(f"**📅 ประจำเดือน {m_name} {y}**")
 
@@ -91,19 +101,15 @@ if full_df is not None and not full_df.empty:
 
     styled_grid = grid_df.style.map(style_grid).format(format_status)
 
-    # --- วิธีทำให้ตัวหนังสือเข้ม 100%: ใช้ column_config บังคับ Bold ---
-    # บังคับคอลัมน์ Index (ชื่อสาขา) ให้กว้างและเข้ม
-    config = {
-        "widgets": st.column_config.Column(width="medium", help="ชื่อสาขา", required=True)
-    }
-    # บังคับคอลัมน์วันที่ (1-31) ให้แคบและจัดกลาง
-    for day in days_in_month:
-        config[day] = st.column_config.TextColumn(str(day), width=32)
+    # ปรับความกว้างคอลัมน์ให้ประหยัดพื้นที่
+    config = {day: st.column_config.TextColumn(str(day), width=32) for day in days_in_month}
+    config[None] = st.column_config.Column(width="medium")
 
+    # แสดงตาราง: เพิ่มความสูง (height) เป็น 1000 หรือมากกว่าเพื่อให้โชว์แถวได้เยอะที่สุด
     st.dataframe(
         styled_grid, 
         use_container_width=True, 
-        height=850,
+        height=1000, 
         column_config=config
     )
     st.caption("✅ ปกติ | ⚠️ ยอดไม่ตรง | ❌ ไม่เข้า | N/A: ยังไม่มีข้อมูล")
