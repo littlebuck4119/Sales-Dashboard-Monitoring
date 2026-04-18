@@ -10,7 +10,7 @@ st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 # CSS: เน้นตัวเข้ม ชิดบน-ล่าง และจัดการระยะห่าง
 st.markdown("""
     <style>
-    .block-container { padding-top: 2rem !important;padding-left: rem !important; padding-right: 1rem !important; padding-bottom: 0rem !important; }
+    .block-container { padding-top: 2rem !important;padding-left: 1rem !important; padding-right: 1rem !important; padding-bottom: 0rem !important; }
     [data-testid="stDataFrame"] td:first-child, [data-testid="stDataFrame"] th {
         font-weight: 900 !important; color: #000000 !important;
     }
