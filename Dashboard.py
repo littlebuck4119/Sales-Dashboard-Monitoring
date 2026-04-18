@@ -14,8 +14,8 @@ st.markdown("""
     .block-container {
         padding-top: 2rem !important; 
         padding-bottom: 0rem !important;
-        padding-left: 1.5rem !important;
-        padding-right: 1.5rem !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
     }
     /* บังคับชื่อสาขา (คอลัมน์แรก) และหัววันที่ ให้เป็นตัวหนาเข้ม */
     [data-testid="stDataFrame"] td:first-child, 
