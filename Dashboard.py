@@ -26,6 +26,7 @@ st.markdown("""
 BRAND_CONFIG = {
     "Eat Am Are": "506e2020f13e6d515726",
     "JonesSalad": "695d80e67b2a8c1ca2ee", 
+    "Laem Charoen Seafood": "98d3735c3a0a94a513f6",
 }
 
 # --- ดึงข้อมูล ---
