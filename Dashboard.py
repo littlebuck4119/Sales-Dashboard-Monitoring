@@ -7,19 +7,31 @@ import calendar
 # --- CONFIG ---
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 
-# CSS: เน้นตัวเข้ม ชิดบน-ล่าง และจัดการระยะห่าง
+# CSS: จัดหน้าตาใหม่ให้ชิดขอบบนสุด
 st.markdown("""
     <style>
-    .block-container { padding-top: 2rem !important;padding-left: 1rem !important; padding-right: 1rem !important; padding-bottom: 0rem !important; }
+    /* ปรับปรุงส่วนนี้: บังคับให้ Sidebar ชิดขอบบนสุด */
+    [data-testid="stSidebarContent"] {
+        padding-top: 0rem !important;
+    }
+    /* ปรับปรุงส่วนนี้: บังคับให้รูปใน Sidebar ขยับขึ้นไปอีก */
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+        gap: 0rem !important;
+        padding-top: 0.5rem !important;
+    }
+    
+    .block-container { 
+        padding-top: 1.5rem !important;
+        padding-left: 1rem !important; 
+        padding-right: 1rem !important; 
+        padding-bottom: 0rem !important; 
+    }
     [data-testid="stDataFrame"] td:first-child, [data-testid="stDataFrame"] th {
         font-weight: 900 !important; color: #000000 !important;
     }
     [data-testid="stDataFrame"] td { text-align: center !important; }
     footer {visibility: hidden;}
-    /* ตกแต่งการ์ดสรุปใน Sidebar */
-    .metric-card {
-        background-color: #f0f2f6; padding: 10px; border-radius: 10px; margin-bottom: 10px;
-    }
+    header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
