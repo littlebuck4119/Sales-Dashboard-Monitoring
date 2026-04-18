@@ -7,7 +7,7 @@ import calendar
 # --- 1. CONFIG ---
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 
-# CSS: Sidebar ชิดบน / หน้าหลักคงระยะ Padding 1rem ตามสั่ง
+# CSS: ล็อค Sidebar ชิดบนสุด และคงระยะหน้าหลักไว้ที่ 1rem ตามสั่ง
 st.markdown("""
     <style>
     [data-testid="stSidebarContent"] { padding-top: 0rem !important; }
@@ -46,14 +46,17 @@ BRAND_CONFIG = {
 }
 
 # --- 2. FAST DATA FETCHING ---
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=60) # ลดเวลาแคชเหลือ 1 นาทีเพื่อความสดใหม่
 def get_data_from_api(url):
     try:
-        res = requests.get(url, timeout=5)
+        res = requests.get(url, timeout=10)
         if res.status_code == 200:
             data = res.json()
             if data:
                 df = pd.DataFrame(data)
+                # บังคับ status_code เป็นตัวเลขเพื่อป้องกัน N/A ค้าง
+                if 'status_code' in df.columns:
+                    df['status_code'] = pd.to_numeric(df['status_code'], errors='coerce')
                 df['sync_date'] = pd.to_datetime(df['sync_date'])
                 return df
     except: pass
@@ -95,23 +98,28 @@ if full_df is not None and not full_df.empty:
     mask = (full_df['sync_date'].dt.month == m) & (full_df['sync_date'].dt.year == y)
     df_filtered = full_df[mask].copy()
 
-    # สร้างโครงตาราง (ใช้ dtype=object เพื่อกันพัง)
+    # สร้างโครงตาราง
     _, last_day = calendar.monthrange(y, m)
     days_in_month = list(range(1, last_day + 1))
     shop_list = sorted(full_df['shop_name'].unique())
-    grid_df = pd.DataFrame("N/A", index=shop_list, columns=days_in_month, dtype=object)
+    grid_df = pd.DataFrame("N/A", index=shop_list, columns=days_in_month)
 
+    # จัดข้อมูลเข้าตาราง (ใช้ Loop แบบพื้นฐานเพื่อความชัวร์ว่าเขียวจะขึ้น)
     if not df_filtered.empty:
         df_filtered['Day'] = df_filtered['sync_date'].dt.day
-        # ใช้ pivot แล้ววน Loop update คอลัมน์ (เร็วและชัวร์)
-        pivot_data = df_filtered.pivot(index='shop_name', columns='Day', values='status_code')
-        for col in pivot_data.columns:
-            if col in grid_df.columns:
-                grid_df[col].update(pivot_data[col])
+        for _, row in df_filtered.iterrows():
+            s_name = row['shop_name']
+            day_val = row['Day']
+            status = row['status_code']
+            if s_name in grid_df.index and day_val in grid_df.columns:
+                # แปลงค่า status เป็น Emoji ทันทีเพื่อลดขั้นตอน replace
+                if status == 2 or status == 2.0: grid_df.at[s_name, day_val] = "✅"
+                elif status == 1 or status == 1.0: grid_df.at[s_name, day_val] = "⚠️"
+                elif status == 0 or status == 0.0: grid_df.at[s_name, day_val] = "❌"
 
     # สรุปใน Sidebar
-    count_normal = (grid_df == 2).sum().sum()
-    count_prob = (grid_df == 0).sum().sum() + (grid_df == 1).sum().sum()
+    count_normal = (grid_df == "✅").sum().sum()
+    count_prob = (grid_df == "⚠️").sum().sum() + (grid_df == "❌").sum().sum()
     
     with summary_placeholder.container():
         st.info(f"เดือนนี้มีทั้งหมด {last_day} วัน")
@@ -120,20 +128,18 @@ if full_df is not None and not full_df.empty:
         c2.metric("ปัญหา (⚠️/❌)", f"{int(count_prob)}")
         
         # สาขาที่มีปัญหาบ่อย
-        problem_counts = (grid_df == 0).sum(axis=1) + (grid_df == 1).sum(axis=1)
+        problem_counts = (grid_df == "❌").sum(axis=1) + (grid_df == "⚠️").sum(axis=1)
         top_shops = problem_counts[problem_counts > 0].sort_values(ascending=False).head(3)
         if not top_shops.empty:
             st.write("**⚠️ สาขาที่พบปัญหาบ่อย:**")
             for shop, count in top_shops.items():
                 st.write(f"- {shop}: `{int(count)}` ครั้ง")
+        else:
+            st.success("🎉 ยังไม่พบปัญหาในเดือนนี้")
 
-    # 5. แก้จุดตาย: ใช้ .replace() แทน .applymap() เพื่อกัน Error ใน Pandas ทุกเวอร์ชั่น
-    status_map = {2: "✅", 2.0: "✅", 1: "⚠️", 1.0: "⚠️", 0: "❌", 0.0: "❌", "N/A": "N/A"}
-    display_df = grid_df.replace(status_map)
-
-    # 6. แสดงผล
+    # 5. แสดงผล (ใช้ grid_df ที่เป็น Emoji แล้วได้เลย ไม่ต้อง map เพิ่ม)
     st.dataframe(
-        display_df, 
+        grid_df, 
         use_container_width=True, 
         height=min(len(shop_list) * 38 + 100, 800), 
         column_config={day: st.column_config.Column(width=32) for day in days_in_month}
