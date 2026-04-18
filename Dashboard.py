@@ -7,33 +7,21 @@ import calendar
 # --- CONFIG ---
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 
-# CSS: ปรับระยะให้พอดี ไม่ดันจนหาย
+# CSS: เน้นตัวเข้ม ชิดบน-ล่าง และจัดการระยะห่างตาราง
 st.markdown("""
     <style>
-    /* 1. ปรับระยะ Sidebar ให้ลงมานิดนึง ไม่ให้หลุดขอบบน */
-    [data-testid="stSidebarContent"] {
-        padding-top: 1.5rem !important;
-    }
-    
-    /* 2. จัดระยะห่างระหว่างองค์ประกอบใน Sidebar */
-    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
-        gap: 0.5rem !important;
-    }
-
-    /* 3. จัดหน้าเนื้อหาหลักให้ชิดบนพอดีๆ */
     .block-container { 
         padding-top: 2rem !important;
         padding-left: 1rem !important; 
         padding-right: 1rem !important; 
         padding-bottom: 0rem !important; 
     }
-
-    /* 4. สไตล์ตารางตัวหนา */
+    /* บังคับตัวหนาเข้มสำหรับชื่อสาขาและหัวตาราง */
     [data-testid="stDataFrame"] td:first-child, [data-testid="stDataFrame"] th {
         font-weight: 900 !important; color: #000000 !important;
     }
     [data-testid="stDataFrame"] td { text-align: center !important; }
-
+    
     footer {visibility: hidden;}
     header {visibility: hidden;}
     </style>
@@ -45,7 +33,7 @@ BRAND_CONFIG = {
     "Laem Charoen Seafood": "98d3735c3a0a94a513f6",
 }
 
-# --- ดึงข้อมูล ---
+# --- ดึงข้อมูล API ---
 @st.cache_data(ttl=10)
 def get_data_from_api(url):
     try:
@@ -59,17 +47,12 @@ def get_data_from_api(url):
         return pd.DataFrame()
     except: return pd.DataFrame()
 
-# --- SIDEBAR ---
+# --- SIDEBAR (แถบเมนูข้าง) ---
 with st.sidebar:
-    # แสดง Logo (ใช้ชื่อไฟล์ที่พี่มีใน GitHub)
-    # ถ้าพี่ใช้ไฟล์โปร่งใสแล้ว อย่าลืมเช็กนามสกุล .png หรือ .JPG นะครับ
-    logo_file = "synaturelogo.png" 
-    try:
-        st.image(logo_file, width=130)
-    except:
-        st.write("### Synature Technology")
+    st.title("Synature")
+    st.caption("Operation monitoring")
     
-    st.markdown("### **ตัวเลือก**")
+    st.header("ตัวเลือก")
     selected_brand = st.selectbox("เลือกแบรนด์", list(BRAND_CONFIG.keys()))
     API_URL = f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}"
     
@@ -82,9 +65,10 @@ with st.sidebar:
     
     st.divider()
     st.subheader("📊 สรุปภาพรวม")
+    # จองพื้นที่ไว้แสดง Metric สรุป
     summary_placeholder = st.empty()
 
-# --- MAIN CONTENT ---
+# --- MAIN CONTENT (เนื้อหาหลัก) ---
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
 
 full_df = get_data_from_api(API_URL)
@@ -104,7 +88,7 @@ if full_df is not None and not full_df.empty:
             if row['shop_name'] in grid_df.index and row['Day'] in grid_df.columns:
                 grid_df.at[row['shop_name'], row['Day']] = row['status_code']
 
-    # --- สรุปใน Sidebar ---
+    # --- คำนวณสรุปสำหรับแสดงใน Sidebar ---
     count_normal = (grid_df == 2).sum().sum()
     count_warning = (grid_df == 1).sum().sum()
     count_error = (grid_df == 0).sum().sum()
@@ -118,7 +102,7 @@ if full_df is not None and not full_df.empty:
         c1.metric("ปกติ (✅)", f"{count_normal}")
         c2.metric("ปัญหา (⚠️/❌)", f"{count_warning + count_error}")
         
-        st.write("**⚠️ สาขาที่มีปัญหามากที่สุด:**")
+        st.write("**⚠️ สาขาที่พบปัญหาบ่อย:**")
         problematic_shops = top_problem_shops[top_problem_shops > 0]
         
         if not problematic_shops.empty:
@@ -127,6 +111,27 @@ if full_df is not None and not full_df.empty:
         else:
             st.success("🎉 ยังไม่พบปัญหาในเดือนนี้")
 
-    # ตาราง Heatmap
+    # --- ฟังก์ชันจัดการสีและสัญลักษณ์ในตาราง ---
     def format_status(val):
         if val == 2 or val == 2.0: return "✅"
+        if val == 1 or val == 1.0: return "⚠️"
+        if val == 0 or val == 0.0: return "❌"
+        return "N/A"
+
+    def style_grid(val):
+        base = 'background-color: #f8f9fa; border: 1px solid #ffffff;'
+        if val == "N/A": return base + ' color: #adb5bd; font-size: 8px;'
+        return base
+
+    styled_grid = grid_df.style.map(style_grid).format(format_status)
+    
+    # กำหนดความกว้างคอลัมน์วันที่
+    config = {day: st.column_config.Column(width=32) for day in days_in_month}
+    config[None] = st.column_config.Column(width="medium")
+
+    # แสดงตาราง Heatmap
+    st.dataframe(styled_grid, use_container_width=True, height=850, column_config=config)
+    st.caption("✅ ปกติ | ⚠️ ยอดไม่ตรง | ❌ ไม่เข้า | N/A: ยังไม่มีข้อมูล")
+
+else:
+    st.warning("⚠️ ไม่พบข้อมูลสำหรับแบรนด์หรือเดือนที่เลือก")
