@@ -59,49 +59,47 @@ with st.sidebar:
     summary_placeholder = st.empty()
 
 # --- MAIN CONTENT ---
-st.subheader(f"📊 Sales Monitoring Heatmap : {selected_brand}")
+st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
+
 full_df = get_data_from_api(API_URL)
 
-if not full_df.empty:
+if full_df is not None and not full_df.empty:
     shop_list = sorted(full_df['shop_name'].unique())
     mask = (full_df['sync_date'].dt.month == m) & (full_df['sync_date'].dt.year == y)
     df_filtered = full_df[mask].copy()
 
-    # เตรียมตาราง
     _, last_day = calendar.monthrange(y, m)
     days_in_month = [i for i in range(1, last_day + 1)]
     grid_df = pd.DataFrame("N/A", index=shop_list, columns=days_in_month, dtype=object)
 
-    # ใส่ข้อมูล status_code
     if not df_filtered.empty:
         df_filtered['Day'] = df_filtered['sync_date'].dt.day
         for _, row in df_filtered.iterrows():
             if row['shop_name'] in grid_df.index and row['Day'] in grid_df.columns:
                 grid_df.at[row['shop_name'], row['Day']] = row['status_code']
 
-    # --- คำนวณสรุปเพื่อแสดงใน Sidebar ---
-    total_cells = grid_df.size
+    # --- คำนวณและแสดงสรุปใน Sidebar ---
     count_normal = (grid_df == 2).sum().sum()
     count_warning = (grid_df == 1).sum().sum()
     count_error = (grid_df == 0).sum().sum()
-    count_na = (grid_df == "N/A").sum().sum()
     
-    # นับสาขาที่มีปัญหามากที่สุด
     problem_counts = (grid_df == 0).sum(axis=1) + (grid_df == 1).sum(axis=1)
     top_problem_shops = problem_counts.sort_values(ascending=False).head(3)
-
+    
     with summary_placeholder.container():
         st.info(f"เดือนนี้มีทั้งหมด {last_day} วัน")
-        col1, col2 = st.columns(2)
-        col1.metric("ปกติ (✅)", f"{count_normal}")
-        col2.metric("ปัญหา (⚠️/❌)", f"{count_warning + count_error}")
+        c1, c2 = st.columns(2)
+        c1.metric("ปกติ (✅)", f"{count_normal}")
+        c2.metric("ปัญหา (⚠️/❌)", f"{count_warning + count_error}")
         
         st.write("**⚠️ สาขาที่พบปัญหาบ่อย:**")
-        for shop, count in top_problem_shops.items():
-            if count > 0:
+        problematic_shops = top_problem_shops[top_problem_shops > 0]
+        
+        if not problematic_shops.empty:
+            for shop, count in problematic_shops.items():
                 st.write(f"- {shop}: `{count}` ครั้ง")
-            else:
-                st.write("ยังไม่พบปัญหาในเดือนนี้")
+        else:
+            st.success("🎉 ยังไม่พบปัญหาในเดือนนี้")
 
     # แสดงตาราง Heatmap
     def format_status(val):
