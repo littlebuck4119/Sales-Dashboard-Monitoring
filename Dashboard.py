@@ -7,20 +7,20 @@ import calendar
 # --- CONFIG ---
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 
-# CSS: รวมความต้องการทั้งหมด (Sidebar ชิดบน, หน้าหลักคงเดิม, ไม่เปลี่ยน Padding L/R)
+# CSS: เน้นเจาะจงให้ Sidebar ชิดบนสุด และคงระยะหน้าหลักตามเดิม
 st.markdown("""
     <style>
-    /* 1. เจาะจงเฉพาะ Sidebar ให้ชิดขอบบนสุด 0px */
+    /* 1. บังคับให้เนื้อหาใน Sidebar ลอยขึ้นไปชิดขอบบนสุด */
     [data-testid="stSidebarContent"] {
         padding-top: 0rem !important;
     }
     
-    /* 2. จัดระเบียบช่องว่างภายใน Sidebar */
+    /* 2. จัดช่องว่างภายใน Sidebar ให้กระชับ */
     [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
         gap: 0rem !important;
     }
 
-    /* 3. หน้าหลักคงเดิม: Padding Top 2rem และ Left/Right 1rem (ห้ามเปลี่ยน) */
+    /* 3. คงระยะหน้าหลักไว้เท่าเดิม (Top 2rem, Left/Right 1rem) ห้ามขยับ */
     .block-container { 
         padding-top: 2rem !important; 
         padding-left: 1rem !important;   
@@ -28,14 +28,14 @@ st.markdown("""
         padding-bottom: 0rem !important; 
     }
 
-    /* 4. สไตล์ Date Card สำหรับปิดพื้นที่โล่งใน Sidebar */
+    /* 4. สไตล์ Date Card ให้ดูพรีเมียมและชิดบน */
     .date-card {
         background-color: #ffffff;
         padding: 15px;
         border-radius: 12px;
         border: 1px solid #e0e0e0;
         box-shadow: 0px 4px 6px rgba(0,0,0,0.05);
-        margin-top: 10px; /* ขยับขึ้นไปชิดขอบบน */
+        margin-top: 10px; 
         margin-bottom: 20px;
         text-align: center;
     }
@@ -43,13 +43,12 @@ st.markdown("""
     .date-card .date-number { font-size: 2.2rem; font-weight: 800; color: #1f1f1f; line-height: 1; margin: 5px 0; }
     .date-card .month-year { color: #555; font-size: 1rem; }
 
-    /* 5. สไตล์ตารางตัวหนาเข้มและจัดกลาง */
+    /* 5. สไตล์ตารางตัวหนาเข้ม */
     [data-testid="stDataFrame"] td:first-child, [data-testid="stDataFrame"] th {
         font-weight: 900 !important; color: #000000 !important;
     }
     [data-testid="stDataFrame"] td { text-align: center !important; }
 
-    /* ซ่อน Footer และคง Header ไว้เพื่อให้มีลูกศรเปิด Sidebar */
     footer {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
@@ -74,9 +73,9 @@ def get_data_from_api(url):
         return pd.DataFrame()
     except: return pd.DataFrame()
 
-# --- SIDEBAR (แถบเมนูข้าง) ---
+# --- SIDEBAR ---
 with st.sidebar:
-    # --- Date Card: ปฏิทินแสดงวันที่ปัจจุบัน ---
+    # แสดง Date Card ชิดขอบบน
     now = datetime.now()
     st.markdown(f"""
         <div class="date-card">
@@ -105,7 +104,7 @@ with st.sidebar:
     st.subheader("📊 สรุปภาพรวม")
     summary_placeholder = st.empty()
 
-# --- MAIN CONTENT (เนื้อหาหลัก) ---
+# --- MAIN CONTENT ---
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
 
 full_df = get_data_from_api(API_URL)
@@ -133,15 +132,4 @@ if full_df is not None and not full_df.empty:
     problem_counts = (grid_df == 0).sum(axis=1) + (grid_df == 1).sum(axis=1)
     top_problem_shops = problem_counts.sort_values(ascending=False).head(3)
     
-    with summary_placeholder.container():
-        st.info(f"เดือนนี้มีทั้งหมด {last_day} วัน")
-        c1, c2 = st.columns(2)
-        c1.metric("ปกติ (✅)", f"{count_normal}")
-        c2.metric("ปัญหา (⚠️/❌)", f"{count_warning + count_error}")
-        
-        st.write("**⚠️ สาขาที่พบปัญหาบ่อย:**")
-        problematic_shops = top_problem_shops[top_problem_shops > 0]
-        
-        if not problematic_shops.empty:
-            for shop, count in problematic_shops.items():
-                st.write(f"- {shop
+    with
