@@ -4,10 +4,10 @@ import requests
 from datetime import datetime
 import calendar
 
-# --- CONFIG ---
+# --- 1. CONFIG ---
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 
-# CSS: คงไว้ตามแบบที่พี่ต้องการ (Sidebar ชิดบน, หน้าหลัก Padding เท่าเดิม)
+# CSS: Sidebar ชิดบน / หน้าหลัก Padding เท่าเดิมตามสั่ง
 st.markdown("""
     <style>
     [data-testid="stSidebarContent"] { padding-top: 0rem !important; }
@@ -45,11 +45,11 @@ BRAND_CONFIG = {
     "Laem Charoen Seafood": "98d3735c3a0a94a513f6",
 }
 
-# --- ดึงข้อมูล API (เพิ่ม Cache เป็น 5 นาทีเพื่อความลื่น) ---
+# --- 2. FAST DATA FETCHING ---
 @st.cache_data(ttl=300)
 def get_data_from_api(url):
     try:
-        res = requests.get(url, timeout=5) # ลด Timeout ให้ไม่ค้างนาน
+        res = requests.get(url, timeout=5)
         if res.status_code == 200:
             data = res.json()
             if data:
@@ -59,7 +59,7 @@ def get_data_from_api(url):
     except: pass
     return pd.DataFrame()
 
-# --- SIDEBAR ---
+# --- 3. SIDEBAR ---
 with st.sidebar:
     now = datetime.now()
     st.markdown(f"""
@@ -86,29 +86,32 @@ with st.sidebar:
     st.subheader("📊 สรุปภาพรวม")
     summary_placeholder = st.empty()
 
-# --- MAIN CONTENT ---
+# --- 4. MAIN CONTENT ---
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
 
 full_df = get_data_from_api(API_URL)
 
 if full_df is not None and not full_df.empty:
-    # 1. กรองข้อมูล
+    # 1. กรองข้อมูลตามเดือนและปี
     mask = (full_df['sync_date'].dt.month == m) & (full_df['sync_date'].dt.year == y)
     df_filtered = full_df[mask].copy()
 
-    # 2. สร้างโครงตาราง
+    # 2. เตรียมโครงสร้างตาราง (บังคับชนิดข้อมูลเป็น Object เพื่อรองรับทั้งเลขและ N/A)
     _, last_day = calendar.monthrange(y, m)
     days_in_month = list(range(1, last_day + 1))
     shop_list = sorted(full_df['shop_name'].unique())
-    grid_df = pd.DataFrame("N/A", index=shop_list, columns=days_in_month)
+    grid_df = pd.DataFrame("N/A", index=shop_list, columns=days_in_month, dtype=object)
 
-    # 3. จัดข้อมูลเข้าตาราง (วิธีที่เร็วที่สุด: Pivot)
     if not df_filtered.empty:
         df_filtered['Day'] = df_filtered['sync_date'].dt.day
-        pivoted = df_filtered.pivot(index='shop_name', columns='Day', values='status_code')
-        grid_df.update(pivoted)
+        # 3. ใช้การ Loop แบบลดรูป (รักษาสมดุลความเร็วและความปลอดภัย)
+        # วิธีนี้จะไม่เกิด TypeError แบบ .update() เพราะจัดการ Data Type ให้เอง
+        pivot_data = df_filtered.groupby(['shop_name', 'Day'])['status_code'].first().unstack()
+        for col in pivot_data.columns:
+            if col in grid_df.columns:
+                grid_df[col].update(pivot_data[col])
 
-    # 4. สรุปใน Sidebar (คำนวณจาก grid_df โดยตรง)
+    # 4. สรุปใน Sidebar
     count_normal = (grid_df == 2).sum().sum()
     count_warning = (grid_df == 1).sum().sum()
     count_error = (grid_df == 0).sum().sum()
@@ -119,6 +122,7 @@ if full_df is not None and not full_df.empty:
         c1.metric("ปกติ (✅)", f"{int(count_normal)}")
         c2.metric("ปัญหา (⚠️/❌)", f"{int(count_warning + count_error)}")
         
+        # สาขาที่มีปัญหาบ่อย
         problem_counts = (grid_df == 0).sum(axis=1) + (grid_df == 1).sum(axis=1)
         top_problem_shops = problem_counts[problem_counts > 0].sort_values(ascending=False).head(3)
         
@@ -129,17 +133,16 @@ if full_df is not None and not full_df.empty:
         else:
             st.success("🎉 ยังไม่พบปัญหาในเดือนนี้")
 
-    # 5. แปลงค่าเป็น Emoji (ทำรวดเดียวจะเร็วกว่าใช้ style map)
+    # 5. แปลงเป็น Emoji เพื่อความเร็วในการโหลดหน้าเว็บ
     status_map = {2: "✅", 2.0: "✅", 1: "⚠️", 1.0: "⚠️", 0: "❌", 0.0: "❌", "N/A": "N/A"}
-    display_df = grid_df.replace(status_map)
+    display_df = grid_df.applymap(lambda x: status_map.get(x, x))
 
-    # 6. แสดงผล (ใช้ column_config เพื่อคุมความกว้าง)
-    config = {day: st.column_config.Column(width=32) for day in days_in_month}
+    # 6. แสดงผลตาราง
     st.dataframe(
         display_df, 
         use_container_width=True, 
         height=min(len(shop_list) * 38 + 100, 800), 
-        column_config=config
+        column_config={day: st.column_config.Column(width=32) for day in days_in_month}
     )
     st.caption("✅ ปกติ | ⚠️ ยอดไม่ตรง | ❌ ไม่เข้า | N/A: ยังไม่มีข้อมูล")
 else:
