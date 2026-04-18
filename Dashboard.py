@@ -13,7 +13,7 @@ st.markdown("""
     /* ขยับชิดขอบบนและล่างสุดๆ */
     .block-container {
         padding-top: 1.5rem !important;
-        padding-bottom: 0.5rem !important;
+        padding-bottom: 0rem !important;
         padding-left: 1rem !important;
         padding-right: 1rem !important;
     }
