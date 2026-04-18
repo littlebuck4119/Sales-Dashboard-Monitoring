@@ -61,8 +61,6 @@ def get_data_from_api(url):
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.title("Monthly Monitoring")
-    st.caption("Operation monitoring")
     
     st.header("ตัวเลือก")
     selected_brand = st.selectbox("เลือกแบรนด์", list(BRAND_CONFIG.keys()))
