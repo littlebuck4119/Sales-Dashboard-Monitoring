@@ -7,7 +7,7 @@ import calendar
 # --- 1. CONFIG ---
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 
-# CSS: Sidebar ชิดบน / หน้าหลัก Padding เท่าเดิมตามสั่ง
+# CSS: Sidebar ชิดบน / หน้าหลักคงระยะ Padding 1rem ตามสั่ง
 st.markdown("""
     <style>
     [data-testid="stSidebarContent"] { padding-top: 0rem !important; }
@@ -72,7 +72,6 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
     
-    st.header("ตัวเลือก")
     selected_brand = st.selectbox("เลือกแบรนด์", list(BRAND_CONFIG.keys()))
     API_URL = f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}"
     
@@ -92,11 +91,11 @@ st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
 full_df = get_data_from_api(API_URL)
 
 if full_df is not None and not full_df.empty:
-    # 1. กรองข้อมูลตามเดือนและปี
+    # กรองข้อมูล
     mask = (full_df['sync_date'].dt.month == m) & (full_df['sync_date'].dt.year == y)
     df_filtered = full_df[mask].copy()
 
-    # 2. เตรียมโครงสร้างตาราง (บังคับชนิดข้อมูลเป็น Object เพื่อรองรับทั้งเลขและ N/A)
+    # สร้างโครงตาราง (ใช้ dtype=object เพื่อกันพัง)
     _, last_day = calendar.monthrange(y, m)
     days_in_month = list(range(1, last_day + 1))
     shop_list = sorted(full_df['shop_name'].unique())
@@ -104,40 +103,35 @@ if full_df is not None and not full_df.empty:
 
     if not df_filtered.empty:
         df_filtered['Day'] = df_filtered['sync_date'].dt.day
-        # 3. ใช้การ Loop แบบลดรูป (รักษาสมดุลความเร็วและความปลอดภัย)
-        # วิธีนี้จะไม่เกิด TypeError แบบ .update() เพราะจัดการ Data Type ให้เอง
-        pivot_data = df_filtered.groupby(['shop_name', 'Day'])['status_code'].first().unstack()
+        # ใช้ pivot แล้ววน Loop update คอลัมน์ (เร็วและชัวร์)
+        pivot_data = df_filtered.pivot(index='shop_name', columns='Day', values='status_code')
         for col in pivot_data.columns:
             if col in grid_df.columns:
                 grid_df[col].update(pivot_data[col])
 
-    # 4. สรุปใน Sidebar
+    # สรุปใน Sidebar
     count_normal = (grid_df == 2).sum().sum()
-    count_warning = (grid_df == 1).sum().sum()
-    count_error = (grid_df == 0).sum().sum()
+    count_prob = (grid_df == 0).sum().sum() + (grid_df == 1).sum().sum()
     
     with summary_placeholder.container():
         st.info(f"เดือนนี้มีทั้งหมด {last_day} วัน")
         c1, c2 = st.columns(2)
         c1.metric("ปกติ (✅)", f"{int(count_normal)}")
-        c2.metric("ปัญหา (⚠️/❌)", f"{int(count_warning + count_error)}")
+        c2.metric("ปัญหา (⚠️/❌)", f"{int(count_prob)}")
         
         # สาขาที่มีปัญหาบ่อย
         problem_counts = (grid_df == 0).sum(axis=1) + (grid_df == 1).sum(axis=1)
-        top_problem_shops = problem_counts[problem_counts > 0].sort_values(ascending=False).head(3)
-        
-        if not top_problem_shops.empty:
+        top_shops = problem_counts[problem_counts > 0].sort_values(ascending=False).head(3)
+        if not top_shops.empty:
             st.write("**⚠️ สาขาที่พบปัญหาบ่อย:**")
-            for shop, count in top_problem_shops.items():
+            for shop, count in top_shops.items():
                 st.write(f"- {shop}: `{int(count)}` ครั้ง")
-        else:
-            st.success("🎉 ยังไม่พบปัญหาในเดือนนี้")
 
-    # 5. แปลงเป็น Emoji เพื่อความเร็วในการโหลดหน้าเว็บ
+    # 5. แก้จุดตาย: ใช้ .replace() แทน .applymap() เพื่อกัน Error ใน Pandas ทุกเวอร์ชั่น
     status_map = {2: "✅", 2.0: "✅", 1: "⚠️", 1.0: "⚠️", 0: "❌", 0.0: "❌", "N/A": "N/A"}
-    display_df = grid_df.applymap(lambda x: status_map.get(x, x))
+    display_df = grid_df.replace(status_map)
 
-    # 6. แสดงผลตาราง
+    # 6. แสดงผล
     st.dataframe(
         display_df, 
         use_container_width=True, 
