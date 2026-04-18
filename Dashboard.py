@@ -45,6 +45,13 @@ def get_data_from_api(url):
 
 # --- SIDEBAR ---
 with st.sidebar:
+    # --- เพิ่มส่วน LOGO ตรงนี้ ---
+    # ตรวจสอบชื่อไฟล์ให้ตรงกับที่พี่อัปโหลดขึ้น GitHub (เช่น synaturelogo.JPG)
+    try:
+        st.image("synaturelogo.JPG", use_container_width=True)
+    except:
+        st.markdown("### 🏢 Synature Technology")
+    
     st.header("ตัวเลือก")
     selected_brand = st.selectbox("เลือกแบรนด์", list(BRAND_CONFIG.keys()))
     API_URL = f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}"
@@ -56,7 +63,6 @@ with st.sidebar:
     
     st.divider()
     st.subheader("📊 สรุปภาพรวม")
-    # ประกาศสร้างตัวแปรไว้ตรงนี้ เพื่อป้องกัน NameError
     summary_placeholder = st.empty()
 
 # --- MAIN CONTENT ---
