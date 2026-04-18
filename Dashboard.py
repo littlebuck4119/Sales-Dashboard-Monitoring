@@ -11,7 +11,7 @@ st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 st.markdown("""
     <style>
     .block-container {
-        padding-top: 1rem !important; /* ชิดขอบบนสุดๆ */
+        padding-top: 1.5rem !important; /* ชิดขอบบนสุดๆ */
         padding-left: 1rem !important;
         padding-right: 1rem !important;
     }
