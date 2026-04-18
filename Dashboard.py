@@ -132,4 +132,39 @@ if full_df is not None and not full_df.empty:
     problem_counts = (grid_df == 0).sum(axis=1) + (grid_df == 1).sum(axis=1)
     top_problem_shops = problem_counts.sort_values(ascending=False).head(3)
     
-    with
+    with summary_placeholder.container():
+        st.info(f"เดือนนี้มีทั้งหมด {last_day} วัน")
+        c1, c2 = st.columns(2)
+        c1.metric("ปกติ (✅)", f"{count_normal}")
+        c2.metric("ปัญหา (⚠️/❌)", f"{count_warning + count_error}")
+        
+        st.write("**⚠️ สาขาที่พบปัญหาบ่อย:**")
+        problematic_shops = top_problem_shops[top_problem_shops > 0]
+        
+        if not problematic_shops.empty:
+            for shop, count in problematic_shops.items():
+                # แก้ไข Syntax Error ตรงนี้แล้วครับ
+                st.write(f"- {shop}: `{count}` ครั้ง")
+        else:
+            st.success("🎉 ยังไม่พบปัญหาในเดือนนี้")
+
+    # ตาราง Heatmap
+    def format_status(val):
+        if val == 2 or val == 2.0: return "✅"
+        if val == 1 or val == 1.0: return "⚠️"
+        if val == 0 or val == 0.0: return "❌"
+        return "N/A"
+
+    def style_grid(val):
+        base = 'background-color: #f8f9fa; border: 1px solid #ffffff;'
+        if val == "N/A": return base + ' color: #adb5bd; font-size: 8px;'
+        return base
+
+    styled_grid = grid_df.style.map(style_grid).format(format_status)
+    config = {day: st.column_config.Column(width=32) for day in days_in_month}
+    config[None] = st.column_config.Column(width="medium")
+
+    st.dataframe(styled_grid, use_container_width=True, height=850, column_config=config)
+    st.caption("✅ ปกติ | ⚠️ ยอดไม่ตรง | ❌ ไม่เข้า | N/A: ยังไม่มีข้อมูล")
+else:
+    st.warning("⚠️ ไม่พบข้อมูลสำหรับแบรนด์หรือเดือนที่เลือก")
