@@ -47,7 +47,7 @@ def get_data_from_api(url):
 with st.sidebar:
     # --- [ส่วนที่แก้] ปรับขนาด LOGO ให้เล็กพอดี ---
     # ใช้ st.image กำหนดความกว้างเฉพาะ (เช่น 150 หรือ 200) ไม่ต้องใช้ use_column_width
-    logo_file = "synaturelogo.JPG" # ตรวจสอบชื่อไฟล์ให้ตรง
+    logo_file = "synaturelogo.png" # ตรวจสอบชื่อไฟล์ให้ตรง
     try:
         # กำหนดความกว้าง 150 พิกเซล (ปรับเลข 150 เพิ่ม/ลดได้ตามชอบครับ)
         st.image(logo_file, width=120)
