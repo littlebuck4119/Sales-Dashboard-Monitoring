@@ -7,29 +7,37 @@ import calendar
 # --- CONFIG ---
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 
-# CSS: จัดหน้าตาใหม่ให้ชิดขอบบนสุด
+# CSS: บังคับทุกอย่างให้ชิดขอบบนและจัดการ Sidebar
 st.markdown("""
     <style>
-    /* ปรับปรุงส่วนนี้: บังคับให้ Sidebar ชิดขอบบนสุด */
+    /* 1. ดันเนื้อหา Sidebar ขึ้นไปชิดขอบบนสุด */
     [data-testid="stSidebarContent"] {
-        padding-top: 0rem !important;
-    }
-    /* ปรับปรุงส่วนนี้: บังคับให้รูปใน Sidebar ขยับขึ้นไปอีก */
-    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
-        gap: 0rem !important;
         padding-top: 0.5rem !important;
     }
+    [data-testid="stSidebarNav"] {
+        display: none;
+    }
     
+    /* 2. จัดการระยะห่างใน Sidebar ให้กระชับ */
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+        gap: 0.2rem !important;
+    }
+
+    /* 3. ดันเนื้อหาฝั่งขวา (ตาราง) ขึ้นชิดบน */
     .block-container { 
         padding-top: 1.5rem !important;
         padding-left: 1rem !important; 
         padding-right: 1rem !important; 
         padding-bottom: 0rem !important; 
     }
+
+    /* 4. สไตล์ตาราง: ตัวหนาและจัดกลาง */
     [data-testid="stDataFrame"] td:first-child, [data-testid="stDataFrame"] th {
         font-weight: 900 !important; color: #000000 !important;
     }
     [data-testid="stDataFrame"] td { text-align: center !important; }
+
+    /* ซ่อน Header/Footer ของ Streamlit */
     footer {visibility: hidden;}
     header {visibility: hidden;}
     </style>
@@ -55,19 +63,18 @@ def get_data_from_api(url):
         return pd.DataFrame()
     except: return pd.DataFrame()
 
-# --- SIDEBAR (แถบเมนูข้าง) ---
+# --- SIDEBAR ---
 with st.sidebar:
-    # --- [ส่วนที่แก้] ปรับขนาด LOGO ให้เล็กพอดี ---
-    # ใช้ st.image กำหนดความกว้างเฉพาะ (เช่น 150 หรือ 200) ไม่ต้องใช้ use_column_width
-    logo_file = "synaturelogo.png" # ตรวจสอบชื่อไฟล์ให้ตรง
+    # แสดง Logo (ปรับเป็น .png เพื่อรองรับพื้นหลังโปร่งใส)
+    # ถ้าพี่ยังไม่ได้เปลี่ยนไฟล์ใน GitHub ให้แก้กลับเป็น .JPG นะครับ
+    logo_file = "synaturelogo.png" 
     try:
-        # กำหนดความกว้าง 150 พิกเซล (ปรับเลข 150 เพิ่ม/ลดได้ตามชอบครับ)
         st.image(logo_file, width=120)
     except:
         st.markdown("### Synature Technology")
-        st.caption("Operation monitoring")
-
-    st.header("ตัวเลือก")
+    
+    # ใช้ markdown แทน header เพื่อให้ระยะห่างข้างบนน้อยลง
+    st.markdown("#### **ตัวเลือก**")
     selected_brand = st.selectbox("เลือกแบรนด์", list(BRAND_CONFIG.keys()))
     API_URL = f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}"
     
@@ -80,8 +87,8 @@ with st.sidebar:
     
     st.divider()
     st.subheader("📊 สรุปภาพรวม")
-    # จองพื้นที่ Metric (แก้ NameError ที่เคยวงไว้)
     summary_placeholder = st.empty()
+
 # --- MAIN CONTENT ---
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
 
@@ -102,7 +109,7 @@ if full_df is not None and not full_df.empty:
             if row['shop_name'] in grid_df.index and row['Day'] in grid_df.columns:
                 grid_df.at[row['shop_name'], row['Day']] = row['status_code']
 
-    # --- คำนวณและแสดงสรุปใน Sidebar ---
+    # --- สรุปใน Sidebar ---
     count_normal = (grid_df == 2).sum().sum()
     count_warning = (grid_df == 1).sum().sum()
     count_error = (grid_df == 0).sum().sum()
@@ -116,7 +123,7 @@ if full_df is not None and not full_df.empty:
         c1.metric("ปกติ (✅)", f"{count_normal}")
         c2.metric("ปัญหา (⚠️/❌)", f"{count_warning + count_error}")
         
-        st.write("**⚠️ สาขาที่พบปัญหาบ่อย:**")
+        st.write("**⚠️ สาขาที่มีปัญหามากที่สุด:**")
         problematic_shops = top_problem_shops[top_problem_shops > 0]
         
         if not problematic_shops.empty:
@@ -125,7 +132,7 @@ if full_df is not None and not full_df.empty:
         else:
             st.success("🎉 ยังไม่พบปัญหาในเดือนนี้")
 
-    # แสดงตาราง Heatmap
+    # ตาราง Heatmap
     def format_status(val):
         if val == 2 or val == 2.0: return "✅"
         if val == 1 or val == 1.0: return "⚠️"
@@ -141,7 +148,7 @@ if full_df is not None and not full_df.empty:
     config = {day: st.column_config.Column(width=32) for day in days_in_month}
     config[None] = st.column_config.Column(width="medium")
 
-    st.dataframe(styled_grid, use_container_width=True, height=850, column_config=config)
+    st.dataframe(styled_grid, use_container_width=True, height=1000, column_config=config)
     st.caption("✅ ปกติ | ⚠️ ยอดไม่ตรง | ❌ ไม่เข้า | N/A: ยังไม่มีข้อมูล")
 else:
     st.warning("⚠️ ไม่พบข้อมูล")
