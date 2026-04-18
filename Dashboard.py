@@ -7,19 +7,25 @@ import calendar
 # --- CONFIG ---
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 
-# 1. Inject CSS: บังคับให้ทุกช่องในตารางจัดวางกึ่งกลางและเอา Padding ส่วนเกินออก
+# 1. Inject CSS: เพื่อขยับทุกอย่างชิดบน และขยายพื้นที่ให้กว้างขึ้น
 st.markdown("""
     <style>
-    /* จัดกึ่งกลางทั้งแนวตั้งและแนวนอน */
+    /* 1. ลดระยะห่างด้านบนสุด (Header gap) */
+    .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 0rem !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+    /* 2. จัดกึ่งกลางทั้งแนวตั้งและแนวนอนในตาราง */
     [data-testid="stDataFrame"] td, [data-testid="stDataFrame"] th {
         text-align: center !important;
         vertical-align: middle !important;
     }
-    /* บังคับความสูงแถวให้กระชับ */
-    [data-testid="stDataFrame"] div[role="gridcell"] {
-        display: flex;
-        justify-content: center;
-        align-items: center;
+    /* 3. ปรับฟอนต์หัวข้อให้กระชับขึ้นเพื่อประหยัดที่ */
+    h1 {
+        margin-top: -30px !important;
+        padding-top: 0px !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -39,7 +45,8 @@ with st.sidebar:
     m_name = st.selectbox("เดือน (Month)", month_names, index=datetime.now().month-1)
     m = month_names.index(m_name) + 1
 
-st.title(f"📊 {selected_brand} - Sales Monitoring Heatmap")
+# แสดงชื่อแบรนด์
+st.title(f"📊 {selected_brand}")
 
 @st.cache_data(ttl=10)
 def get_data_from_api(url):
@@ -84,19 +91,20 @@ if full_df is not None and not full_df.empty:
             return base + ' color: #adb5bd; font-size: 8px;'
         return base
 
-    st.subheader(f"🗓️ ประจำเดือน {m_name} {y}")
+    # ปรับ Subheader ให้ติดกับ Title
+    st.write(f"**📅 ประจำเดือน {m_name} {y}**")
+    
     styled_grid = grid_df.style.map(style_grid).format(format_status)
 
-    # 2. ตั้งค่าความกว้างคอลัมน์วันที่ (1-31) ให้เล็กจิ๋วที่ 35 พิกเซล
-    # วิธีนี้จะบีบช่องให้แคบลงจน Emoji ไม่มีที่ให้เยื้องเลยครับ
-    col_config = {day: st.column_config.Column(width=35) for day in days_in_month}
-    # สำหรับคอลัมน์ชื่อสาขา ให้กว้างตามปกติ
+    # ปรับความกว้างคอลัมน์วันที่ให้เล็กเพื่อประหยัดพื้นที่แนวขวาง
+    col_config = {day: st.column_config.Column(width=32) for day in days_in_month}
     col_config[None] = st.column_config.Column(width="medium")
 
+    # แสดงตารางแบบขยายเต็มความกว้าง
     st.dataframe(
         styled_grid, 
         use_container_width=True, 
-        height=800,
+        height=850, # เพิ่มความสูงขึ้นอีกนิด
         column_config=col_config
     )
     st.caption("✅ ปกติ | ⚠️ ยอดไม่ตรง | ❌ ไม่เข้า | N/A: ยังไม่มีข้อมูล")
