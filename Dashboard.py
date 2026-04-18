@@ -7,15 +7,12 @@ import calendar
 # --- CONFIG ---
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 
-# CSS: บังคับทุกอย่างให้ชิดขอบบนและจัดการ Sidebar
+# CSS: บังคับทุกอย่างให้ชิดขอบบนและจัดการ Sidebar ให้กลับมา
 st.markdown("""
     <style>
     /* 1. ดันเนื้อหา Sidebar ขึ้นไปชิดขอบบนสุด */
     [data-testid="stSidebarContent"] {
         padding-top: 0.5rem !important;
-    }
-    [data-testid="stSidebarNav"] {
-        display: none;
     }
     
     /* 2. จัดการระยะห่างใน Sidebar ให้กระชับ */
@@ -65,15 +62,13 @@ def get_data_from_api(url):
 
 # --- SIDEBAR ---
 with st.sidebar:
-    # แสดง Logo (ปรับเป็น .png เพื่อรองรับพื้นหลังโปร่งใส)
-    # ถ้าพี่ยังไม่ได้เปลี่ยนไฟล์ใน GitHub ให้แก้กลับเป็น .JPG นะครับ
+    # แสดง Logo (ตรวจสอบชื่อไฟล์ให้ตรงกับใน GitHub นะครับ)
     logo_file = "synaturelogo.png" 
     try:
         st.image(logo_file, width=120)
     except:
         st.markdown("### Synature Technology")
     
-    # ใช้ markdown แทน header เพื่อให้ระยะห่างข้างบนน้อยลง
     st.markdown("#### **ตัวเลือก**")
     selected_brand = st.selectbox("เลือกแบรนด์", list(BRAND_CONFIG.keys()))
     API_URL = f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}"
