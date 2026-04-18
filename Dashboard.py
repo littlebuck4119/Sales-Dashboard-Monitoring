@@ -7,34 +7,29 @@ import calendar
 # --- CONFIG ---
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 
-# 1. Inject CSS: ขยับชิดบน-ล่าง และทำตัวหนา
+# 1. Inject CSS: เน้นตัวเข้ม ชิดบน-ล่าง และจัดการระยะห่างให้พอดี
 st.markdown("""
     <style>
-    /* ขยับชิดขอบบนและล่างสุดๆ */
+    /* ปรับระยะขอบให้พอดี ไม่ให้หัวหาย */
     .block-container {
-        padding-top: 1.5rem !important;
+        padding-top: 2rem !important; 
         padding-bottom: 0rem !important;
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
     }
-    /* กำจัดระยะห่างส่วนเกินขององค์ประกอบภายใน */
-    [data-testid="stVerticalBlock"] > div {
-        padding-bottom: 0px !important;
-        margin-bottom: 0px !important;
-    }
-    /* บังคับตัวหนาสำหรับหัวตารางและชื่อสาขา */
-    [data-testid="stDataFrame"] th, 
-    [data-testid="stDataFrame"] td:first-child {
+    /* บังคับชื่อสาขา (คอลัมน์แรก) และหัววันที่ ให้เป็นตัวหนาเข้ม */
+    [data-testid="stDataFrame"] td:first-child, 
+    [data-testid="stDataFrame"] th {
         font-weight: 900 !important;
         color: #000000 !important;
+        background-color: #ffffff !important;
     }
-    /* จัดกึ่งกลาง Emoji */
+    /* จัดกึ่งกลาง Emoji ทุกช่อง */
     [data-testid="stDataFrame"] td {
         text-align: center !important;
     }
-    /* ซ่อน Footer ปกติของ Streamlit เพื่อประหยัดที่ */
+    /* ซ่อน Footer เพื่อเพิ่มพื้นที่ตารางด้านล่าง */
     footer {visibility: hidden;}
-    header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
@@ -43,6 +38,7 @@ BRAND_CONFIG = {
     "JonesSalad": "695d80e67b2a8c1ca2ee", 
 }
 
+# --- Sidebar ---
 with st.sidebar:
     st.header("ตัวเลือก")
     selected_brand = st.selectbox("เลือกแบรนด์", list(BRAND_CONFIG.keys()))
@@ -53,9 +49,9 @@ with st.sidebar:
     m_name = st.selectbox("เดือน (Month)", month_names, index=datetime.now().month-1)
     m = month_names.index(m_name) + 1
 
-# แสดงหัวข้อ (ใช้ Markdown เพื่อให้ประหยัดพื้นที่กว่า Title ปกติ)
-st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
-st.markdown(f"**📅 ประจำเดือน {m_name} {y}**")
+# --- หัวข้อ (แสดงผลแน่นอน) ---
+st.subheader(f"📊 Sales Monitoring Heatmap : {selected_brand}")
+st.write(f"📅 ข้อมูลประจำเดือน **{m_name} {y}**")
 
 @st.cache_data(ttl=10)
 def get_data_from_api(url):
@@ -101,11 +97,11 @@ if full_df is not None and not full_df.empty:
 
     styled_grid = grid_df.style.map(style_grid).format(format_status)
 
-    # ปรับความกว้างคอลัมน์ให้ประหยัดพื้นที่
-    config = {day: st.column_config.TextColumn(str(day), width=32) for day in days_in_month}
+    # บังคับความกว้างวันที่ให้เล็กเพื่อประหยัดที่
+    config = {day: st.column_config.Column(width=32) for day in days_in_month}
     config[None] = st.column_config.Column(width="medium")
 
-    # แสดงตาราง: เพิ่มความสูง (height) เป็น 1000 หรือมากกว่าเพื่อให้โชว์แถวได้เยอะที่สุด
+    # แสดงตาราง (ความสูง 1000 เพื่อให้ยืดลงไปด้านล่างได้เยอะที่สุด)
     st.dataframe(
         styled_grid, 
         use_container_width=True, 
