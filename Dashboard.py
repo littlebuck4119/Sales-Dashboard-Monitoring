@@ -7,22 +7,31 @@ import calendar
 # --- CONFIG ---
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 
-# =========================================================
-# 1. รายชื่อแบรนด์และ API ID
-# =========================================================
+# 1. Inject CSS เพื่อบังคับให้ตารางจัดกลางเป๊ะๆ และลดช่องว่างส่วนเกิน
+st.markdown("""
+    <style>
+    /* บังคับตัวอักษรใน Dataframe ให้อยู่ตรงกลางทุกช่อง */
+    [data-testid="stTable"] td, [data-testid="stDataFrame"] td {
+        text-align: center !important;
+    }
+    /* ลดขนาด Header ให้กระชับ */
+    [data-testid="stDataFrame"] th {
+        text-align: center !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# รายชื่อแบรนด์ (พี่อย่าลืมอัปเดต ID JonesSalad นะครับ)
 BRAND_CONFIG = {
     "Eat Am Are": "506e2020f13e6d515726",
     "JonesSalad": "695d80e67b2a8c1ca2ee", 
 }
 
-# --- UI Sidebar ---
 with st.sidebar:
     st.header("ตัวเลือก")
     selected_brand = st.selectbox("เลือกแบรนด์", list(BRAND_CONFIG.keys()))
     API_URL = f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}"
-    
     st.divider()
-    
     y = st.selectbox("ปี (Year)", [2025, 2026], index=1)
     month_names = list(calendar.month_name)[1:]
     m_name = st.selectbox("เดือน (Month)", month_names, index=datetime.now().month-1)
@@ -61,7 +70,6 @@ if full_df is not None and not full_df.empty:
             if row['shop_name'] in grid_df.index and row['Day'] in grid_df.columns:
                 grid_df.at[row['shop_name'], row['Day']] = row['status_code']
 
-    # --- ฟังก์ชันการแสดงผล (ปรับให้ Center จรงๆ) ---
     def format_status(val):
         if val == 2 or val == 2.0: return "✅"
         if val == 1 or val == 1.0: return "⚠️"
@@ -69,26 +77,23 @@ if full_df is not None and not full_df.empty:
         return "N/A"
 
     def style_grid(val):
-        # บังคับ text-align: center และ padding เพื่อให้ Emoji อยู่กลางเป๊ะ
-        base = 'background-color: #f8f9fa; text-align: center; border: 1px solid #ffffff; vertical-align: middle;'
+        # เน้นพื้นหลังและระยะห่างที่สะอาดตา
+        base = 'background-color: #f8f9fa; border: 1px solid #ffffff;'
         if val == "N/A": 
             return base + ' color: #adb5bd; font-size: 8px;'
         return base
 
     st.subheader(f"🗓️ ประจำเดือน {m_name} {y}")
     
+    # ใช้ Style เดิมของพี่ แต่ตัด text-align ออกเพราะเราใช้ CSS คุมข้างบนแล้ว
     styled_grid = grid_df.style.map(style_grid).format(format_status)
 
-    # --- ส่วนที่เพิ่ม: กำหนดความกว้างคอลัมน์วันที่ให้แคบลงและเท่ากัน ---
-    col_config = {day: st.column_config.Column(width="small") for day in days_in_month}
-
-    # แสดงผลตารางด้วย column_config เพื่อบีบให้ Emoji อยู่กลางช่อง
+    # แสดงผลตาราง (ถอด column_config ออกเพื่อไม่ให้มันฝืนจัดกว้างเกินไป)
     st.dataframe(
         styled_grid, 
         use_container_width=True, 
-        height=800,
-        column_config=col_config # บังคับขนาดคอลัมน์
+        height=800
     )
     st.caption("✅ ปกติ | ⚠️ ยอดไม่ตรง | ❌ ไม่เข้า | N/A: ยังไม่มีข้อมูล")
 else:
-    st.warning(f"⚠️ ไม่พบข้อมูลของ {selected_brand} ในระบบ API")
+    st.warning(f"⚠️ ไม่พบข้อมูลของ {selected_brand}")
