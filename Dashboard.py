@@ -50,11 +50,16 @@ with summary_placeholder.container():
         col2.metric("ปัญหา (⚠️/❌)", f"{count_warning + count_error}")
         
         st.write("**⚠️ สาขาที่พบปัญหาบ่อย:**")
-        for shop, count in top_problem_shops.items():
-            if count > 0:
+        
+        # กรองเฉพาะสาขาที่มีปัญหาจริงๆ (มากกว่า 0 ครั้ง)
+        problematic_shops = top_problem_shops[top_problem_shops > 0]
+        
+        if not problematic_shops.empty:
+            for shop, count in problematic_shops.items():
                 st.write(f"- {shop}: `{count}` ครั้ง")
-            else:
-                st.write("ยังไม่พบปัญหาในเดือนนี้")
+        else:
+            # ถ้าไม่มีสาขาไหนมีปัญหาเลย ให้ขึ้นบรรทัดเดียวพอ
+            st.success("🎉 ยังไม่พบปัญหาในเดือนนี้")
 
 # --- MAIN CONTENT ---
 st.subheader(f"📊 Sales Monitoring Heatmap : {selected_brand}")
