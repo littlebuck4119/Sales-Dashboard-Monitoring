@@ -8,14 +8,6 @@ from datetime import datetime
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 
 st.markdown("""
-    /* จัดการชื่อสาขาไม่ให้ตกขอบ */
-    .shop-problem-list {
-        font-size: 0.85rem;
-        line-height: 1.4;
-        word-wrap: break-word; /* ตัดคำถ้าชื่อยาวเกิน */
-        overflow-wrap: break-word;
-        padding: 5px 0;
-    }
     
     /* ปรับแต่งส่วน Metric ให้ดูพอดีกับขอบ */
     [data-testid="stMetricValue"] {
