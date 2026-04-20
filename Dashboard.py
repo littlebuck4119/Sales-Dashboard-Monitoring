@@ -125,20 +125,32 @@ if not full_df.empty:
                 grid_df.at[row['shop_name'], row['Day']] = emoji
 
     # Update Sidebar Summary
-    c_ok = (grid_df == "✅").sum().sum()
-    c_prob = (grid_df == "⚠️").sum().sum() + (grid_df == "❌").sum().sum()
+# --- ปรับปรุงการนับสรุปผลแบบรายสาขา (1 สาขา นับเป็น 1) ---
     
+    # 1. จำนวนสาขาทั้งหมด
+    total_unique_shops = len(grid_df)
+    
+    # 2. หาว่าสาขาไหนมีปัญหาบ้าง (นับแถวที่มี ⚠️ หรือ ❌ อย่างน้อยหนึ่งช่อง)
+    # เราใช้ .isin ตรวจสอบว่าในแถวนั้นมีค่าเหล่านี้ไหม
+    has_issue = grid_df.isin(["⚠️", "❌"]).any(axis=1)
+    
+    c_prob_shops = has_issue.sum()               # จำนวนสาขาที่มีปัญหา
+    c_ok_shops = total_unique_shops - c_prob_shops # จำนวนสาขาที่ปกติ 100% (ไม่มีปัญหาเลย)
+
     with summary_placeholder.container():
-        st.info(f"เดือนนี้มีทั้งหมด {last_day} วัน")
+        st.info(f"เดือนนี้มีสาขาที่ Monitor ทั้งหมด {total_unique_shops} สาขา") # เปลี่ยนจากนับวันเป็นนับสาขา
         m1, m2 = st.columns(2)
-        m1.metric("ปกติ (✅)", f"{int(c_ok)}")
-        m2.metric("ปัญหา (⚠️/❌)", f"{int(c_prob)}")
         
+        # แสดงผลลัพธ์แบบรายสาขาตามที่วงไว้ในรูป image_ec90e3.png
+        m1.metric("สาขาปกติ (✅)", f"{int(c_ok_shops)}")
+        m2.metric("สาขามีปัญหา (⚠️/❌)", f"{int(c_prob_shops)}")
+        
+        # ส่วนแสดงรายชื่อสาขาที่มีปัญหาบ่อย (เหมือนเดิม)
         prob_sum = (grid_df == "❌").sum(axis=1) + (grid_df == "⚠️").sum(axis=1)
-        top_prob = prob_sum[prob_sum > 0].sort_values(ascending=False).head(3)
+        top_prob = prob_sum[prob_sum > 0].sort_values(ascending=False).head(5) # เพิ่มเป็น 5 อันดับให้ดูจุใจขึ้น
         if not top_prob.empty:
             st.markdown("---")
-            st.write("**⚠️ สาขาที่พบปัญหาบ่อย:**")
+            st.write("**⚠️ ลำดับสาขาที่พบปัญหาบ่อยที่สุด:**")
             for shop, count in top_prob.items():
                 st.write(f"- {shop}: `{int(count)}` ครั้ง")
 
