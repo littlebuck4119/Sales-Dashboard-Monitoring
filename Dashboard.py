@@ -8,12 +8,14 @@ from datetime import datetime
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 
 st.markdown("""
-    
-    /* ปรับแต่งส่วน Metric ให้ดูพอดีกับขอบ */
-    [data-testid="stMetricValue"] {
-        font-size: 1.8rem !important; /* ย่อขนาดตัวเลข Metric นิดนึงถ้าจอเล็ก */
+   st.markdown("""
+    <style>
+    /* Sidebar Alignment & Spacing */
+    [data-testid="stSidebarContent"] { padding-top: 0rem !important; }
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] { 
+        gap: 1.5rem !important; /* เพิ่มระยะห่างระหว่างองค์ประกอบใน Sidebar */
     }
-
+        
     /* Main Container Padding */
     .block-container { 
         padding-top: 2rem !important; 
