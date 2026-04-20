@@ -7,15 +7,15 @@ from datetime import datetime
 # --- 1. CONFIG & STYLES ---
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
 
+# แก้ไขจุดที่ st.markdown ซ้อนกัน และเพิ่ม CSS กันข้อความตกขอบ
 st.markdown("""
-   st.markdown("""
     <style>
     /* Sidebar Alignment & Spacing */
     [data-testid="stSidebarContent"] { padding-top: 0rem !important; }
     [data-testid="stSidebar"] [data-testid="stVerticalBlock"] { 
-        gap: 1.5rem !important; /* เพิ่มระยะห่างระหว่างองค์ประกอบใน Sidebar */
+        gap: 1.2rem !important; 
     }
-        
+
     /* Main Container Padding */
     .block-container { 
         padding-top: 2rem !important; 
@@ -44,6 +44,19 @@ st.markdown("""
         font-weight: 900 !important; color: #000000 !important;
     }
     [data-testid="stDataFrame"] td { text-align: center !important; }
+
+    /* จัดการรายชื่อสาขาไม่ให้ตกขอบ */
+    .problem-item {
+        font-size: 0.85rem;
+        line-height: 1.4;
+        padding: 8px 10px;
+        background-color: #fff5f5;
+        border-left: 4px solid #ff4b4b;
+        border-radius: 4px;
+        margin-bottom: 6px;
+        word-wrap: break-word;
+        white-space: normal; /* ทำให้ข้อความขึ้นบรรทัดใหม่ไม่ตกขอบ */
+    }
     
     footer { visibility: hidden; }
     </style>
@@ -69,7 +82,7 @@ def get_data_from_api(url):
     except Exception: pass
     return pd.DataFrame()
 
-# --- 3. SIDEBAR (จัดเว้นบรรทัดใหม่) ---
+# --- 3. SIDEBAR ---
 with st.sidebar:
     now = datetime.now()
     
@@ -84,12 +97,11 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
     
-    # 3.2 Selection Section (เพิ่มช่องว่างด้วย st.container)
+    # 3.2 Selection Section
     with st.container():
         st.markdown("### **ตัวเลือก**")
         selected_brand = st.selectbox("เลือกแบรนด์", list(BRAND_CONFIG.keys()))
         
-        # จัดกลุ่ม Year/Month ให้มีช่องว่างพอดีๆ
         col_y, col_m = st.columns(2)
         with col_y:
             y = st.selectbox("ปี (Year)", [2025, 2026], index=1)
@@ -98,9 +110,7 @@ with st.sidebar:
             m_name = st.selectbox("เดือน", month_list, index=now.month-1)
             m = month_list.index(m_name) + 1
     
-    st.markdown("<br>", unsafe_allow_html=True) # เคาะเว้นบรรทัดเพิ่ม 1 จังหวะ
-    
-    # 3.3 Summary Section
+    st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("### **📊 สรุปภาพรวม**")
     summary_placeholder = st.empty()
 
@@ -125,42 +135,39 @@ if not full_df.empty:
                 emoji = "✅" if status == 2 else "⚠️" if status == 1 else "❌" if status == 0 else "N/A"
                 grid_df.at[row['shop_name'], row['Day']] = emoji
 
-    # Update Sidebar Summary
-# --- ปรับปรุงการนับสรุปผลแบบรายสาขา (1 สาขา นับเป็น 1) ---
-    
-    # 1. จำนวนสาขาทั้งหมด
+    # --- นับสรุปผลแบบรายสาขา (1 สาขา นับเป็น 1) ---
     total_unique_shops = len(grid_df)
-    
-    # 2. หาว่าสาขาไหนมีปัญหาบ้าง (นับแถวที่มี ⚠️ หรือ ❌ อย่างน้อยหนึ่งช่อง)
-    # เราใช้ .isin ตรวจสอบว่าในแถวนั้นมีค่าเหล่านี้ไหม
     has_issue = grid_df.isin(["⚠️", "❌"]).any(axis=1)
-    
-    c_prob_shops = has_issue.sum()               # จำนวนสาขาที่มีปัญหา
-    c_ok_shops = total_unique_shops - c_prob_shops # จำนวนสาขาที่ปกติ 100% (ไม่มีปัญหาเลย)
+    c_prob_shops = has_issue.sum()
+    c_ok_shops = total_unique_shops - c_prob_shops
 
     with summary_placeholder.container():
-        st.info(f"เดือนนี้มีสาขาที่ Monitor ทั้งหมด {total_unique_shops} สาขา") # เปลี่ยนจากนับวันเป็นนับสาขา
+        st.info(f"Monitor ทั้งหมด: **{total_unique_shops}** สาขา")
         m1, m2 = st.columns(2)
+        m1.metric("ปกติ (✅)", f"{int(c_ok_shops)}")
+        m2.metric("ปัญหา (⚠️/❌)", f"{int(c_prob_shops)}")
         
-        # แสดงผลลัพธ์แบบรายสาขาตามที่วงไว้ในรูป image_ec90e3.png
-        m1.metric("สาขาปกติ (✅)", f"{int(c_ok_shops)}")
-        m2.metric("สาขามีปัญหา (⚠️/❌)", f"{int(c_prob_shops)}")
-        
-        # ส่วนแสดงรายชื่อสาขาที่มีปัญหาบ่อย (เหมือนเดิม)
         prob_sum = (grid_df == "❌").sum(axis=1) + (grid_df == "⚠️").sum(axis=1)
-        top_prob = prob_sum[prob_sum > 0].sort_values(ascending=False).head(5) # เพิ่มเป็น 5 อันดับให้ดูจุใจขึ้น
+        top_prob = prob_sum[prob_sum > 0].sort_values(ascending=False).head(5)
+        
         if not top_prob.empty:
             st.markdown("---")
-            st.write("**⚠️ ลำดับสาขาที่พบปัญหาบ่อยที่สุด:**")
+            st.write("**⚠️ สาขาที่พบปัญหาบ่อย:**")
             for shop, count in top_prob.items():
-                st.write(f"- {shop}: `{int(count)}` ครั้ง")
+                # ใช้ HTML ครอบรายชื่อเพื่อให้ขึ้นบรรทัดใหม่สวยงามไม่ตกขอบ
+                st.markdown(f"""
+                    <div class="problem-item">
+                        <b>{shop}</b><br>
+                        <span style="color:#d32f2f; font-size:0.8rem;">พบปัญหาทั้งหมด {int(count)} ครั้ง</span>
+                    </div>
+                """, unsafe_allow_html=True)
 
     # --- 5. STYLING & DISPLAY ---
     def apply_cell_style(val):
         if val == "✅": return 'background-color: #d4edda; color: #155724;'
         if val == "⚠️": return 'background-color: #fff3cd; color: #856404;'
         if val == "❌": return 'background-color: #f8d7da; color: #721c24;'
-        return 'color: #ced4da; font-size: 10px;' # N/A จางๆ
+        return 'color: #ced4da; font-size: 10px;'
 
     st.dataframe(
         grid_df.style.map(apply_cell_style), 
