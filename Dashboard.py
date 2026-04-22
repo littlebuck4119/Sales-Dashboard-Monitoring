@@ -13,11 +13,28 @@ st.markdown("""
     [data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: 1.2rem !important; }
     .block-container { padding-top: 2rem !important; padding-left: 1rem !important; padding-right: 1rem !important; padding-bottom: 0rem !important; }
     [data-testid="stDataFrame"] { width: 100% !important; }
+    
+    /* ปรับแต่งปุ่มใน Sidebar ให้ดูเล็กลงประหยัดพื้นที่ */
+    div.stButton > button {
+        padding: 2px 10px !important;
+        font-size: 14px !important;
+    }
+
     .date-card { background-color: #ffffff; padding: 20px 15px; border-radius: 12px; border: 1px solid #e0e0e0; box-shadow: 0px 4px 6px rgba(0,0,0,0.05); margin-bottom: 10px; text-align: center; }
     .date-card .day-name { color: #ff4b4b; font-weight: bold; font-size: 0.9rem; text-transform: uppercase; }
     .date-card .date-number { font-size: 2.2rem; font-weight: 800; color: #1f1f1f; line-height: 1; margin: 8px 0; }
-    [data-testid="stDataFrame"] td:first-child, [data-testid="stDataFrame"] th [data-testid="stText"] { font-weight: 900 !important; color: #000000 !important; }
-    [data-testid="stDataFrame"] td { text-align: center !important; }
+    
+    /* แก้ไขสีปุ่มบันทึก (Primary) ให้เป็นสีเขียว */
+    button[kind="primary"] {
+        background-color: #28a745 !important;
+        border-color: #28a745 !important;
+        color: white !important;
+    }
+    button[kind="primary"]:hover {
+        background-color: #218838 !important;
+        border-color: #1e7e34 !important;
+    }
+    
     .problem-item { font-size: 0.85rem; line-height: 1.4; padding: 8px 10px; background-color: #fff5f5; border-left: 4px solid #ff4b4b; border-radius: 4px; margin-bottom: 6px; }
     footer { visibility: hidden; }
     </style>
@@ -29,7 +46,6 @@ BRAND_CONFIG = {
     "JonesSalad": "695d80e67b2a8c1ca2ee", 
     "Laem Charoen Seafood": "98d3735c3a0a94a513f6",
 }
-
 CONFIG_API = "https://api.npoint.io/9898efa2a5853bf5f886"
 
 def get_config():
@@ -61,8 +77,6 @@ with st.sidebar:
         <div class="date-card">
             <div class="day-name">{now.strftime('%A')}</div>
             <div class="date-number">{now.day}</div>
-            <div class="month-year">{now.strftime('%B %Y')}</div>
-            <hr style="margin: 15px 0; border: none; border-top: 1px solid #eee;">
             <div style="font-size: 0.75rem; color: #28a745; font-weight: bold;">● SYSTEM ONLINE</div>
         </div>
     """, unsafe_allow_html=True)
@@ -93,24 +107,25 @@ if not full_df.empty:
     current_full_config = get_config()
     brand_settings = current_full_config.get(selected_brand, {})
 
-    # --- ส่วนที่เพิ่ม: Select All / Deselect All ---
+    # --- Setting ใน Sidebar ---
     with st.sidebar:
         st.markdown("---")
-        with st.expander(f"🚫 **ปิดการ Monitor: {selected_brand}**"):
+        with st.expander(f"🚫 **จัดการสาขา: {selected_brand}**"):
             
-            # ปุ่มลัดเลือกทั้งหมด
-            c1, c2 = st.columns(2)
-            if c1.button("✅ เปิดทั้งหมด", use_container_width=True):
+            # ดีไซน์ประหยัดพื้นที่: รวมคำอธิบายและปุ่มเลือกทั้งหมดไว้แถวเดียวกัน
+            st.write("สถานะ Monitor:")
+            c1, c2, c3 = st.columns([2, 1, 1])
+            c1.caption("เปิด/ปิด ทั้งหมด:")
+            if c2.button("✅", help="เปิดทุกสาขา", use_container_width=True):
                 for s in shops: st.session_state[f"tog_{selected_brand}_{s}"] = True
                 st.rerun()
-            if c2.button("❌ ปิดทั้งหมด", use_container_width=True):
+            if c3.button("❌", help="ปิดทุกสาขา", use_container_width=True):
                 for s in shops: st.session_state[f"tog_{selected_brand}_{s}"] = False
                 st.rerun()
 
-            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("---")
             updated_brand_settings = brand_settings.copy()
             for shop in shops:
-                # ใช้ Session State ควบคุมค่าเริ่มต้น
                 key = f"tog_{selected_brand}_{shop}"
                 if key not in st.session_state:
                     st.session_state[key] = brand_settings.get(shop, True)
@@ -118,6 +133,7 @@ if not full_df.empty:
                 new_val = st.toggle(f"{shop}", key=key)
                 updated_brand_settings[shop] = new_val
             
+            # ปุ่มบันทึกเป็นสีเขียว (Primary)
             if st.button("💾 บันทึกการตั้งค่า", type="primary", use_container_width=True):
                 current_full_config[selected_brand] = updated_brand_settings
                 save_config(current_full_config)
@@ -142,7 +158,7 @@ if not full_df.empty:
     c_prob_shops = active_grid.isin(["⚠️", "❌"]).any(axis=1).sum() if not active_grid.empty else 0
     
     with summary_placeholder.container():
-        st.info(f"Monitor: **{len(active_shops)}** / ทั้งหมด: **{len(shops)}**")
+        st.info(f"Monitor: **{len(active_shops)}** / **{len(shops)}** สาขา")
         m1, m2 = st.columns(2)
         m1.metric("ปกติ ✅", len(active_shops) - c_prob_shops)
         m2.metric("ปัญหา ⚠️/❌", c_prob_shops)
@@ -161,6 +177,5 @@ if not full_df.empty:
         height=min(len(shops) * 38 + 100, 850), 
         column_config={d: st.column_config.Column(width=30) for d in days}
     )
-    st.caption("✅ ปกติ | ⚠️ ยอดไม่ตรง | ❌ ไม่เข้า | สีเทาเข้ม: ปิดการ Monitor")
 else:
-    st.warning("⚠️ ไม่พบข้อมูลสำหรับแบรนด์หรือเดือนที่เลือก")
+    st.warning("⚠️ ไม่พบข้อมูล")
