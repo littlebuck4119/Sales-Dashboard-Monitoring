@@ -12,26 +12,11 @@ st.markdown("""
     [data-testid="stSidebarContent"] { padding-top: 0rem !important; }
     [data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: 1.2rem !important; }
     .block-container { padding-top: 2rem !important; padding-left: 1rem !important; padding-right: 1rem !important; padding-bottom: 0rem !important; }
-    
-    /* ปุ่มบันทึกสีเขียว */
-    button[kind="primary"] {
-        background-color: #28a745 !important;
-        border-color: #28a745 !important;
-        color: white !important;
-    }
-    
-    .date-card {
-        background-color: #ffffff; padding: 20px 15px; border-radius: 12px;
-        border: 1px solid #e0e0e0; box-shadow: 0px 4px 6px rgba(0,0,0,0.05);
-        margin-bottom: 10px; text-align: center;
-    }
+    button[kind="primary"] { background-color: #28a745 !important; border-color: #28a745 !important; color: white !important; }
+    .date-card { background-color: #ffffff; padding: 20px 15px; border-radius: 12px; border: 1px solid #e0e0e0; box-shadow: 0px 4px 6px rgba(0,0,0,0.05); margin-bottom: 10px; text-align: center; }
     .date-card .day-name { color: #ff4b4b; font-weight: bold; font-size: 0.9rem; text-transform: uppercase; }
     .date-card .date-number { font-size: 2.2rem; font-weight: 800; color: #1f1f1f; line-height: 1; margin: 8px 0; }
-    
-    .problem-item {
-        font-size: 0.85rem; padding: 8px 10px; background-color: #fff5f5;
-        border-left: 4px solid #ff4b4b; border-radius: 4px; margin-bottom: 6px;
-    }
+    .problem-item { font-size: 0.85rem; padding: 8px 10px; background-color: #fff5f5; border-left: 4px solid #ff4b4b; border-radius: 4px; margin-bottom: 6px; }
     footer { visibility: hidden; }
     </style>
     """, unsafe_allow_html=True)
@@ -69,8 +54,7 @@ def get_data_from_api(url):
 # --- 3. SIDEBAR ---
 with st.sidebar:
     now = datetime.now()
-    st.markdown(f"""<div class="date-card"><div class="day-name">{now.strftime('%A')}</div><div class="date-number">{now.day}</div><div style="font-size: 0.75rem; color: #28a745; font-weight: bold;">● SYSTEM ONLINE</div></div>""", unsafe_allow_html=True)
-    
+    st.markdown(f'<div class="date-card"><div class="day-name">{now.strftime("%A")}</div><div class="date-number">{now.day}</div><div style="font-size: 0.75rem; color: #28a745; font-weight: bold;">● SYSTEM ONLINE</div></div>', unsafe_allow_html=True)
     selected_brand = st.selectbox("เลือกแบรนด์", list(BRAND_CONFIG.keys()))
     col_y, col_m = st.columns(2)
     with col_y: y = st.selectbox("ปี", [2025, 2026], index=1)
@@ -78,7 +62,6 @@ with st.sidebar:
         month_list = list(calendar.month_name)[1:]
         m_name = st.selectbox("เดือน", month_list, index=now.month-1)
         m = month_list.index(m_name) + 1
-    
     summary_placeholder = st.empty()
 
 # --- 4. MAIN CONTENT ---
@@ -90,31 +73,27 @@ if not full_df.empty:
     current_full_config = get_config()
     brand_settings = current_full_config.get(selected_brand, {})
 
-    # --- จัดการเปิด/ปิดสาขา ใน Sidebar ---
     with st.sidebar:
         st.markdown("---")
         with st.expander(f"🚫 **จัดการสาขา: {selected_brand}**"):
             master_key = f"master_{selected_brand}"
             def on_master_change():
                 for s in shops: st.session_state[f"tog_{selected_brand}_{s}"] = st.session_state[master_key]
-
+            
             all_on = all(brand_settings.get(s, True) for s in shops)
             st.toggle("🔔 **เปิด/ปิด ทั้งหมด**", value=all_on, key=master_key, on_change=on_master_change)
             st.markdown("---")
-            
             updated_settings = {}
             for shop in shops:
                 key = f"tog_{selected_brand}_{shop}"
                 if key not in st.session_state: st.session_state[key] = brand_settings.get(shop, True)
                 updated_settings[shop] = st.toggle(f"{shop}", key=key)
-            
             if st.button("💾 บันทึกการตั้งค่า", type="primary", use_container_width=True):
                 current_full_config[selected_brand] = updated_settings
                 save_config(current_full_config)
                 st.success("บันทึกสำเร็จ!")
                 st.rerun()
 
-    # --- เตรียมข้อมูลตาราง (Logic นี้จะดึงยอดวันที่ 19-21 กลับมา) ---
     mask = (full_df['sync_date'].dt.month == m) & (full_df['sync_date'].dt.year == y)
     df_filtered = full_df[mask].copy()
     _, last_day = calendar.monthrange(y, m)
@@ -126,17 +105,18 @@ if not full_df.empty:
         for _, row in df_filtered.iterrows():
             shop = row['shop_name']
             if shop in grid_df.index:
-                # ถ้าสาขาโดนปิดใน Config ให้แสดงเป็นสีเทา (DISABLED)
-                if not brand_settings.get(shop, True):
+                # --- จุดที่แก้ไข: ถ้าไม่เจอชื่อใน Config ให้ default เป็น True (เปิด) ---
+                is_active = brand_settings.get(shop, True) 
+                
+                if not is_active:
                     grid_df.loc[shop] = "DISABLED"
                 else:
                     status = row['status_code']
                     grid_df.at[shop, row['Day']] = "✅" if status == 2 else "⚠️" if status == 1 else "❌" if status == 0 else "N/A"
 
-    # --- สรุปภาพรวม ---
+    # สรุปภาพรวม
     active_shops = [s for s in shops if brand_settings.get(s, True)]
     active_grid = grid_df.loc[active_shops] if active_shops else pd.DataFrame()
-    
     with summary_placeholder.container():
         st.info(f"Monitor: **{len(active_shops)}** / **{len(shops)}** สาขา")
         m1, m2 = st.columns(2)
@@ -144,7 +124,6 @@ if not full_df.empty:
             prob_count = active_grid.isin(["⚠️", "❌"]).any(axis=1).sum()
             m1.metric("ปกติ ✅", len(active_shops) - prob_count)
             m2.metric("ปัญหา ⚠️/❌", prob_count)
-            
             prob_sum = (active_grid == "❌").sum(axis=1) + (active_grid == "⚠️").sum(axis=1)
             top_prob = prob_sum[prob_sum > 0].sort_values(ascending=False).head(3)
             if not top_prob.empty:
@@ -153,7 +132,6 @@ if not full_df.empty:
                 for shop, count in top_prob.items():
                     st.markdown(f'<div class="problem-item"><b>{shop}</b><br><span style="color:#d32f2f; font-size:0.8rem;">พบปัญหา {int(count)} ครั้ง</span></div>', unsafe_allow_html=True)
 
-    # --- 5. STYLING & DISPLAY ---
     def apply_style(val):
         if val == "✅": return 'background-color: #d4edda; color: #155724;'
         if val == "⚠️": return 'background-color: #fff3cd; color: #856404;'
