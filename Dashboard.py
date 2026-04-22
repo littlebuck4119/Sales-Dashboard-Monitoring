@@ -12,10 +12,6 @@ st.markdown("""
     [data-testid="stSidebarContent"] { padding-top: 0rem !important; }
     [data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: 1.2rem !important; }
     .block-container { padding-top: 2rem !important; padding-left: 1rem !important; padding-right: 1rem !important; padding-bottom: 0rem !important; }
-    [data-testid="stDataFrame"] { width: 100% !important; }
-    .date-card { background-color: #ffffff; padding: 20px 15px; border-radius: 12px; border: 1px solid #e0e0e0; box-shadow: 0px 4px 6px rgba(0,0,0,0.05); margin-bottom: 10px; text-align: center; }
-    .date-card .day-name { color: #ff4b4b; font-weight: bold; font-size: 0.9rem; text-transform: uppercase; }
-    .date-card .date-number { font-size: 2.2rem; font-weight: 800; color: #1f1f1f; line-height: 1; margin: 8px 0; }
     
     /* ปุ่มบันทึกสีเขียว */
     button[kind="primary"] {
@@ -24,10 +20,17 @@ st.markdown("""
         color: white !important;
     }
     
-    .problem-item { 
-        font-size: 0.85rem; line-height: 1.4; padding: 8px 10px; 
-        background-color: #fff5f5; border-left: 4px solid #ff4b4b; 
-        border-radius: 4px; margin-bottom: 6px; 
+    .date-card {
+        background-color: #ffffff; padding: 20px 15px; border-radius: 12px;
+        border: 1px solid #e0e0e0; box-shadow: 0px 4px 6px rgba(0,0,0,0.05);
+        margin-bottom: 10px; text-align: center;
+    }
+    .date-card .day-name { color: #ff4b4b; font-weight: bold; font-size: 0.9rem; text-transform: uppercase; }
+    .date-card .date-number { font-size: 2.2rem; font-weight: 800; color: #1f1f1f; line-height: 1; margin: 8px 0; }
+    
+    .problem-item {
+        font-size: 0.85rem; padding: 8px 10px; background-color: #fff5f5;
+        border-left: 4px solid #ff4b4b; border-radius: 4px; margin-bottom: 6px;
     }
     footer { visibility: hidden; }
     </style>
@@ -66,7 +69,7 @@ def get_data_from_api(url):
 # --- 3. SIDEBAR ---
 with st.sidebar:
     now = datetime.now()
-    st.markdown(f'<div class="date-card"><div class="day-name">{now.strftime("%A")}</div><div class="date-number">{now.day}</div><div style="font-size: 0.75rem; color: #28a745; font-weight: bold;">● SYSTEM ONLINE</div></div>', unsafe_allow_html=True)
+    st.markdown(f"""<div class="date-card"><div class="day-name">{now.strftime('%A')}</div><div class="date-number">{now.day}</div><div style="font-size: 0.75rem; color: #28a745; font-weight: bold;">● SYSTEM ONLINE</div></div>""", unsafe_allow_html=True)
     
     selected_brand = st.selectbox("เลือกแบรนด์", list(BRAND_CONFIG.keys()))
     col_y, col_m = st.columns(2)
@@ -87,43 +90,31 @@ if not full_df.empty:
     current_full_config = get_config()
     brand_settings = current_full_config.get(selected_brand, {})
 
-    # --- Setting ใน Sidebar ---
+    # --- จัดการเปิด/ปิดสาขา ใน Sidebar ---
     with st.sidebar:
         st.markdown("---")
         with st.expander(f"🚫 **จัดการสาขา: {selected_brand}**"):
-            
-            # Master Toggle
             master_key = f"master_{selected_brand}"
-            
-            # ฟังก์ชันจัดการเมื่อเลื่อน Master Toggle
             def on_master_change():
-                new_state = st.session_state[master_key]
-                for s in shops:
-                    st.session_state[f"tog_{selected_brand}_{s}"] = new_state
+                for s in shops: st.session_state[f"tog_{selected_brand}_{s}"] = st.session_state[master_key]
 
-            # ตรวจสอบสถานะปัจจุบันของลูกทั้งหมดเพื่อตั้งค่า Master เริ่มต้น
             all_on = all(brand_settings.get(s, True) for s in shops)
-            
-            st.toggle("🔔 **เปิด/ปิด ทุกสาขา**", value=all_on, key=master_key, on_change=on_master_change)
-            
+            st.toggle("🔔 **เปิด/ปิด ทั้งหมด**", value=all_on, key=master_key, on_change=on_master_change)
             st.markdown("---")
-            updated_brand_settings = {}
+            
+            updated_settings = {}
             for shop in shops:
                 key = f"tog_{selected_brand}_{shop}"
-                # ถ้ายังไม่มีใน session ให้ดึงจาก config
-                if key not in st.session_state:
-                    st.session_state[key] = brand_settings.get(shop, True)
-                
-                val = st.toggle(f"{shop}", key=key)
-                updated_brand_settings[shop] = val
+                if key not in st.session_state: st.session_state[key] = brand_settings.get(shop, True)
+                updated_settings[shop] = st.toggle(f"{shop}", key=key)
             
             if st.button("💾 บันทึกการตั้งค่า", type="primary", use_container_width=True):
-                current_full_config[selected_brand] = updated_brand_settings
+                current_full_config[selected_brand] = updated_settings
                 save_config(current_full_config)
-                st.success("บันทึกแล้ว!")
+                st.success("บันทึกสำเร็จ!")
                 st.rerun()
 
-    # เตรียม Grid ข้อมูล
+    # --- เตรียมข้อมูลตาราง (Logic นี้จะดึงยอดวันที่ 19-21 กลับมา) ---
     mask = (full_df['sync_date'].dt.month == m) & (full_df['sync_date'].dt.year == y)
     df_filtered = full_df[mask].copy()
     _, last_day = calendar.monthrange(y, m)
@@ -135,15 +126,14 @@ if not full_df.empty:
         for _, row in df_filtered.iterrows():
             shop = row['shop_name']
             if shop in grid_df.index:
-                # เช็คสถานะจาก brand_settings ที่ดึงมาจาก API (ไม่ใช่ session state เพื่อให้ตรงกับที่บันทึกจริง)
+                # ถ้าสาขาโดนปิดใน Config ให้แสดงเป็นสีเทา (DISABLED)
                 if not brand_settings.get(shop, True):
                     grid_df.loc[shop] = "DISABLED"
                 else:
                     status = row['status_code']
-                    emoji = "✅" if status == 2 else "⚠️" if status == 1 else "❌" if status == 0 else "N/A"
-                    grid_df.at[shop, row['Day']] = emoji
+                    grid_df.at[shop, row['Day']] = "✅" if status == 2 else "⚠️" if status == 1 else "❌" if status == 0 else "N/A"
 
-    # สรุปภาพรวม
+    # --- สรุปภาพรวม ---
     active_shops = [s for s in shops if brand_settings.get(s, True)]
     active_grid = grid_df.loc[active_shops] if active_shops else pd.DataFrame()
     
@@ -163,7 +153,7 @@ if not full_df.empty:
                 for shop, count in top_prob.items():
                     st.markdown(f'<div class="problem-item"><b>{shop}</b><br><span style="color:#d32f2f; font-size:0.8rem;">พบปัญหา {int(count)} ครั้ง</span></div>', unsafe_allow_html=True)
 
-    # --- 5. DISPLAY ---
+    # --- 5. STYLING & DISPLAY ---
     def apply_style(val):
         if val == "✅": return 'background-color: #d4edda; color: #155724;'
         if val == "⚠️": return 'background-color: #fff3cd; color: #856404;'
