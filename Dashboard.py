@@ -11,10 +11,8 @@ st.markdown("""
     <style>
     [data-testid="stSidebarContent"] { padding-top: 0rem !important; }
     [data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: 1.2rem !important; }
-    .block-container { padding-top: 2rem !important; padding-left: 1rem !important; padding-right: 1rem !important;  padding-bottom: 0rem !important; }
+    .block-container { padding-top: 2rem !important; padding-left: 1rem !important; padding-right: 1rem !important; padding-bottom: 0rem !important; }
     [data-testid="stDataFrame"] { width: 100% !important; }
-    
-    /* ตกแต่งการ์ดวันที่ */
     .date-card { background-color: #ffffff; padding: 20px 15px; border-radius: 12px; border: 1px solid #e0e0e0; box-shadow: 0px 4px 6px rgba(0,0,0,0.05); margin-bottom: 10px; text-align: center; }
     .date-card .day-name { color: #ff4b4b; font-weight: bold; font-size: 0.9rem; text-transform: uppercase; }
     .date-card .date-number { font-size: 2.2rem; font-weight: 800; color: #1f1f1f; line-height: 1; margin: 8px 0; }
@@ -94,26 +92,29 @@ if not full_df.empty:
         st.markdown("---")
         with st.expander(f"🚫 **จัดการสาขา: {selected_brand}**"):
             
-            # Master Toggle สำหรับเปิด/ปิดทั้งหมด
+            # Master Toggle
             master_key = f"master_{selected_brand}"
-            # เช็คว่าถ้าทุกสาขาเปิดอยู่ให้ Master เป็น True
+            
+            # ฟังก์ชันจัดการเมื่อเลื่อน Master Toggle
+            def on_master_change():
+                new_state = st.session_state[master_key]
+                for s in shops:
+                    st.session_state[f"tog_{selected_brand}_{s}"] = new_state
+
+            # ตรวจสอบสถานะปัจจุบันของลูกทั้งหมดเพื่อตั้งค่า Master เริ่มต้น
             all_on = all(brand_settings.get(s, True) for s in shops)
             
-            master_val = st.toggle("🔔 **เปิด/ปิด ทุกสาขา**", value=all_on, key=master_key)
+            st.toggle("🔔 **เปิด/ปิด ทุกสาขา**", value=all_on, key=master_key, on_change=on_master_change)
             
-            # ถ้า Master Toggle เปลี่ยน ให้ขยับลูกตาม
             st.markdown("---")
             updated_brand_settings = {}
             for shop in shops:
-                # ถ้า Master ถูกเปลี่ยน จะบังคับค่าลูก แต่ถ้ายังไม่เปลี่ยน ให้เอาค่าจาก config เดิม
                 key = f"tog_{selected_brand}_{shop}"
+                # ถ้ายังไม่มีใน session ให้ดึงจาก config
+                if key not in st.session_state:
+                    st.session_state[key] = brand_settings.get(shop, True)
                 
-                # ตรวจสอบว่ามีการเลื่อน Master Toggle หรือไม่ (เปรียบเทียบกับค่าเดิม)
-                if st.session_state.get(master_key) != all_on:
-                     st.session_state[key] = master_val
-                
-                # โชว์ Toggle รายสาขา
-                val = st.toggle(f"{shop}", value=brand_settings.get(shop, True), key=key)
+                val = st.toggle(f"{shop}", key=key)
                 updated_brand_settings[shop] = val
             
             if st.button("💾 บันทึกการตั้งค่า", type="primary", use_container_width=True):
@@ -134,6 +135,7 @@ if not full_df.empty:
         for _, row in df_filtered.iterrows():
             shop = row['shop_name']
             if shop in grid_df.index:
+                # เช็คสถานะจาก brand_settings ที่ดึงมาจาก API (ไม่ใช่ session state เพื่อให้ตรงกับที่บันทึกจริง)
                 if not brand_settings.get(shop, True):
                     grid_df.loc[shop] = "DISABLED"
                 else:
