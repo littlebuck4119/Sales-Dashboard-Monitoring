@@ -66,7 +66,8 @@ BRAND_CONFIG = {
     "JonesSalad": "695d80e67b2a8c1ca2ee", 
     "Laem Charoen Seafood": "98d3735c3a0a94a513f6",
 }
-# --- 1. เพิ่มฟังก์ชันจัดการ Config ที่รองรับการแยกแบรนด์ ---
+
+# --- 1. การจัดการเปิด-ปิดสาขา ---
 CONFIG_API = "https://api.npoint.io/9898efa2a5853bf5f886"
 
 def get_config():
@@ -76,36 +77,54 @@ def get_config():
     except: return {}
 
 def save_config(full_config):
-    # ส่งข้อมูลทั้งหมดกลับไปบันทึก
     requests.post(CONFIG_API, json=full_config)
 
-# --- 2. ส่วนใน Sidebar (จุดที่แสดงปุ่ม Toggle) ---
-current_full_config = get_config() # ดึงข้อมูลทั้งหมดมา
-# ดึงเฉพาะของแบรนด์ที่เลือกมาดู (ถ้ายังไม่มีแบรนด์นี้ใน config ให้เป็น dict ว่าง)
-brand_settings = current_full_config.get(selected_brand, {}) 
+# --- 2. ส่วนที่อยู่ใน MAIN CONTENT (หลังดึง full_df และได้รายชื่อ shops แล้ว) ---
+# (ห้ามวางโค้ดข้างล่างนี้ไว้ในส่วน Sidebar ด้านบน เพราะมันจะหาตัวแปร shops ไม่เจอ)
 
-with st.sidebar:
-    st.markdown("---")
-    with st.expander(f"🚫 **ปิดการ Monitor: {selected_brand}**"):
-        updated_brand_settings = brand_settings.copy()
-        
-        for shop in shops:
-            # เช็คสถานะรายสาขาของแบรนด์นี้
-            is_active = brand_settings.get(shop, True)
-            new_val = st.toggle(f"{shop}", value=is_active, key=f"tog_{selected_brand}_{shop}")
-            updated_brand_settings[shop] = new_val
-        
-        if st.button("💾 บันทึกการตั้งค่า"):
-            # เอาข้อมูลเฉพาะแบรนด์นี้ ไปอัปเดตในก้อนใหญ่ก่อนส่งบันทึก
-            current_full_config[selected_brand] = updated_brand_settings
-            save_config(current_full_config)
-            st.success(f"บันทึกตั้งค่า {selected_brand} แล้ว!")
-            st.rerun()
+if not full_df.empty:
+    # ... โค้ดสร้าง grid_df และดึงรายชื่อ shops ...
+    shops = sorted(full_df['shop_name'].unique()) 
+    
+    # 🟢 [จุดที่ต้องแก้] ดึง Config ทั้งหมดมาก่อน
+    current_full_config = get_config()
+    # 🟢 ดึงเฉพาะของแบรนด์ที่เลือก (ถ้าไม่มีให้เป็น dict ว่าง)
+    brand_settings = current_full_config.get(selected_brand, {})
 
-# --- 3. ส่วนในตาราง Heatmap ---
-# ใช้ค่าจาก updated_brand_settings (หรือ brand_settings) มาเช็ค
-if not brand_settings.get(shop_name, True):
-    grid_df.loc[shop_name] = "OFF"
+    # --- ส่วนจัดการปุ่ม Toggle ใน Sidebar ---
+    with st.sidebar:
+        st.markdown("---")
+        with st.expander(f"🚫 **จัดการสาขา: {selected_brand}**"):
+            st.caption("ปิดสาขาเพื่อหยุด Monitor และหยุดส่งแจ้งเตือน")
+            updated_brand_settings = brand_settings.copy()
+            
+            for shop in shops:
+                # เช็คสถานะปัจจุบัน ถ้าไม่มีให้เป็น True (เปิด)
+                is_active = brand_settings.get(shop, True)
+                # สร้างปุ่ม Toggle โดยใช้คีย์ที่แยกตามแบรนด์
+                new_val = st.toggle(f"{shop}", value=is_active, key=f"tog_{selected_brand}_{shop}")
+                updated_brand_settings[shop] = new_val
+            
+            if st.button("💾 บันทึกการตั้งค่า"):
+                # เอาค่าเฉพาะแบรนด์นี้ไปใส่คืนในก้อนใหญ่
+                current_full_config[selected_brand] = updated_brand_settings
+                save_config(current_full_config)
+                st.success(f"บันทึกตั้งค่า {selected_brand} แล้ว!")
+                st.rerun()
+
+    # --- 3. ส่วนในตาราง Heatmap (ตอนวนลูปใส่ emoji) ---
+    if not df_filtered.empty:
+        df_filtered['Day'] = df_filtered['sync_date'].dt.day
+        for _, row in df_filtered.iterrows():
+            shop_name = row['shop_name']
+            if shop_name in grid_df.index:
+                # 🟢 [จุดที่ต้องแก้] ตรวจสอบสถานะเปิด/ปิดจาก brand_settings
+                if not brand_settings.get(shop_name, True):
+                    grid_df.loc[shop_name] = "OFF"
+                else:
+                    status = row['status_code']
+                    emoji = "✅" if status == 2 else "⚠️" if status == 1 else "❌" if status == 0 else "N/A"
+                    grid_df.at[shop_name, row['Day']] = emoji
 
 # --- 3. SIDEBAR ---
 with st.sidebar:
