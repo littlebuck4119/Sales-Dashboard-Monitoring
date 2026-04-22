@@ -43,8 +43,9 @@ def get_data_from_api(url):
     try:
         res = requests.get(url, timeout=10)
         if res.status_code == 200:
-            df = pd.DataFrame(res.json())
-            if not df.empty:
+            data = res.json()
+            if data:
+                df = pd.DataFrame(data)
                 df['status_code'] = pd.to_numeric(df['status_code'], errors='coerce')
                 df['sync_date'] = pd.to_datetime(df['sync_date'])
                 return df
@@ -80,20 +81,25 @@ if not full_df.empty:
             def on_master_change():
                 for s in shops: st.session_state[f"tog_{selected_brand}_{s}"] = st.session_state[master_key]
             
+            # ถ้ายังไม่มี config ให้ถือว่าเปิด (True)
             all_on = all(brand_settings.get(s, True) for s in shops)
             st.toggle("🔔 **เปิด/ปิด ทั้งหมด**", value=all_on, key=master_key, on_change=on_master_change)
+            
             st.markdown("---")
             updated_settings = {}
             for shop in shops:
                 key = f"tog_{selected_brand}_{shop}"
-                if key not in st.session_state: st.session_state[key] = brand_settings.get(shop, True)
+                if key not in st.session_state: 
+                    st.session_state[key] = brand_settings.get(shop, True)
                 updated_settings[shop] = st.toggle(f"{shop}", key=key)
+            
             if st.button("💾 บันทึกการตั้งค่า", type="primary", use_container_width=True):
                 current_full_config[selected_brand] = updated_settings
                 save_config(current_full_config)
                 st.success("บันทึกสำเร็จ!")
                 st.rerun()
 
+    # เตรียมตาราง
     mask = (full_df['sync_date'].dt.month == m) & (full_df['sync_date'].dt.year == y)
     df_filtered = full_df[mask].copy()
     _, last_day = calendar.monthrange(y, m)
@@ -105,32 +111,23 @@ if not full_df.empty:
         for _, row in df_filtered.iterrows():
             shop = row['shop_name']
             if shop in grid_df.index:
-                # --- จุดที่แก้ไข: ถ้าไม่เจอชื่อใน Config ให้ default เป็น True (เปิด) ---
-                is_active = brand_settings.get(shop, True) 
-                
-                if not is_active:
-                    grid_df.loc[shop] = "DISABLED"
-                else:
+                # ถ้าไม่เจอชื่อใน Config หรือค่าเป็น True ให้แสดงยอด
+                if brand_settings.get(shop, True):
                     status = row['status_code']
                     grid_df.at[shop, row['Day']] = "✅" if status == 2 else "⚠️" if status == 1 else "❌" if status == 0 else "N/A"
+                else:
+                    grid_df.loc[shop] = "DISABLED"
 
-    # สรุปภาพรวม
+    # ส่วนสรุป
     active_shops = [s for s in shops if brand_settings.get(s, True)]
     active_grid = grid_df.loc[active_shops] if active_shops else pd.DataFrame()
     with summary_placeholder.container():
         st.info(f"Monitor: **{len(active_shops)}** / **{len(shops)}** สาขา")
-        m1, m2 = st.columns(2)
         if not active_grid.empty:
+            m1, m2 = st.columns(2)
             prob_count = active_grid.isin(["⚠️", "❌"]).any(axis=1).sum()
             m1.metric("ปกติ ✅", len(active_shops) - prob_count)
             m2.metric("ปัญหา ⚠️/❌", prob_count)
-            prob_sum = (active_grid == "❌").sum(axis=1) + (active_grid == "⚠️").sum(axis=1)
-            top_prob = prob_sum[prob_sum > 0].sort_values(ascending=False).head(3)
-            if not top_prob.empty:
-                st.markdown("---")
-                st.write("**⚠️ สาขาที่พบปัญหาบ่อย:**")
-                for shop, count in top_prob.items():
-                    st.markdown(f'<div class="problem-item"><b>{shop}</b><br><span style="color:#d32f2f; font-size:0.8rem;">พบปัญหา {int(count)} ครั้ง</span></div>', unsafe_allow_html=True)
 
     def apply_style(val):
         if val == "✅": return 'background-color: #d4edda; color: #155724;'
@@ -139,6 +136,6 @@ if not full_df.empty:
         if val == "DISABLED": return 'background-color: #6c757d; color: transparent;' 
         return 'color: #ced4da; font-size: 10px;'
 
-    st.dataframe(grid_df.style.map(apply_style), use_container_width=True, height=800, column_config={d: st.column_config.Column(width=30) for d in days})
+    st.dataframe(grid_df.style.map(apply_style), use_container_width=True, height=800)
 else:
     st.warning("⚠️ ไม่พบข้อมูล")
