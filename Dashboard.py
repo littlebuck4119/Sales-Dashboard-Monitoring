@@ -66,33 +66,46 @@ BRAND_CONFIG = {
     "JonesSalad": "695d80e67b2a8c1ca2ee", 
     "Laem Charoen Seafood": "98d3735c3a0a94a513f6",
 }
+# --- 1. เพิ่มฟังก์ชันจัดการ Config ที่รองรับการแยกแบรนด์ ---
+CONFIG_API = "https://api.npoint.io/9898efa2a5853bf5f886"
 
-# แนะนำให้พี่สร้าง npoint ID ใหม่เพื่อเก็บสถานะ เปิด/ปิด สาขาแยกกัน (ตัวอย่างด้านล่าง)
-# ถ้ายังไม่มีให้ใส่ ID หลอกไว้ก่อนครับ
-CONFIG_CONTROL_API = "https://api.npoint.io/ใส่_ID_สำหรับ_SETTING_ที่นี่"
-
-@st.cache_data(ttl=60)
-def get_data_from_api(url):
+def get_config():
     try:
-        res = requests.get(url, timeout=10)
-        if res.status_code == 200:
-            df = pd.DataFrame(res.json())
-            if not df.empty:
-                df['status_code'] = pd.to_numeric(df['status_code'], errors='coerce')
-                df['sync_date'] = pd.to_datetime(df['sync_date'])
-                return df
-    except Exception: pass
-    return pd.DataFrame()
-
-# ฟังก์ชันดึง/ส่ง สถานะเปิดปิดสาขา
-def get_branch_settings():
-    try:
-        res = requests.get(CONFIG_CONTROL_API, timeout=5)
+        res = requests.get(CONFIG_API, timeout=5)
         return res.json() if res.status_code == 200 else {}
     except: return {}
 
-def save_branch_settings(settings):
-    requests.post(CONFIG_CONTROL_API, json=settings)
+def save_config(full_config):
+    # ส่งข้อมูลทั้งหมดกลับไปบันทึก
+    requests.post(CONFIG_API, json=full_config)
+
+# --- 2. ส่วนใน Sidebar (จุดที่แสดงปุ่ม Toggle) ---
+current_full_config = get_config() # ดึงข้อมูลทั้งหมดมา
+# ดึงเฉพาะของแบรนด์ที่เลือกมาดู (ถ้ายังไม่มีแบรนด์นี้ใน config ให้เป็น dict ว่าง)
+brand_settings = current_full_config.get(selected_brand, {}) 
+
+with st.sidebar:
+    st.markdown("---")
+    with st.expander(f"🚫 **ปิดการ Monitor: {selected_brand}**"):
+        updated_brand_settings = brand_settings.copy()
+        
+        for shop in shops:
+            # เช็คสถานะรายสาขาของแบรนด์นี้
+            is_active = brand_settings.get(shop, True)
+            new_val = st.toggle(f"{shop}", value=is_active, key=f"tog_{selected_brand}_{shop}")
+            updated_brand_settings[shop] = new_val
+        
+        if st.button("💾 บันทึกการตั้งค่า"):
+            # เอาข้อมูลเฉพาะแบรนด์นี้ ไปอัปเดตในก้อนใหญ่ก่อนส่งบันทึก
+            current_full_config[selected_brand] = updated_brand_settings
+            save_config(current_full_config)
+            st.success(f"บันทึกตั้งค่า {selected_brand} แล้ว!")
+            st.rerun()
+
+# --- 3. ส่วนในตาราง Heatmap ---
+# ใช้ค่าจาก updated_brand_settings (หรือ brand_settings) มาเช็ค
+if not brand_settings.get(shop_name, True):
+    grid_df.loc[shop_name] = "OFF"
 
 # --- 3. SIDEBAR ---
 with st.sidebar:
