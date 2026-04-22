@@ -38,7 +38,7 @@ def get_config():
 def save_config(full_config):
     requests.post(CONFIG_API, json=full_config)
 
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=30) # ลดเวลา Cache ลงหน่อยให้พี่เติ้ลเห็นผลไวขึ้น
 def get_data_from_api(url):
     try:
         res = requests.get(url, timeout=10)
@@ -73,6 +73,7 @@ if not full_df.empty:
     current_full_config = get_config()
     brand_settings = current_full_config.get(selected_brand, {})
 
+    # --- ส่วนจัดการสาขาใน Sidebar ---
     with st.sidebar:
         st.markdown("---")
         with st.expander(f"🚫 **จัดการสาขา: {selected_brand}**"):
@@ -82,56 +83,68 @@ if not full_df.empty:
             
             all_on = all(brand_settings.get(s, True) for s in shops)
             st.toggle("🔔 **เปิด/ปิด ทั้งหมด**", value=all_on, key=master_key, on_change=on_master_change)
-            st.markdown("---")
+            
             updated_settings = {}
             for shop in shops:
                 key = f"tog_{selected_brand}_{shop}"
                 if key not in st.session_state: st.session_state[key] = brand_settings.get(shop, True)
                 updated_settings[shop] = st.toggle(f"{shop}", key=key)
+            
             if st.button("💾 บันทึกการตั้งค่า", type="primary", use_container_width=True):
                 current_full_config[selected_brand] = updated_settings
                 save_config(current_full_config)
                 st.success("บันทึกสำเร็จ!")
                 st.rerun()
 
+    # --- เตรียมโครงสร้างตาราง ---
     mask = (full_df['sync_date'].dt.month == m) & (full_df['sync_date'].dt.year == y)
     df_filtered = full_df[mask].copy()
     _, last_day = calendar.monthrange(y, m)
     days = list(range(1, last_day + 1))
     grid_df = pd.DataFrame("N/A", index=shops, columns=days)
 
+    # --- จุดแก้ไขสำคัญ: วนลูปหยอดข้อมูลให้ตรงช่อง ---
     if not df_filtered.empty:
         df_filtered['Day'] = df_filtered['sync_date'].dt.day
+        
+        # 1. จัดการสาขาที่ถูก DISABLED (เทาทั้งแถว)
+        for shop in shops:
+            if not brand_settings.get(shop, True):
+                grid_df.loc[shop] = "DISABLED"
+
+        # 2. เอาข้อมูลจริงมาหยอดลงช่อง (ถ้าไม่ได้ DISABLED)
         for _, row in df_filtered.iterrows():
             shop = row['shop_name']
-            if shop in grid_df.index:
-                # --- จุดที่แก้ไข: ถ้าไม่เจอชื่อใน Config ให้ default เป็น True (เปิด) ---
-                is_active = brand_settings.get(shop, True) 
-                
-                if not is_active:
-                    grid_df.loc[shop] = "DISABLED"
-                else:
-                    status = row['status_code']
-                    grid_df.at[shop, row['Day']] = "✅" if status == 2 else "⚠️" if status == 1 else "❌" if status == 0 else "N/A"
+            day = row['Day']
+            status = row['status_code']
+            
+            if shop in grid_df.index and grid_df.at[shop, day] != "DISABLED":
+                # ใส่ไอคอนตาม status_code จริงจาก API
+                icon = "✅" if status == 2 else "⚠️" if status == 1 else "❌" if status == 0 else "N/A"
+                grid_df.at[shop, day] = icon
 
-    # สรุปภาพรวม
+    # --- สรุปภาพรวม (Summary) ---
     active_shops = [s for s in shops if brand_settings.get(s, True)]
     active_grid = grid_df.loc[active_shops] if active_shops else pd.DataFrame()
+    
     with summary_placeholder.container():
         st.info(f"Monitor: **{len(active_shops)}** / **{len(shops)}** สาขา")
         m1, m2 = st.columns(2)
         if not active_grid.empty:
+            # เช็คว่าแถวไหนมี ⚠️ หรือ ❌ บ้าง
             prob_count = active_grid.isin(["⚠️", "❌"]).any(axis=1).sum()
             m1.metric("ปกติ ✅", len(active_shops) - prob_count)
             m2.metric("ปัญหา ⚠️/❌", prob_count)
+            
             prob_sum = (active_grid == "❌").sum(axis=1) + (active_grid == "⚠️").sum(axis=1)
             top_prob = prob_sum[prob_sum > 0].sort_values(ascending=False).head(3)
             if not top_prob.empty:
                 st.markdown("---")
-                st.write("**⚠️ สาขาที่พบปัญหาบ่อย:**")
+                st.write("**⚠️ สาขาที่พบปัญหาบ่อยเดือนนี้:**")
                 for shop, count in top_prob.items():
                     st.markdown(f'<div class="problem-item"><b>{shop}</b><br><span style="color:#d32f2f; font-size:0.8rem;">พบปัญหา {int(count)} ครั้ง</span></div>', unsafe_allow_html=True)
 
+    # --- การระบายสี (Styling) ---
     def apply_style(val):
         if val == "✅": return 'background-color: #d4edda; color: #155724;'
         if val == "⚠️": return 'background-color: #fff3cd; color: #856404;'
@@ -139,6 +152,7 @@ if not full_df.empty:
         if val == "DISABLED": return 'background-color: #6c757d; color: transparent;' 
         return 'color: #ced4da; font-size: 10px;'
 
-    st.dataframe(grid_df.style.map(apply_style), use_container_width=True, height=800, column_config={d: st.column_config.Column(width=30) for d in days})
+    st.dataframe(grid_df.style.map(apply_style), use_container_width=True, height=800, 
+                 column_config={d: st.column_config.Column(width=35) for d in days})
 else:
-    st.warning("⚠️ ไม่พบข้อมูล")
+    st.warning("⚠️ ไม่พบข้อมูลสำหรับแบรนด์นี้")
