@@ -77,9 +77,9 @@ if not full_df.empty:
 # --- ส่วนจัดการสาขาใน Sidebar ---
     with st.sidebar:
         st.markdown("---")
+        search_query = st.text_input("🔍 ค้นหาสาขา...", key=f"search_{selected_brand}").strip().lower()
         with st.expander(f"🚫 **จัดการสาขา: {selected_brand}**"):
             # 1. ช่อง Search (ขยับตามการพิมพ์ทันที ไม่ต้อง Enter)
-            search_query = st.text_input("🔍 ค้นหาสาขา...", key=f"search_{selected_brand}").strip().lower()
 
             master_key = f"master_{selected_brand}"
             def on_master_change():
