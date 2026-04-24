@@ -76,53 +76,51 @@ if not full_df.empty:
     brand_settings = current_full_config.get(selected_brand, {})
 
 
-   # --- ส่วนจัดการสาขาใน Sidebar ---
-with st.sidebar:
-    st.markdown("---")
-    with st.expander(f"🚫 **จัดการสาขา: {selected_brand}**", expanded=True):
-        
-        # 1. ใช้ st_keyup เพื่อให้พิมพ์แล้วกรองทันทีแบบไม่ต้องกด Enter
-        search_query = st_keyup(
-            "🔍 ค้นหาสาขา...", 
-            key=f"keyup_search_{selected_brand}"
-        ).strip().lower()
+  # --- ส่วนจัดการสาขาใน Sidebar (แก้ไข Syntax Error) ---
+        with st.expander(f"🚫 **จัดการสาขา: {selected_brand}**", expanded=True):
+            
+            # 1. พิมพ์ค้นหา (KeyUp จะวูบตามนิ้วทันที)
+            from st_keyup import st_keyup
+            search_query = st_keyup(
+                "🔍 ค้นหาสาขา...", 
+                key=f"keyup_search_{selected_brand}"
+            ).strip().lower()
 
-        # ปุ่ม Master Toggle เปิด/ปิด ทั้งหมด
-        master_key = f"master_{selected_brand}"
-        def on_master_change():
-            for s in shops:
-                st.session_state[f"tog_{selected_brand}_{s}"] = st.session_state[master_key]
-        
-        all_on = all(brand_settings.get(s, True) for s in shops)
-        st.toggle("🔔 **เปิด/ปิด ทั้งหมด**", value=all_on, key=master_key, on_change=on_master_change)
-        
-        st.markdown("---")
-        
-        # เตรียมค่าสถานะปัจจุบันของทุกสาขา
-        updated_settings = {s: st.session_state.get(f"tog_{selected_brand}_{s}", brand_settings.get(s, True)) for s in shops}
+            master_key = f"master_{selected_brand}"
+            def on_master_change():
+                for s in shops:
+                    st.session_state[f"tog_{selected_brand}_{s}"] = st.session_state[master_key]
+            
+            all_on = all(brand_settings.get(s, True) for s in shops)
+            st.toggle("🔔 **เปิด/ปิด ทั้งหมด**", value=all_on, key=master_key, on_change=on_master_change)
+            
+            st.markdown("---")
+            
+            # เตรียมค่าปัจจุบัน
+            updated_settings = {s: st.session_state.get(f"tog_{selected_brand}_{s}", brand_settings.get(s, True)) for s in shops}
 
-        # 2. กรองสาขาตามที่พิมพ์ใน search_query
-        filtered_shops = [s for s in shops if search_query in s.lower()] if search_query else shops
+            # 2. กรองสาขา
+            filtered_shops = [s for s in shops if search_query in s.lower()] if search_query else shops
 
-        # 3. แสดงรายการ Toggle (แก้ไข Syntax Error ให้แล้ว)
-        if not filtered_shops:
-            st.info("😔 ไม่พบสาขาที่ค้นหา...")
-        else:
-            for shop in filtered_shops:
-                t_key = f"tog_{selected_brand}_{shop}"
-                if t_key not in st.session_state:
-                    st.session_state[t_key] = brand_settings.get(shop, True)
-                
-                # อัปเดตสถานะเข้า updated_settings
-                updated_settings[shop] = st.toggle(f"{shop}", key=t_key)
-        
-        st.markdown("---")
-        # ปุ่มบันทึกการตั้งค่าลง API
-        if st.button("💾 บันทึกการตั้งค่า", type="primary", use_container_width=True):
-            current_full_config[selected_brand] = updated_settings
-            save_config(current_full_config)
-            st.success("บันทึกสำเร็จ!")
-            st.rerun()
+            # --- 3. ส่วนที่มีปัญหา Indent (แก้ไขแล้ว) ---
+            if not filtered_shops:
+                st.info("😔 ไม่พบสาขาที่ค้นหา...")
+            else:
+                # วนลูปสร้าง Toggle (เช็คระยะย่อหน้าให้ตรงกับ if)
+                for shop in filtered_shops:
+                    t_key = f"tog_{selected_brand}_{shop}"
+                    if t_key not in st.session_state:
+                        st.session_state[t_key] = brand_settings.get(shop, True)
+                    
+                    # อัปเดตสถานะเข้าตัวแปร updated_settings
+                    updated_settings[shop] = st.toggle(f"{shop}", key=t_key)
+            
+            st.markdown("---")
+            if st.button("💾 บันทึกการตั้งค่า", type="primary", use_container_width=True):
+                current_full_config[selected_brand] = updated_settings
+                save_config(current_full_config)
+                st.success("บันทึกสำเร็จ!")
+                st.rerun()
 
     # --- เตรียมโครงสร้างตาราง ---
     mask = (full_df['sync_date'].dt.month == m) & (full_df['sync_date'].dt.year == y)
