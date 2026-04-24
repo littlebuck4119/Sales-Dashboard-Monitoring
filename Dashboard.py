@@ -100,65 +100,55 @@ with st.sidebar:
 if selected_brand == "🛑 SELECT BRAND 🛑":
     st.markdown("""
         <style>
-        /* สร้าง Container ให้เต็มความสูงหน้าจอและจัดวางกึ่งกลาง */
         .welcome-outer {
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 70vh; /* ปรับความสูงให้สมดุลกับหน้าจอ */
+            height: 80vh;
         }
-        
         .welcome-container {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* เปลี่ยนเฉดสีให้พรีเมียมขึ้น */
-            padding: 60px;
-            border-radius: 30px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 80px;
+            border-radius: 40px;
             text-align: center;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            width: 80%;
-            max-width: 800px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 850px;
             color: white;
+            border: 1px solid rgba(255,255,255,0.1);
         }
-
         .main-title {
-            font-size: 3.5rem;
-            font-weight: 800;
-            margin-bottom: 10px;
-            color: white;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 15px;
+            letter-spacing: -1px;
         }
-
-        .sub-title {
-            font-size: 1.3rem;
-            margin-bottom: 40px;
-            opacity: 0.9;
-        }
-
-        .hint-card {
-            background: white;
-            display: inline-block;
-            padding: 18px 40px;
+        .hint-text {
+            background: rgba(255,255,255,0.15);
+            padding: 15px 35px;
             border-radius: 50px;
-            color: #764ba2; /* ใช้สีเดียวกับ Gradient */
-            font-weight: 800;
-            font-size: 1.2rem;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-            animation: pulse 2s infinite;
+            display: inline-block;
+            font-size: 1.1rem;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.2);
+            animation: bounce 2s infinite;
         }
-
-        @keyframes pulse {
-            0% { transform: scale(1); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-            50% { transform: scale(1.08); box-shadow: 0 15px 30px rgba(0,0,0,0.2); }
-            100% { transform: scale(1); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-10px);}
+            60% {transform: translateY(-5px);}
         }
         </style>
         
         <div class="welcome-outer">
             <div class="welcome-container">
-                <div style="font-size: 5rem; margin-bottom: 10px;">📊</div>
+                <div style="font-size: 6rem; margin-bottom: 20px;">🚀</div>
                 <h1 class="main-title">Sales Monitoring</h1>
-                <p class="sub-title">System is ready. Please choose a brand to continue.</p>
-                <div class="hint-card">
-                    👈 SELECT BRAND TO START
+                <p style="font-size: 1.4rem; opacity: 0.8; margin-bottom: 40px;">
+                    ระบบพร้อมใช้งานแล้ว กรุณาเปิดแถบเมนูด้านซ้ายเพื่อเลือกแบรนด์
+                </p>
+                <div class="hint-text">
+                    ⬅️ Click the arrow on the top left to start
                 </div>
             </div>
         </div>
