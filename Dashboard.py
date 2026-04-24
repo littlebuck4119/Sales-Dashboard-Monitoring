@@ -55,27 +55,29 @@ def get_data_from_api(url):
 
 # --- 3. SIDEBAR ---
 with st.sidebar:
-    now = datetime.now()
-    st.markdown(f'<div class="date-card"><div class="day-name">{now.strftime("%A")}</div><div class="date-number">{now.day}</div><div style="font-size: 0.75rem; color: #28a745; font-weight: bold;">● SYSTEM ONLINE</div></div>', unsafe_allow_html=True)
-    
-    # 1. เพิ่ม "Select Brand" เป็นค่า Default
-    brand_options = ["Select Brand"] + list(BRAND_CONFIG.keys())
+    # ... โค้ดส่วนวันที่ ...
+
+    # ใช้ Emoji ประกบหน้าหลังให้ดูเด่น
+    brand_options = ["🚨 Select Brand 🚨"] + list(BRAND_CONFIG.keys())
     selected_brand = st.selectbox("เลือกแบรนด์", brand_options, index=0)
-    
-    col_y, col_m = st.columns(2)
-    with col_y: y = st.selectbox("ปี", [2025, 2026], index=1)
-    with col_m:
-        month_list = list(calendar.month_name)[1:]
-        m_name = st.selectbox("เดือน", month_list, index=now.month-1)
-        m = month_list.index(m_name) + 1
-    summary_placeholder = st.empty()
 
 # --- 4. MAIN CONTENT ---
-# 2. เช็คเงื่อนไข: ถ้ายังไม่เลือกแบรนด์ ไม่ต้องโหลดอะไรเลย
-if selected_brand == "Select Brand":
-    st.title("👋 Monthly Sales Monitoring")
-    st.info("กรุณาเลือกแบรนด์ที่แถบด้านซ้าย เพื่อตรวจสอบข้อมูล")
-    st.stop() # หยุดการทำงานของโค้ดบรรทัดล่างทั้งหมด จนกว่าจะเลือกแบรนด์
+if selected_brand == "🚨 Select Brand 🚨":
+    st.markdown("""
+        <style>
+        @keyframes blinker {
+          50% { opacity: 0; }
+        }
+        .blink {
+          animation: blinker 1s linear infinite;
+          color: #ff4b4b;
+          font-weight: bold;
+          font-size: 20px;
+        }
+        </style>
+        <div class="blink">🚨 กรุณาเลือกแบรนด์เพื่อเริ่มระบบ 🚨</div>
+        """, unsafe_allow_html=True)
+    st.stop()
 
 # --- ตั้งแต่ตรงนี้ลงไป คือโค้ดเดิมที่จะทำงานเมื่อเลือกแบรนด์แล้วเท่านั้น ---
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
