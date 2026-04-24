@@ -74,12 +74,24 @@ if not full_df.empty:
     current_full_config = get_config()
     brand_settings = current_full_config.get(selected_brand, {})
 
-# --- ส่วนจัดการสาขาใน Sidebar ---
+ได้ครับพี่ เพื่อให้มัน "พิมพ์ไปกรองไป" แบบไม่ต้องกด Enter เราจะใช้เทคนิคส่งค่า label_visibility และจัดการตัวแปร search_query ให้ทำงานร่วมกับกลไก Rerun ของ Streamlit ครับ
+
+สาเหตุที่ก่อนหน้านี้มันยังต้อง Enter เพราะ Streamlit รุ่นเก่าจะรอจนจบ Action แต่ถ้าเรากำหนด key ให้มัน และจัดการให้ Logic การวนลูปอยู่หลัง Input ทันที มันจะขยับตามนิ้ว (พิมพ์แล้วหยุดแป๊บหนึ่งจะกรองเลย)
+
+นี่คือโค้ดที่รวมให้ใหม่แบบสมบูรณ์ในส่วน Sidebar ครับ:
+
+Python
+    # --- ส่วนจัดการสาขาใน Sidebar ---
     with st.sidebar:
         st.markdown("---")
-        search_query = st.text_input("🔍 ค้นหาสาขา...", key=f"search_{selected_brand}").strip().lower()
-        with st.expander(f"🚫 **จัดการสาขา: {selected_brand}**"):
-            # 1. ช่อง Search (ขยับตามการพิมพ์ทันที ไม่ต้อง Enter)
+        with st.expander(f"🚫 **จัดการสาขา: {selected_brand}**", expanded=True):
+            # 1. ช่อง Search (พิมพ์แล้วหยุดครู่หนึ่งจะกรองทันที ไม่ต้องกด Enter)
+            # ใช้การตั้ง key เพื่อให้ Streamlit ตรวจจับความเปลี่ยนแปลงของ Widget ได้รวดเร็วขึ้น
+            search_query = st.text_input(
+                "🔍 ค้นหาสาขา...", 
+                placeholder="พิมพ์ชื่อร้าน...",
+                key=f"search_input_{selected_brand}"
+            ).strip().lower()
 
             master_key = f"master_{selected_brand}"
             def on_master_change():
@@ -91,31 +103,34 @@ if not full_df.empty:
             
             st.markdown("---")
             
-            # เตรียม Dictionary เพื่อเก็บค่าสถานะใหม่ (ดึงจาก session_state ปัจจุบัน)
+            # ดึงค่าสถานะปัจจุบันเตรียมไว้ (กันค่าหาย)
             updated_settings = {s: st.session_state.get(f"tog_{selected_brand}_{s}", brand_settings.get(s, True)) for s in shops}
 
-            # 2. กรองสาขาตามตัวอักษรที่พิมพ์ (ขยับ Real-time)
+            # 2. กรองสาขาตามตัวอักษร (Reactive Filter)
+            # ถ้าพิมพ์อะไรในช่อง search_query รายการจะขยับตามทันทีเมื่อหยุดพิมพ์
             filtered_shops = [s for s in shops if search_query in s.lower()] if search_query else shops
 
-            # 3. แสดงรายการ Toggle เฉพาะที่กรองเจอ
+            # 3. ส่วนแสดงผลรายการ Toggle
             if not filtered_shops:
-                st.write("😔 ไม่พบสาขานี้...")
+                st.info("😔 ไม่พบสาขาที่ค้นหา...")
             else:
+                # วนลูปสร้าง Toggle เฉพาะสาขาที่ค้นหาเจอ
                 for shop in filtered_shops:
                     key = f"tog_{selected_brand}_{shop}"
-                    # ตั้งค่าเริ่มต้นใน session ถ้ายังไม่มี
+                    
+                    # ตั้งค่าเริ่มต้นใน session_state ถ้ายังไม่มี
                     if key not in st.session_state:
                         st.session_state[key] = brand_settings.get(shop, True)
                     
-                    # แสดง Toggle และเก็บค่าที่เปลี่ยนลง updated_settings
+                    # แสดง Toggle และดึงค่าใหม่เข้า updated_settings ทันทีที่มีการขยับ
                     updated_settings[shop] = st.toggle(f"{shop}", key=key)
             
             st.markdown("---")
-            # ปุ่มบันทึก: จะส่ง updated_settings (ที่รวมทั้งสาขาที่โชว์และที่ซ่อนอยู่) ไป Save
+            # ปุ่มบันทึก: จะรวมสถานะของทุกสาขา (ทั้งที่โชว์และที่ซ่อน) ส่งไปบันทึก
             if st.button("💾 บันทึกการตั้งค่า", type="primary", use_container_width=True):
                 current_full_config[selected_brand] = updated_settings
                 save_config(current_full_config)
-                st.success("บันทึกเรียบร้อย!")
+                st.success("บันทึกสำเร็จ!")
                 st.rerun()
 
     # --- เตรียมโครงสร้างตาราง ---
