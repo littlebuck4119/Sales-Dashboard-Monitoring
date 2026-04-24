@@ -170,4 +170,7 @@ if not full_df.empty:
         if v == "✅": return 'background-color: #d4edda;'
         if v == "⚠️": return 'background-color: #fff3cd;'
         if v == "❌": return 'background-color: #f8d7da;'
-        if v == "DISABLED": return 'background-color
+        if v == "DISABLED": return 'background-color: #6c757d; color: transparent;'
+        return 'color: #eeeeee;'
+
+    st.dataframe(grid.style.map(style_grid), use_container_width=True, height=750)
