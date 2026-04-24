@@ -74,13 +74,7 @@ if not full_df.empty:
     current_full_config = get_config()
     brand_settings = current_full_config.get(selected_brand, {})
 
-ได้ครับพี่ เพื่อให้มัน "พิมพ์ไปกรองไป" แบบไม่ต้องกด Enter เราจะใช้เทคนิคส่งค่า label_visibility และจัดการตัวแปร search_query ให้ทำงานร่วมกับกลไก Rerun ของ Streamlit ครับ
 
-สาเหตุที่ก่อนหน้านี้มันยังต้อง Enter เพราะ Streamlit รุ่นเก่าจะรอจนจบ Action แต่ถ้าเรากำหนด key ให้มัน และจัดการให้ Logic การวนลูปอยู่หลัง Input ทันที มันจะขยับตามนิ้ว (พิมพ์แล้วหยุดแป๊บหนึ่งจะกรองเลย)
-
-นี่คือโค้ดที่รวมให้ใหม่แบบสมบูรณ์ในส่วน Sidebar ครับ:
-
-Python
     # --- ส่วนจัดการสาขาใน Sidebar ---
     with st.sidebar:
         st.markdown("---")
