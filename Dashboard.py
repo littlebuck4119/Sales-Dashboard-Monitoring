@@ -3,26 +3,15 @@ import pandas as pd
 import requests
 import calendar
 from datetime import datetime
-from st_keyup import st_keyup
 
-# --- 1. CONFIG: บังคับกาง Sidebar ตั้งแต่เริ่ม ---
+# 1. บังคับกาง Sidebar ตั้งแต่เกิด
 st.set_page_config(
     page_title="Sales Monitoring",
-    page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded" # กางออกมาเลย ไม่ต้องรอคลิก
+    initial_sidebar_state="expanded"
 )
 
-# --- 2. CSS: เน้นให้อ่านง่าย สะอาดตา ---
-st.markdown("""
-    <style>
-    [data-testid="stSidebar"] { background-color: #f8f9fa; border-right: 1px solid #e0e0e0; }
-    .stMetric { background-color: #ffffff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    .problem-item { font-size: 0.85rem; padding: 8px 10px; background-color: #fff5f5; border-left: 4px solid #ff4b4b; border-radius: 4px; margin-bottom: 6px; }
-    </style>
-    """, unsafe_allow_html=True)
-
-# --- 3. DATA API ---
+# 2. ข้อมูล API
 BRAND_CONFIG = {
     "Eat Am Are": "506e2020f13e6d515726",
     "JonesSalad": "695d80e67b2a8c1ca2ee", 
@@ -32,7 +21,7 @@ BRAND_CONFIG = {
 CONFIG_API = "https://api.npoint.io/9898efa2a5853bf5f886"
 
 @st.cache_data(ttl=30)
-def get_data_from_api(url):
+def get_data(url):
     try:
         res = requests.get(url, timeout=10)
         if res.status_code == 200:
@@ -42,71 +31,52 @@ def get_data_from_api(url):
             return df
     except: return pd.DataFrame()
 
-# --- 4. SIDEBAR ---
+# 3. Sidebar (กางรอไว้อยู่แล้ว)
 with st.sidebar:
     st.title("📊 Sales Monitor")
-    now = datetime.now()
-    st.info(f"Today: {now.strftime('%d %b %Y')}")
+    brand = st.selectbox("1. เลือกแบรนด์", ["🛑 กรุณาเลือกแบรนด์ 🛑"] + list(BRAND_CONFIG.keys()))
     
-    brand_options = ["🛑 SELECT BRAND 🛑"] + list(BRAND_CONFIG.keys())
-    selected_brand = st.selectbox("เลือกแบรนด์ที่ต้องการ", brand_options, index=0)
-    
-    st.markdown("---")
-    col_y, col_m = st.columns(2)
-    with col_y: y = st.selectbox("ปี", [2025, 2026], index=1)
-    with col_m:
-        month_list = list(calendar.month_name)[1:]
-        m_name = st.selectbox("เดือน", month_list, index=now.month-1)
-        m = month_list.index(m_name) + 1
-    
-    sidebar_summary = st.empty()
+    st.write("---")
+    y = st.selectbox("ปี", [2025, 2026], index=1)
+    month_list = list(calendar.month_name)[1:]
+    m_name = st.selectbox("เดือน", month_list, index=datetime.now().month-1)
+    m = month_list.index(m_name) + 1
 
-# --- 5. MAIN CONTENT ---
-if selected_brand == "🛑 SELECT BRAND 🛑":
-    # ถ้ายังไม่เลือกแบรนด์ ให้บอก User ชัดๆ
+# 4. Main Content
+if brand == "🛑 กรุณาเลือกแบรนด์ 🛑":
     st.write("#")
-    st.write("#")
-    st.markdown("<h1 style='text-align: center; color: #6c757d;'>👈 กรุณาเลือกแบรนด์ที่แถบเมนูซ้ายมือ</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #adb5bd;'>โปรแกรมจะแสดงข้อมูล Heatmap ทันทีเมื่อเลือกแบรนด์</p>", unsafe_allow_html=True)
+    st.info("👈 เริ่มต้นใช้งานโดยการเลือกแบรนด์ที่แถบเมนูด้านซ้ายครับ")
 else:
-    st.header(f"📈 Dashboard: {selected_brand}")
-    full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
-
-    if not full_df.empty:
-        # ดึง Config การเปิด/ปิดสาขา
-        brand_settings = requests.get(CONFIG_API).json().get(selected_brand, {})
-        shops = sorted(full_df['shop_name'].unique())
+    st.header(f"📈 {brand} ({m_name} {y})")
+    df = get_data(f"https://api.npoint.io/{BRAND_CONFIG[brand]}")
+    
+    if not df.empty:
+        # ดึงการตั้งค่า เปิด/ปิด สาขา
+        conf = requests.get(CONFIG_API).json().get(brand, {})
+        shops = sorted(df['shop_name'].unique())
         
-        # เตรียมตาราง Heatmap
-        mask = (full_df['sync_date'].dt.month == m) & (full_df['sync_date'].dt.year == y)
-        df_filtered = full_df[mask].copy()
+        # สร้างตาราง Heatmap
+        mask = (df['sync_date'].dt.month == m) & (df['sync_date'].dt.year == y)
+        df_filtered = df[mask].copy()
         _, last_day = calendar.monthrange(y, m)
-        days = list(range(1, last_day + 1))
-        grid_df = pd.DataFrame("N/A", index=shops, columns=days)
+        grid_df = pd.DataFrame("N/A", index=shops, columns=range(1, last_day + 1))
 
         if not df_filtered.empty:
             df_filtered['Day'] = df_filtered['sync_date'].dt.day
-            for shop in shops:
-                if not brand_settings.get(shop, True): grid_df.loc[shop] = "DISABLED"
-            for _, row in df_filtered.iterrows():
-                sn, dy, sc = row['shop_name'], row['Day'], row['status_code']
-                if sn in grid_df.index and grid_df.at[sn, dy] != "DISABLED":
-                    grid_df.at[sn, dy] = "✅" if sc == 2 else "⚠️" if sc == 1 else "❌"
-        
-        # สรุปผลลง Sidebar
-        with sidebar_summary.container():
-            st.success(f"โหลดข้อมูลสาขาเรียบร้อย")
-            active_list = [s for s in shops if brand_settings.get(s, True)]
-            st.metric("สาขาที่เปิดใช้", f"{len(active_list)} / {len(shops)}")
+            for s in shops:
+                if not conf.get(s, True): grid_df.loc[s] = "DISABLED"
+            for _, r in df_filtered.iterrows():
+                if r['shop_name'] in grid_df.index and grid_df.at[r['shop_name'], r['Day']] != "DISABLED":
+                    grid_df.at[r['shop_name'], r['Day']] = "✅" if r['status_code'] == 2 else "⚠️" if r['status_code'] == 1 else "❌"
 
-        # ฟังก์ชันระบายสี
-        def apply_style(val):
-            if val == "✅": return 'background-color: #d4edda; color: #155724; text-align: center;'
-            if val == "⚠️": return 'background-color: #fff3cd; color: #856404; text-align: center;'
-            if val == "❌": return 'background-color: #f8d7da; color: #721c24; text-align: center;'
-            if val == "DISABLED": return 'background-color: #e9ecef; color: #dee2e6;'
-            return 'color: #f8f9fa;'
+        # ระบายสีตาราง
+        def style_cells(v):
+            if v == "✅": return 'background-color: #d4edda;'
+            if v == "⚠️": return 'background-color: #fff3cd;'
+            if v == "❌": return 'background-color: #f8d7da;'
+            if v == "DISABLED": return 'background-color: #e9ecef; color: #adb5bd;'
+            return 'color: #eeeeee;'
 
-        st.dataframe(grid_df.style.applymap(apply_style), use_container_width=True, height=700)
+        st.dataframe(grid_df.style.applymap(style_cells), use_container_width=True, height=750)
     else:
-        st.warning("⚠️ ไม่พบข้อมูลสำหรับเดือน/ปี ที่เลือก")
+        st.warning("ไม่พบข้อมูล")
