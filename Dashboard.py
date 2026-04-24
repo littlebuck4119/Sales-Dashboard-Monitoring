@@ -76,12 +76,13 @@ if not full_df.empty:
     brand_settings = current_full_config.get(selected_brand, {})
 
 
-  # --- 2. ส่วนจัดการสาขาใน Sidebar ---
+  # --- ส่วนจัดการสาขาใน Sidebar ---
     with st.sidebar:
         st.markdown("---")
-        # ใช้ระยะย่อหน้า 8 spaces (2 levels) จากขอบซ้ายสุด
-        with st.expander(f"🚫 **จัดการสาขา: {selected_brand}**", expanded=True):
-            # ระยะย่อหน้า 12 spaces (3 levels)
+        # ใส่ข้อความใน "" ให้ชัดเจนครับพี่ มันจะได้โชว์บนหัว Expander
+        with st.expander("🚫 จัดการ เปิด/ปิด สาขา", expanded=False):
+            
+            # 1. พิมพ์ค้นหา (KeyUp)
             from st_keyup import st_keyup
             search_query = st_keyup(
                 "🔍 ค้นหาสาขา...", 
