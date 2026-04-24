@@ -76,10 +76,12 @@ if not full_df.empty:
     brand_settings = current_full_config.get(selected_brand, {})
 
 
-  # --- ส่วนจัดการสาขาใน Sidebar (แก้ไข Syntax Error) ---
+  # --- 2. ส่วนจัดการสาขาใน Sidebar ---
+    with st.sidebar:
+        st.markdown("---")
+        # ใช้ระยะย่อหน้า 8 spaces (2 levels) จากขอบซ้ายสุด
         with st.expander(f"🚫 **จัดการสาขา: {selected_brand}**", expanded=True):
-            
-            # 1. พิมพ์ค้นหา (KeyUp จะวูบตามนิ้วทันที)
+            # ระยะย่อหน้า 12 spaces (3 levels)
             from st_keyup import st_keyup
             search_query = st_keyup(
                 "🔍 ค้นหาสาขา...", 
@@ -96,26 +98,26 @@ if not full_df.empty:
             
             st.markdown("---")
             
-            # เตรียมค่าปัจจุบัน
+            # ดึงค่า Config ปัจจุบัน
             updated_settings = {s: st.session_state.get(f"tog_{selected_brand}_{s}", brand_settings.get(s, True)) for s in shops}
 
-            # 2. กรองสาขา
+            # กรองรายชื่อสาขา
             filtered_shops = [s for s in shops if search_query in s.lower()] if search_query else shops
 
-            # --- 3. ส่วนที่มีปัญหา Indent (แก้ไขแล้ว) ---
+            # ส่วนการแสดงผล Toggle
             if not filtered_shops:
                 st.info("😔 ไม่พบสาขาที่ค้นหา...")
             else:
-                # วนลูปสร้าง Toggle (เช็คระยะย่อหน้าให้ตรงกับ if)
                 for shop in filtered_shops:
                     t_key = f"tog_{selected_brand}_{shop}"
                     if t_key not in st.session_state:
                         st.session_state[t_key] = brand_settings.get(shop, True)
                     
-                    # อัปเดตสถานะเข้าตัวแปร updated_settings
+                    # บันทึกสถานะลงตัวแปร updated_settings ทันที
                     updated_settings[shop] = st.toggle(f"{shop}", key=t_key)
             
             st.markdown("---")
+            # ปุ่มบันทึกข้อมูล
             if st.button("💾 บันทึกการตั้งค่า", type="primary", use_container_width=True):
                 current_full_config[selected_brand] = updated_settings
                 save_config(current_full_config)
