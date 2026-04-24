@@ -57,10 +57,8 @@ def get_data_from_api(url):
 # --- 3. SIDEBAR ---
 with st.sidebar:
     now = datetime.now()
-    # ส่วน Date Card (ถ้าพังให้เอาออกเหลือแค่ text ธรรมดา)
     st.write(f"📅 {now.strftime('%A, %d %B %Y')}")
     
-    # 1. ใช้ Emoji ที่ "ปลอดภัย" (ไม่มี HTML)
     brand_options = ["🛑 SELECT BRAND 🛑"] + list(BRAND_CONFIG.keys())
     selected_brand = st.selectbox("เลือกแบรนด์", brand_options, index=0)
     
@@ -71,12 +69,29 @@ with st.sidebar:
         m_name = st.selectbox("เดือน", month_list, index=now.month-1)
         m = month_list.index(m_name) + 1
 
-# --- 4. MAIN CONTENT ---
-# 2. เช็คเงื่อนไขหยุดการทำงาน (จุดนี้สำคัญมาก ต้องพิมพ์ให้ตรงกับด้านบน)
+    # --- สร้างตัวแปรทิ้งไว้ก่อน จะได้ไม่ Error ---
+    summary_placeholder = st.empty()
+
+# --- 4. MAIN CONTENT (เช็คเงื่อนไขหยุดรันตรงนี้) ---
+
 if selected_brand == "🛑 SELECT BRAND 🛑":
-    st.title("👋 Welcome")
-    st.warning("กรุณาเลือกแบรนด์ที่แถบด้านซ้าย เพื่อโหลดข้อมูล")
-    st.stop()  # หยุดทุกอย่างไว้ที่นี่จนกว่าจะเลือกแบรนด์
+    st.title("📊 Sales Monitoring Dashboard")
+    st.info("👈 กรุณาเลือกแบรนด์ที่แถบด้านซ้ายเพื่อเริ่มต้น")
+    # สร้าง Placeholder เผื่อไว้แม้ตอนหยุดรัน ฝั่งขวาจะได้ไม่พัง
+    st.stop() 
+
+# --- 5. หลังจากเลือกแบรนด์แล้ว (โค้ดเดิมที่ทำงานได้) ---
+st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
+
+# โหลด API เฉพาะตอนเลือกแบรนด์แล้วเท่านั้น
+try:
+    api_url = f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}"
+    # full_df = get_data_from_api(api_url) # ใช้ฟังก์ชันเดิมของพี่
+except Exception as e:
+    st.error(f"Error loading data: {e}")
+    st.stop()
+
+# โค้ดส่วนแสดงผล Heatmap ของพี่ต่อจากตรงนี้ได้เลย...
 
 # --- ตั้งแต่ตรงนี้ลงไป คือโค้ดเดิมที่จะทำงานเมื่อเลือกแบรนด์แล้วเท่านั้น ---
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
