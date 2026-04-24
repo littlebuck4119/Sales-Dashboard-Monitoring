@@ -78,10 +78,6 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
     st.warning("กรุณาเลือกแบรนด์ที่แถบด้านซ้าย เพื่อโหลดข้อมูล")
     st.stop()  # หยุดทุกอย่างไว้ที่นี่จนกว่าจะเลือกแบรนด์
 
-# --- 5. หลังจากเลือกแบรนด์แล้ว (โค้ดส่วนเดิมที่พี่ใช้งานได้) ---
-st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
-# ... โหลด API และทำ Heatmap ต่อ ...
-
 # --- ตั้งแต่ตรงนี้ลงไป คือโค้ดเดิมที่จะทำงานเมื่อเลือกแบรนด์แล้วเท่านั้น ---
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
