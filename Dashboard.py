@@ -5,7 +5,7 @@ import calendar
 from datetime import datetime
 from st_keyup import st_keyup
 
-# --- 1. CONFIG & SESSION STATE ---
+# --- 1. SESSION STATE (ต้องอยู่บนสุดเพื่อคุม Sidebar) ---
 if 'sidebar_state' not in st.session_state:
     st.session_state.sidebar_state = 'collapsed'
 
@@ -16,36 +16,36 @@ st.set_page_config(
     initial_sidebar_state=st.session_state.sidebar_state
 )
 
-# --- 2. CSS (เน้นแค่ความสวยงาม ไม่ขวางปุ่ม) ---
+# --- 2. CSS (เน้นให้ปุ่มอยู่กลาง และสีพื้นหลังเต็มหน้า) ---
 st.markdown("""
     <style>
+    /* พื้นหลังหน้า Welcome */
     .stApp {
-        background-color: #0f2027;
         background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
     }
-    .welcome-text {
-        text-align: center;
-        color: white;
-        font-family: 'sans-serif';
+    /* ถ้าเลือกแบรนด์แล้ว ให้พื้นหลังกลับมาปกติ */
+    .app-selected {
+        background: white !important;
     }
+    
+    /* ตกแต่งปุ่ม GET STARTED */
     div.stButton > button {
         background: linear-gradient(to right, #00f2fe 0%, #4facfe 100%) !important;
         color: white !important;
         font-weight: bold !important;
-        padding: 15px 50px !important;
-        font-size: 1.2rem !important;
-        border-radius: 30px !important;
+        padding: 20px 40px !important;
+        font-size: 1.5rem !important;
+        border-radius: 50px !important;
         border: none !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
         width: 100% !important;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.3) !important;
     }
-    /* แก้ไข Sidebar ให้ดูดี */
-    [data-testid="stSidebar"] { background-color: #ffffff !important; }
+    
     .problem-item { font-size: 0.85rem; padding: 8px 10px; background-color: #fff5f5; border-left: 4px solid #ff4b4b; border-radius: 4px; margin-bottom: 6px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. DATA CONFIG ---
+# --- 3. DATA LOGIC ---
 BRAND_CONFIG = {
     "Eat Am Are": "506e2020f13e6d515726",
     "JonesSalad": "695d80e67b2a8c1ca2ee", 
@@ -67,7 +67,7 @@ def get_data_from_api(url):
     except: pass
     return pd.DataFrame()
 
-# --- 4. SIDEBAR (ใส่ไว้ตอนแรกเพื่อกัน NameError) ---
+# --- 4. SIDEBAR (สร้างรอไว้เลย กัน Error) ---
 with st.sidebar:
     now = datetime.now()
     st.markdown(f"### 📅 {now.strftime('%d %b %Y')}")
@@ -81,72 +81,24 @@ with st.sidebar:
         m_name = st.selectbox("เดือน", month_list, index=now.month-1)
         m = month_list.index(m_name) + 1
     
-    sidebar_summary = st.empty() # ตัวนี้แหละที่กัน Error
+    sidebar_summary = st.empty()
 
-# --- 5. WELCOME PAGE (จัดกลางด้วย Columns) ---
+# --- 5. WELCOME PAGE (ทำให้ปุ่มกดติดชัวร์) ---
 if selected_brand == "🛑 SELECT BRAND 🛑":
-    # สร้างช่องว่าง บน-ล่าง เพื่อให้คอนเทนต์อยู่กลางจอ
-    st.write("##")
-    st.write("##")
-    st.write("##")
+    # สร้างพื้นที่ว่างให้ปุ่มลงมาอยู่กลางจอ
+    for _ in range(8): st.write("") 
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.markdown("""
-            <div class="welcome-text">
-                <h1 style='font-size: 5rem;'>📊</h1>
-                <h1 style='font-size: 3rem;'>Sales Monitoring</h1>
-                <p style='opacity: 0.8;'>Enterprise Dashboard System</p>
-            </div>
-        """, unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align:center; color:white; font-size:4rem;'>📊</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align:center; color:white;'>Sales Monitoring</h1>", unsafe_allow_html=True)
+        st.write("")
         
-        # ปุ่ม Get Started ของจริง กดติด 100%
+        # ปุ่ม Get Started ของจริง (ไม่ใช้ HTML มาบัง เพื่อให้คลิกติด 100%)
         if st.button("🚀 GET STARTED"):
             st.session_state.sidebar_state = 'expanded'
             st.rerun()
             
     st.stop()
 
-# --- 6. DASHBOARD (จะแสดงเมื่อเลือกแบรนด์) ---
-# เคลียร์พื้นหลังให้กลับมาเป็นสีปกติ
-st.markdown("<style>.stApp { background: white !important; }</style>", unsafe_allow_html=True)
-
-st.title(f"📊 {selected_brand}")
-full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
-
-if not full_df.empty:
-    current_full_config = requests.get(CONFIG_API).json()
-    brand_settings = current_full_config.get(selected_brand, {})
-    shops = sorted(full_df['shop_name'].unique())
-
-    # Heatmap Logic
-    mask = (full_df['sync_date'].dt.month == m) & (full_df['sync_date'].dt.year == y)
-    df_filtered = full_df[mask].copy()
-    _, last_day = calendar.monthrange(y, m)
-    days = list(range(1, last_day + 1))
-    grid_df = pd.DataFrame("N/A", index=shops, columns=days)
-
-    if not df_filtered.empty:
-        df_filtered['Day'] = df_filtered['sync_date'].dt.day
-        for shop in shops:
-            if not brand_settings.get(shop, True): grid_df.loc[shop] = "DISABLED"
-        for _, row in df_filtered.iterrows():
-            if row['shop_name'] in grid_df.index and grid_df.at[row['shop_name'], row['Day']] != "DISABLED":
-                stc = row['status_code']
-                grid_df.at[row['shop_name'], row['Day']] = "✅" if stc == 2 else "⚠️" if stc == 1 else "❌" if stc == 0 else "N/A"
-
-    # แสดงผล Summary ใน Sidebar (เรียกใช้ผ่าน Placeholder)
-    with sidebar_summary.container():
-        active_cnt = len([s for s in shops if brand_settings.get(s, True)])
-        st.metric("สาขาที่เปิด Monitor", f"{active_cnt} / {len(shops)}")
-
-    def apply_style(val):
-        if val == "✅": return 'background-color: #d4edda;'
-        if val == "⚠️": return 'background-color: #fff3cd;'
-        if val == "❌": return 'background-color: #f8d7da;'
-        if val == "DISABLED": return 'background-color: #eeeeee; color: #cccccc;'
-        return 'color: #eeeeee;'
-
-    st.dataframe(grid_df.style.applymap(apply_style), use_container_width=True, height=700)
-else:
-    st.warning("ไม่มีข้อมูล")
+#
