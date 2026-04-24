@@ -79,4 +79,91 @@ with st.sidebar:
 
 # --- 5. MAIN CONTENT ---
 if selected_brand == "🛑 SELECT BRAND 🛑":
-    st.
+    st.markdown("""
+        <style>
+        [data-testid="stAppViewBlockContainer"] { padding: 0 !important; }
+        .welcome-bg {
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white;
+        }
+        </style>
+        <div class="welcome-bg">
+            <h1 style="font-size: 4rem;">Sales Monitoring System</h1>
+            <p style="font-size: 1.5rem; opacity: 0.8;">👈 กดทางซ้ายเพื่อเลือก Brand</p>
+        </div>
+    """, unsafe_allow_html=True)
+    st.stop()
+
+# --- 6. DASHBOARD LOGIC ---
+st.markdown("<style>[data-testid='stAppViewBlockContainer'] { padding: 2rem !important; }</style>", unsafe_allow_html=True)
+st.header(f"📈 {selected_brand}")
+
+full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
+
+if not full_df.empty:
+    current_full_config = get_config()
+    brand_settings = current_full_config.get(selected_brand, {})
+    shops = sorted(full_df['shop_name'].unique())
+
+    # ใส่ตัวจัดการสาขาลงใน Sidebar (อันเดียวจบ)
+    with manage_placeholder.container():
+        with st.expander("🚫 จัดการ เปิด/ปิด สาขา", expanded=False):
+            search = st_keyup("🔍 ค้นหาสาขา...", key=f"search_{selected_brand}").strip().lower()
+            
+            # Toggle ทั้งหมด
+            m_key = f"master_{selected_brand}"
+            def toggle_all():
+                for s in shops: st.session_state[f"t_{selected_brand}_{s}"] = st.session_state[m_key]
+            
+            st.toggle("🔔 เปิด/ปิด ทั้งหมด", key=m_key, on_change=toggle_all)
+            st.write("---")
+            
+            new_settings = {}
+            for s in shops:
+                if search and search not in s.lower(): continue
+                t_key = f"t_{selected_brand}_{s}"
+                if t_key not in st.session_state: st.session_state[t_key] = brand_settings.get(s, True)
+                new_settings[s] = st.toggle(s, key=t_key)
+            
+            if st.button("💾 บันทึกการตั้งค่า", use_container_width=True, type="primary"):
+                current_full_config[selected_brand] = new_settings
+                save_config(current_full_config)
+                st.success("บันทึกสำเร็จ!")
+                st.rerun()
+
+    # เตรียม Data Grid
+    mask = (full_df['sync_date'].dt.month == m) & (full_df['sync_date'].dt.year == y)
+    df_f = full_df[mask].copy()
+    _, last_day = calendar.monthrange(y, m)
+    grid = pd.DataFrame("N/A", index=shops, columns=range(1, last_day + 1))
+
+    if not df_f.empty:
+        df_f['Day'] = df_f['sync_date'].dt.day
+        for s in shops:
+            if not brand_settings.get(s, True): grid.loc[s] = "DISABLED"
+        for _, r in df_f.iterrows():
+            sn, d, sc = r['shop_name'], r['Day'], r['status_code']
+            if sn in grid.index and grid.at[sn, d] != "DISABLED":
+                grid.at[sn, d] = "✅" if sc == 2 else "⚠️" if sc == 1 else "❌"
+
+    # สรุปผล (Sidebar)
+    with summary_placeholder.container():
+        actives = [s for s in shops if brand_settings.get(s, True)]
+        st.info(f"Monitor: **{len(actives)}** / {len(shops)} สาขา")
+        if actives:
+            active_grid = grid.loc[actives]
+            prob_count = active_grid.isin(["⚠️", "❌"]).any(axis=1).sum()
+            c1, c2 = st.columns(2)
+            c1.metric("ปกติ ✅", len(actives) - prob_count)
+            c2.metric("ปัญหา ⚠️/❌", prob_count)
+
+    def style_grid(v):
+        if v == "✅": return 'background-color: #d4edda;'
+        if v == "⚠️": return 'background-color: #fff3cd;'
+        if v == "❌": return 'background-color: #f8d7da;'
+        if v == "DISABLED": return 'background-color: #6c757d; color: transparent;'
+        return 'color: #eeeeee;'
+
+    st.dataframe(grid.style.map(style_grid), use_container_width=True, height=750)
+else:
+    st.warning("⚠️ ไม่พบข้อมูล")
