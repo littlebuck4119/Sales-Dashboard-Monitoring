@@ -75,13 +75,6 @@ if not full_df.empty:
     brand_settings = current_full_config.get(selected_brand, {})
 
 
-    เข้าใจแล้วครับพี่ ปัญหานี้เกิดจากนิสัยของ st.text_input ที่มันจะส่งค่าก็ต่อเมื่อเรา "เลิกยุ่ง" กับช่องพิมพ์ (เช่น กด Enter หรือไปคลิกที่อื่น)
-
-เพื่อให้มัน Auto Refresh ตามนิ้วแบบไม่ต้องกดอะไรเลย เราต้องขยับ search_query ไปไว้ใน st.empty() หรือใช้เทคนิค on_change เพื่อบังคับให้ Streamlit Rerun ทันทีที่ตัวอักษรเปลี่ยนครับ
-
-นี่คือชุดที่แก้ให้มัน Reactive (ขยับตามนิ้ว) จริงๆ ครับ:
-
-Python
     # --- ส่วนจัดการสาขาใน Sidebar ---
     with st.sidebar:
         st.markdown("---")
