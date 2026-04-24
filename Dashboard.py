@@ -80,9 +80,6 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
     # สร้าง Placeholder เผื่อไว้แม้ตอนหยุดรัน ฝั่งขวาจะได้ไม่พัง
     st.stop() 
 
-# --- 5. หลังจากเลือกแบรนด์แล้ว (โค้ดเดิมที่ทำงานได้) ---
-st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
-
 # โหลด API เฉพาะตอนเลือกแบรนด์แล้วเท่านั้น
 try:
     api_url = f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}"
