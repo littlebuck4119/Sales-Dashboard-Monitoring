@@ -6,7 +6,12 @@ from datetime import datetime
 from st_keyup import st_keyup
 
 # --- 1. CONFIG & STYLES ---
-st.set_page_config(page_title="Sales Monitoring Heatmap", layout="collapse")
+st.set_page_config(
+    page_title="Sales Monitoring",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="collapsed"  # บรรทัดนี้จะทำให้เปิดมาแล้ว Sidebar หุบไปทางซ้ายทันที
+)
 
 st.markdown("""
     <style>
