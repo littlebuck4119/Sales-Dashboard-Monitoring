@@ -90,18 +90,60 @@ with st.sidebar:
             search_query = st_keyup("🔍 ค้นหาสาขา...", key=f"keyup_{selected_brand}").strip().lower()
             # ... (ใส่ Logic Toggle ของพี่ตรงนี้ได้เลย) ...
 
-# --- 2. MAIN CONTENT (หน้าขวา) ---
+# --- 4. MAIN CONTENT (หน้าขวาตอนยังไม่เลือกแบรนด์) ---
 
-# ถ้ายังไม่เลือกแบรนด์ ให้โชว์หน้า Welcome แต่ Sidebar จะยังอยู่ครบ!
 if selected_brand == "🛑 SELECT BRAND 🛑":
+    # ใส่ CSS ตกแต่งพื้นหลังไล่เฉดสี
     st.markdown("""
-        <div style="text-align: center; padding: 50px;">
-            <h1 style="font-size: 3rem;">📊</h1>
-            <h2>Sales Monitoring System</h2>
-            <p style="color: #666;">Please select a brand from the sidebar to initialize the dashboard.</p>
+        <style>
+        .welcome-container {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 100px 20px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            margin-top: 50px;
+        }
+        .main-title {
+            background: linear-gradient(to right, #1e3c72, #2a5298);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+        .sub-title {
+            color: #5c677d;
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+        }
+        .hint-card {
+            background-color: white;
+            display: inline-block;
+            padding: 15px 30px;
+            border-radius: 50px;
+            color: #2a5298;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        </style>
+        
+        <div class="welcome-container">
+            <h1 class="main-title">Sales Monitoring</h1>
+            <p class="sub-title">Real-time Performance & Insights Dashboard</p>
+            <div style="font-size: 5rem; margin-bottom: 20px;">📊</div>
+            <div class="hint-card">
+                👈 Please Select a Brand from Sidebar
+            </div>
         </div>
     """, unsafe_allow_html=True)
-    st.stop() # หยุดเฉพาะเนื้อหาตรงนี้ Sidebar ด้านบนรันเสร็จไปแล้ว
+    st.stop()
 
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
