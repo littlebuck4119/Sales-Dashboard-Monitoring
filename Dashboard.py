@@ -54,11 +54,18 @@ def get_data_from_api(url):
     return pd.DataFrame()
 
 
-# --- 3. SIDEBAR ---
+# --- 1. เตรียมพื้นที่ด้านบนสุดของ Sidebar (เพื่อให้โชว์ตลอดเวลา) ---
 with st.sidebar:
+    # ส่วนวันที่ (ใส่ไว้บนสุดเลยครับ)
     now = datetime.now()
-    st.write(f"📅 {now.strftime('%A, %d %B %Y')}")
-    
+    st.markdown(f"""
+        <div style="background-color: #f0f2f6; padding: 10px; border-radius: 10px; border-left: 5px solid #4CAF50; margin-bottom: 20px;">
+            <div style="font-size: 0.8rem; color: #666;">📅 Today</div>
+            <div style="font-size: 1.1rem; font-weight: bold;">{now.strftime("%A, %d %b %Y")}</div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # เลือกแบรนด์
     brand_options = ["🛑 SELECT BRAND 🛑"] + list(BRAND_CONFIG.keys())
     selected_brand = st.selectbox("เลือกแบรนด์", brand_options, index=0)
     
@@ -69,28 +76,33 @@ with st.sidebar:
         m_name = st.selectbox("เดือน", month_list, index=now.month-1)
         m = month_list.index(m_name) + 1
 
-    # --- สร้างตัวแปรทิ้งไว้ก่อน จะได้ไม่ Error ---
+    # จองพื้นที่สรุปผลไว้ (ป้องกัน NameError ในอนาคต)
     summary_placeholder = st.empty()
+    
+    # --- ส่วนจัดการสาขา (Expander) ---
+    # จะโชว์ต่อเมื่อเลือกแบรนด์แล้วเท่านั้น เพื่อความสะอาด
+    if selected_brand != "🛑 SELECT BRAND 🛑":
+        st.markdown("---")
+        with st.expander(f"🚫 จัดการ เปิด/ปิด สาขา", expanded=False):
+            from st_keyup import st_keyup
+            # ดึงรายชื่อร้านของแบรนด์ที่เลือกมา
+            shops = current_full_config.get(selected_brand, {}).keys() if 'current_full_config' in locals() else []
+            search_query = st_keyup("🔍 ค้นหาสาขา...", key=f"keyup_{selected_brand}").strip().lower()
+            # ... (ใส่ Logic Toggle ของพี่ตรงนี้ได้เลย) ...
 
-# --- 4. MAIN CONTENT (เช็คเงื่อนไขหยุดรันตรงนี้) ---
+# --- 2. MAIN CONTENT (หน้าขวา) ---
 
+# ถ้ายังไม่เลือกแบรนด์ ให้โชว์หน้า Welcome แต่ Sidebar จะยังอยู่ครบ!
 if selected_brand == "🛑 SELECT BRAND 🛑":
-    st.title("📊 Sales Monitoring Dashboard")
-    st.info("👈 กรุณาเลือกแบรนด์ที่แถบด้านซ้ายเพื่อเริ่มต้น")
-    # สร้าง Placeholder เผื่อไว้แม้ตอนหยุดรัน ฝั่งขวาจะได้ไม่พัง
-    st.stop() 
+    st.markdown("""
+        <div style="text-align: center; padding: 50px;">
+            <h1 style="font-size: 3rem;">📊</h1>
+            <h2>Sales Monitoring System</h2>
+            <p style="color: #666;">Please select a brand from the sidebar to initialize the dashboard.</p>
+        </div>
+    """, unsafe_allow_html=True)
+    st.stop() # หยุดเฉพาะเนื้อหาตรงนี้ Sidebar ด้านบนรันเสร็จไปแล้ว
 
-# โหลด API เฉพาะตอนเลือกแบรนด์แล้วเท่านั้น
-try:
-    api_url = f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}"
-    # full_df = get_data_from_api(api_url) # ใช้ฟังก์ชันเดิมของพี่
-except Exception as e:
-    st.error(f"Error loading data: {e}")
-    st.stop()
-
-# โค้ดส่วนแสดงผล Heatmap ของพี่ต่อจากตรงนี้ได้เลย...
-
-# --- ตั้งแต่ตรงนี้ลงไป คือโค้ดเดิมที่จะทำงานเมื่อเลือกแบรนด์แล้วเท่านั้น ---
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
