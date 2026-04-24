@@ -98,58 +98,53 @@ with st.sidebar:
 # --- 4. MAIN CONTENT (หน้าขวาตอนยังไม่เลือกแบรนด์) ---
 
 if selected_brand == "🛑 SELECT BRAND 🛑":
+    # ใส่ CSS ตกแต่งพื้นหลังไล่เฉดสี
     st.markdown("""
         <style>
-        .welcome-outer {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 80vh;
-        }
         .welcome-container {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            padding: 80px;
-            border-radius: 40px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 100px 20px;
+            border-radius: 20px;
             text-align: center;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.3);
-            width: 90%;
-            max-width: 850px;
-            color: white;
-            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            margin-top: 50px;
         }
         .main-title {
-            font-size: 4rem;
-            font-weight: 900;
-            margin-bottom: 15px;
-            letter-spacing: -1px;
+            background: linear-gradient(to right, #1e3c72, #2a5298);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 10px;
         }
-        .hint-text {
-            background: rgba(255,255,255,0.15);
-            padding: 15px 35px;
-            border-radius: 50px;
+        .sub-title {
+            color: #5c677d;
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+        }
+        .hint-card {
+            background-color: white;
             display: inline-block;
-            font-size: 1.1rem;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255,255,255,0.2);
-            animation: bounce 2s infinite;
+            padding: 15px 30px;
+            border-radius: 50px;
+            color: #2a5298;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            animation: pulse 2s infinite;
         }
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
-            40% {transform: translateY(-10px);}
-            60% {transform: translateY(-5px);}
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
         </style>
         
-        <div class="welcome-outer">
-            <div class="welcome-container">
-                <div style="font-size: 6rem; margin-bottom: 20px;">🚀</div>
-                <h1 class="main-title">Sales Monitoring</h1>
-                <p style="font-size: 1.4rem; opacity: 0.8; margin-bottom: 40px;">
-                    ระบบพร้อมใช้งานแล้ว กรุณาเปิดแถบเมนูด้านซ้ายเพื่อเลือกแบรนด์
-                </p>
-                <div class="hint-text">
-                    ⬅️ Click the arrow on the top left to start
-                </div>
+        <div class="welcome-container">
+            <h1 class="main-title">Sales Monitoring</h1>
+            <p class="sub-title">Real-time Performance & Insights Dashboard</p>
+            <div style="font-size: 5rem; margin-bottom: 20px;">📊</div>
+            <div class="hint-card">
+                👈 Please Select a Brand from Sidebar
             </div>
         </div>
     """, unsafe_allow_html=True)
