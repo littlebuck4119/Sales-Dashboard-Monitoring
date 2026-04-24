@@ -74,42 +74,44 @@ if not full_df.empty:
     current_full_config = get_config()
     brand_settings = current_full_config.get(selected_brand, {})
 
-   # --- ส่วนจัดการสาขาใน Sidebar ---
-    with st.expander(f"🚫 **จัดการสาขา: {selected_brand}**"):
-            # 1. ช่อง Search (จะขยับตามการพิมพ์ทันที)
+# --- ส่วนจัดการสาขาใน Sidebar ---
+    with st.sidebar:
+        st.markdown("---")
+        with st.expander(f"🚫 **จัดการสาขา: {selected_brand}**"):
+            # 1. ช่อง Search (ขยับตามการพิมพ์ทันที ไม่ต้อง Enter)
             search_query = st.text_input("🔍 ค้นหาสาขา...", key=f"search_{selected_brand}").strip().lower()
 
             master_key = f"master_{selected_brand}"
             def on_master_change():
-                for s in shops: st.session_state[f"tog_{selected_brand}_{s}"] = st.session_state[master_key]
+                for s in shops:
+                    st.session_state[f"tog_{selected_brand}_{s}"] = st.session_state[master_key]
             
             all_on = all(brand_settings.get(s, True) for s in shops)
             st.toggle("🔔 **เปิด/ปิด ทั้งหมด**", value=all_on, key=master_key, on_change=on_master_change)
             
             st.markdown("---")
             
-            # เตรียม Dictionary เพื่อเก็บค่าสถานะใหม่
-            # ต้องเริ่มจากค่าปัจจุบันใน session_state หรือ brand_settings เพื่อไม่ให้ค่าตัวที่ถูกซ่อนหายไป
+            # เตรียม Dictionary เพื่อเก็บค่าสถานะใหม่ (ดึงจาก session_state ปัจจุบัน)
             updated_settings = {s: st.session_state.get(f"tog_{selected_brand}_{s}", brand_settings.get(s, True)) for s in shops}
 
-            # 2. กรองสาขาตามตัวอักษรที่พิมพ์
+            # 2. กรองสาขาตามตัวอักษรที่พิมพ์ (ขยับ Real-time)
             filtered_shops = [s for s in shops if search_query in s.lower()] if search_query else shops
 
-            # 3. แสดง Toggle เฉพาะที่กรองเจอ
+            # 3. แสดงรายการ Toggle เฉพาะที่กรองเจอ
             if not filtered_shops:
                 st.write("😔 ไม่พบสาขานี้...")
             else:
-                # ใช้ Container เพื่อจำกัดความสูงกรณีผลลัพธ์เยอะ (Optional)
                 for shop in filtered_shops:
                     key = f"tog_{selected_brand}_{shop}"
-                    # ดึงค่าเดิมมาตั้งต้นถ้ายังไม่มีใน session
+                    # ตั้งค่าเริ่มต้นใน session ถ้ายังไม่มี
                     if key not in st.session_state:
                         st.session_state[key] = brand_settings.get(shop, True)
                     
-                    # อัปเดตค่าใน updated_settings เมื่อมีการสลับ Toggle
+                    # แสดง Toggle และเก็บค่าที่เปลี่ยนลง updated_settings
                     updated_settings[shop] = st.toggle(f"{shop}", key=key)
             
             st.markdown("---")
+            # ปุ่มบันทึก: จะส่ง updated_settings (ที่รวมทั้งสาขาที่โชว์และที่ซ่อนอยู่) ไป Save
             if st.button("💾 บันทึกการตั้งค่า", type="primary", use_container_width=True):
                 current_full_config[selected_brand] = updated_settings
                 save_config(current_full_config)
