@@ -5,10 +5,11 @@ import calendar
 from datetime import datetime
 from st_keyup import st_keyup
 
-# --- 1. SESSION STATE & CONFIG (ต้องอยู่บนสุดและห้ามพลาด) ---
+# --- 1. INITIAL SESSION STATE ---
 if 'sidebar_state' not in st.session_state:
     st.session_state.sidebar_state = 'collapsed'
 
+# --- 2. CONFIG ---
 st.set_page_config(
     page_title="Sales Monitoring",
     page_icon="📊",
@@ -16,45 +17,34 @@ st.set_page_config(
     initial_sidebar_state=st.session_state.sidebar_state
 )
 
-# --- 2. CSS RESET & CUSTOM STYLES ---
+# --- 3. CSS (รวมทุกอย่างไว้ที่เดียว) ---
 st.markdown("""
     <style>
-    /* ระเบิดขอบให้เต็มจอจริงๆ */
-    [data-testid="stAppViewBlockContainer"] { padding: 0 !important; max-width: 100% !important; }
-    [data-testid="stSidebarContent"] { padding-top: 0rem !important; }
+    /* ระเบิดขอบเต็มจอสำหรับหน้า Welcome */
+    .stAppHeader { background: transparent !important; }
+    [data-testid="stSidebarContent"] { padding-top: 1rem !important; }
     
-    /* ตกแต่ง Sidebar */
-    .date-card { background-color: #ffffff; padding: 20px 15px; border-radius: 12px; border: 1px solid #e0e0e0; text-align: center; }
+    /* แก้ไขการแสดงผล Dashboard ปกติ */
+    .dashboard-container { padding: 2rem; }
     .problem-item { font-size: 0.85rem; padding: 8px 10px; background-color: #fff5f5; border-left: 4px solid #ff4b4b; border-radius: 4px; margin-bottom: 6px; }
     footer { visibility: hidden; }
 
-    /* หน้า Welcome แบบจัดกลางเป๊ะ */
-    .welcome-wrapper {
-        background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
-        height: 100vh;
-        width: 100vw;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        position: fixed;
-        top: 0;
-        left: 0;
-        z-index: 99;
-    }
-    .glass-card {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 50px;
-        border-radius: 40px;
-        text-align: center;
-        box-shadow: 0 25px 50px rgba(0,0,0,0.4);
+    /* ปรับแต่งปุ่ม Get Started ให้เด่นกลางจอ */
+    div.stButton > button {
+        width: 100%;
+        background: linear-gradient(to right, #00f2fe 0%, #4facfe 100%) !important;
+        color: white !important;
+        border: none !important;
+        padding: 15px 40px !important;
+        font-size: 1.5rem !important;
+        font-weight: bold !important;
+        border-radius: 50px !important;
+        box-shadow: 0 10px 25px rgba(79, 172, 254, 0.4) !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. DATA FETCHING (Logic เดิมของพี่) ---
+# --- 4. DATA & CONFIG LOGIC ---
 BRAND_CONFIG = {
     "Eat Am Are": "506e2020f13e6d515726",
     "JonesSalad": "695d80e67b2a8c1ca2ee", 
@@ -87,16 +77,11 @@ def get_data_from_api(url):
 
 current_full_config = get_config()
 
-# --- 4. SIDEBAR ---
+# --- 5. SIDEBAR ---
 with st.sidebar:
     now = datetime.now()
-    st.markdown(f"""
-        <div style="background-color: #f0f2f6; padding: 10px; border-radius: 10px; border-left: 5px solid #4CAF50; margin-top: 10px;">
-            <div style="font-size: 0.8rem; color: #666;">📅 Today</div>
-            <div style="font-size: 1.1rem; font-weight: bold;">{now.strftime("%A, %d %b %Y")}</div>
-        </div>
-    """, unsafe_allow_html=True)
-
+    st.info(f"📅 Today: **{now.strftime('%d %b %Y')}**")
+    
     brand_options = ["🛑 SELECT BRAND 🛑"] + list(BRAND_CONFIG.keys())
     selected_brand = st.selectbox("เลือกแบรนด์", brand_options, index=0)
     
@@ -106,29 +91,31 @@ with st.sidebar:
         month_list = list(calendar.month_name)[1:]
         m_name = st.selectbox("เดือน", month_list, index=now.month-1)
         m = month_list.index(m_name) + 1
-
-    summary_placeholder = st.empty()
-
-# --- 5. WELCOME PAGE (จัดกลางจอและปุ่มทำงานได้จริง) ---
-if selected_brand == "🛑 SELECT BRAND 🛑":
-    # สร้าง Container เปล่าเพื่อใช้เป็นตัวครอบปุ่มให้ไปอยู่กลางจอ
-    st.markdown('<div class="welcome-wrapper"><div class="glass-card">', unsafe_allow_html=True)
-    st.markdown('<h1 style="font-size: 4rem; margin:0;">📊</h1>', unsafe_allow_html=True)
-    st.markdown('<h1 style="font-size: 3.5rem; font-weight: 800; margin-bottom: 10px; color: white;">Sales Monitoring</h1>', unsafe_allow_html=True)
-    st.markdown('<p style="font-size: 1.2rem; opacity: 0.8; color: white; margin-bottom: 30px;">Enterprise Performance Intelligence</p>', unsafe_allow_html=True)
     
-    # วางปุ่ม Streamlit ไว้ตรงนี้ (มันจะถูกจัดกลางตาม CSS welcome-wrapper)
-    if st.button("🚀 GET STARTED", type="primary"):
+    # สร้าง Placeholder ไว้ใน Sidebar เลยเพื่อกัน NameError
+    sidebar_summary = st.empty()
+
+# --- 6. WELCOME PAGE (Full Screen & Centralized) ---
+if selected_brand == "🛑 SELECT BRAND 🛑":
+    st.markdown("""
+        <div style="background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); 
+                    height: 100vh; display: flex; align-items: center; justify-content: center; margin: -100px -50px;">
+            <div style="background: rgba(255,255,255,0.05); padding: 80px; border-radius: 40px; 
+                        text-align: center; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(20px); width: 600px;">
+                <h1 style="font-size: 5rem; margin: 0;">📊</h1>
+                <h1 style="color: white; font-size: 3rem; font-weight: 800; margin-bottom: 10px;">Sales Monitoring</h1>
+                <p style="color: #bdc3c7; font-size: 1.2rem; margin-bottom: 40px;">Please open control panel to continue</p>
+    """, unsafe_allow_html=True)
+    
+    # ปุ่มอยู่ตรงนี้ กึ่งกลาง Card แน่นอน
+    if st.button("🚀 GET STARTED"):
         st.session_state.sidebar_state = 'expanded'
         st.rerun()
-    
-    st.markdown('</div></div>', unsafe_allow_html=True)
+        
+    st.markdown("</div></div>", unsafe_allow_html=True)
     st.stop()
 
-# --- 6. MAIN DASHBOARD (เมื่อเลือกแบรนด์แล้ว) ---
-# คืนค่า Padding ให้หน้า Dashboard ปกติ
-st.markdown("<style>[data-testid='stAppViewBlockContainer'] { padding: 2rem !important; }</style>", unsafe_allow_html=True)
-
+# --- 7. MAIN DASHBOARD CONTENT ---
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
@@ -139,29 +126,28 @@ if not full_df.empty:
     with st.sidebar:
         st.markdown("---")
         with st.expander("🚫 จัดการ เปิด/ปิด สาขา", expanded=False):
-            search_query = st_keyup("🔍 ค้นหาสาขา...", key=f"keyup_search_{selected_brand}").strip().lower()
+            search_query = st_keyup("🔍 ค้นหา...", key=f"search_{selected_brand}").strip().lower()
             master_key = f"master_{selected_brand}"
             def on_master_change():
                 for s in shops: st.session_state[f"tog_{selected_brand}_{s}"] = st.session_state[master_key]
             
             all_on = all(brand_settings.get(s, True) for s in shops)
-            st.toggle("🔔 **เปิด/ปิด ทั้งหมด**", value=all_on, key=master_key, on_change=on_master_change)
+            st.toggle("🔔 เปิด/ปิด ทั้งหมด", value=all_on, key=master_key, on_change=on_master_change)
             
-            updated_settings = {s: st.session_state.get(f"tog_{selected_brand}_{s}", brand_settings.get(s, True)) for s in shops}
-            filtered_shops = [s for s in shops if search_query in s.lower()] if search_query else shops
-
-            for shop in filtered_shops:
+            updated_settings = {}
+            for shop in shops:
+                if search_query and search_query not in shop.lower(): continue
                 t_key = f"tog_{selected_brand}_{shop}"
                 if t_key not in st.session_state: st.session_state[t_key] = brand_settings.get(shop, True)
                 updated_settings[shop] = st.toggle(f"{shop}", key=t_key)
             
-            if st.button("💾 บันทึกการตั้งค่า", use_container_width=True):
-                current_full_config[selected_brand] = updated_settings
+            if st.button("💾 บันทึก", use_container_width=True):
+                current_full_config[selected_brand] = {s: st.session_state.get(f"tog_{selected_brand}_{s}", brand_settings.get(s, True)) for s in shops}
                 save_config(current_full_config)
-                st.success("บันทึกสำเร็จ!")
+                st.success("Saved!")
                 st.rerun()
 
-    # --- ตาราง Heatmap ---
+    # Heatmap Logic
     mask = (full_df['sync_date'].dt.month == m) & (full_df['sync_date'].dt.year == y)
     df_filtered = full_df[mask].copy()
     _, last_day = calendar.monthrange(y, m)
@@ -173,28 +159,30 @@ if not full_df.empty:
         for shop in shops:
             if not brand_settings.get(shop, True): grid_df.loc[shop] = "DISABLED"
         for _, row in df_filtered.iterrows():
-            shop, day, status = row['shop_name'], row['Day'], row['status_code']
-            if shop in grid_df.index and grid_df.at[shop, day] != "DISABLED":
-                grid_df.at[shop, day] = "✅" if status == 2 else "⚠️" if status == 1 else "❌" if status == 0 else "N/A"
+            s_name, d, status = row['shop_name'], row['Day'], row['status_code']
+            if s_name in grid_df.index and grid_df.at[s_name, d] != "DISABLED":
+                grid_df.at[s_name, d] = "✅" if status == 2 else "⚠️" if status == 1 else "❌" if status == 0 else "N/A"
 
-    # --- Summary ---
-    active_shops = [s for s in shops if brand_settings.get(s, True)]
-    with summary_placeholder.container():
-        st.info(f"Monitor: **{len(active_shops)}** / **{len(shops)}** สาขา")
-        m1, m2 = st.columns(2)
+    # Sidebar Summary (ใช้ชื่อตัวแปรที่ประกาศไว้ข้างบน กัน NameError)
+    with sidebar_summary.container():
+        active_shops = [s for s in shops if brand_settings.get(s, True)]
+        st.write(f"Active: **{len(active_shops)}** / **{len(shops)}**")
         if active_shops:
             active_grid = grid_df.loc[active_shops]
             prob_count = active_grid.isin(["⚠️", "❌"]).any(axis=1).sum()
-            m1.metric("ปกติ ✅", len(active_shops) - prob_count)
-            m2.metric("ปัญหา ⚠️/❌", prob_count)
+            st.metric("ปัญหา ⚠️/❌", prob_count)
+            prob_sum = (active_grid == "❌").sum(axis=1) + (active_grid == "⚠️").sum(axis=1)
+            top_prob = prob_sum[prob_sum > 0].sort_values(ascending=False).head(3)
+            for shop, count in top_prob.items():
+                st.markdown(f'<div class="problem-item"><b>{shop}</b> ({int(count)})</div>', unsafe_allow_html=True)
 
     def apply_style(val):
         if val == "✅": return 'background-color: #d4edda; color: #155724;'
         if val == "⚠️": return 'background-color: #fff3cd; color: #856404;'
         if val == "❌": return 'background-color: #f8d7da; color: #721c24;'
         if val == "DISABLED": return 'background-color: #6c757d; color: transparent;' 
-        return 'color: #ced4da; font-size: 10px;'
+        return 'color: #ced4da;'
 
     st.dataframe(grid_df.style.map(apply_style), use_container_width=True, height=800)
 else:
-    st.warning("⚠️ ไม่พบข้อมูลสำหรับแบรนด์นี้")
+    st.warning("⚠️ No data found.")
