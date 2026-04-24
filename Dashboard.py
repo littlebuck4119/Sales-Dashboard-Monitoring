@@ -10,8 +10,7 @@ st.set_page_config(
     page_title="Sales Monitoring",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="collapsed"  # บรรทัดนี้จะทำให้เปิดมาแล้ว Sidebar หุบไปทางซ้ายทันที
-)
+    initial_sidebar_state="collapsed"
 
 st.markdown("""
     <style>
