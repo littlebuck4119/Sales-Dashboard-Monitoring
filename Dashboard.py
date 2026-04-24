@@ -122,4 +122,71 @@ st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
 if not full_df.empty:
-    current
+    current_full_config = get_config()
+    brand_settings = current_full_config.get(selected_brand, {})
+    shops = sorted(full_df['shop_name'].unique())
+
+    # --- ส่วนจัดการสาขาใน Sidebar ---
+    with st.sidebar:
+        st.markdown("---")
+        with st.expander("🚫 จัดการ เปิด/ปิด สาขา", expanded=False):
+            search_query = st_keyup("🔍 ค้นหาสาขา...", key=f"src_{selected_brand}").strip().lower()
+            
+            master_key = f"ms_{selected_brand}"
+            def on_ms_change():
+                for s in shops: st.session_state[f"tog_{selected_brand}_{s}"] = st.session_state[master_key]
+            
+            all_on = all(brand_settings.get(s, True) for s in shops)
+            st.toggle("🔔 เปิด/ปิด ทั้งหมด", value=all_on, key=master_key, on_change=on_ms_change)
+            
+            st.markdown("---")
+            updated_settings = {}
+            for shop in shops:
+                if search_query and search_query not in shop.lower(): continue
+                t_key = f"tog_{selected_brand}_{shop}"
+                if t_key not in st.session_state: st.session_state[t_key] = brand_settings.get(shop, True)
+                updated_settings[shop] = st.toggle(f"{shop}", key=t_key)
+            
+            if st.button("💾 บันทึกการตั้งค่า", type="primary", use_container_width=True):
+                current_full_config[selected_brand] = updated_settings
+                save_config(current_full_config)
+                st.success("บันทึกสำเร็จ!")
+                st.rerun()
+
+    # --- ตาราง Heatmap ---
+    mask = (full_df['sync_date'].dt.month == m) & (full_df['sync_date'].dt.year == y)
+    df_filtered = full_df[mask].copy()
+    _, last_day = calendar.monthrange(y, m)
+    grid_df = pd.DataFrame("N/A", index=shops, columns=range(1, last_day + 1))
+
+    if not df_filtered.empty:
+        df_filtered['Day'] = df_filtered['sync_date'].dt.day
+        for s in shops:
+            if not brand_settings.get(s, True): grid_df.loc[s] = "DISABLED"
+        for _, row in df_filtered.iterrows():
+            if row['shop_name'] in grid_df.index and grid_df.at[row['shop_name'], row['Day']] != "DISABLED":
+                stc = row['status_code']
+                grid_df.at[row['shop_name'], row['Day']] = "✅" if stc == 2 else "⚠️" if stc == 1 else "❌" if stc == 0 else "N/A"
+
+    # --- สรุปภาพรวม (Sidebar) ---
+    with summary_placeholder.container():
+        active_list = [s for s in shops if brand_settings.get(s, True)]
+        st.info(f"Monitor: **{len(active_list)}** / **{len(shops)}** สาขา")
+        if active_list:
+            active_grid = grid_df.loc[active_list]
+            prob_count = active_grid.isin(["⚠️", "❌"]).any(axis=1).sum()
+            m1, m2 = st.columns(2)
+            m1.metric("ปกติ ✅", len(active_list) - prob_count)
+            m2.metric("ปัญหา ⚠️/❌", prob_count)
+
+    # --- Styling ตาราง ---
+    def apply_style(val):
+        if val == "✅": return 'background-color: #d4edda; color: #155724;'
+        if val == "⚠️": return 'background-color: #fff3cd; color: #856404;'
+        if val == "❌": return 'background-color: #f8d7da; color: #721c24;'
+        if val == "DISABLED": return 'background-color: #6c757d; color: transparent;' 
+        return 'color: #ced4da; font-size: 10px;'
+
+    st.dataframe(grid_df.style.map(apply_style), use_container_width=True, height=800)
+else:
+    st.warning("⚠️ ไม่พบข้อมูล")
