@@ -75,12 +75,18 @@ if not full_df.empty:
     brand_settings = current_full_config.get(selected_brand, {})
 
 
-    # --- ส่วนจัดการสาขาใน Sidebar ---
+   # --- ส่วนจัดการสาขาใน Sidebar ---
     with st.sidebar:
         st.markdown("---")
         with st.expander(f"🚫 **จัดการสาขา: {selected_brand}**", expanded=True):
             
-            search_query = st.text_input("🔍 ค้นหาสาขา (พิมพ์แล้ว Enter)", key=f"search_{selected_brand}").strip().lower()
+            # 1. ใช้ Multiselect แทนช่องพิมพ์ (พิมพ์ค้นหาได้เหมือนกัน แต่ขยับตามนิ้วชัวร์)
+            # พี่สามารถเลือกหลายร้านพร้อมกันเพื่อเปิด/ปิด หรือพิมพ์ชื่อร้านเพื่อกรองได้เลย
+            search_selection = st.multiselect(
+                "🔍 ค้นหา/เลือกสาขา...", 
+                options=shops,
+                placeholder="พิมพ์ชื่อเพื่อกรอง..."
+            )
 
             master_key = f"master_{selected_brand}"
             def on_master_change():
@@ -92,29 +98,25 @@ if not full_df.empty:
             
             st.markdown("---")
             
-            # ดึงค่าจากสถานะปัจจุบันมาเตรียมไว้
+            # เตรียมค่าสถานะปัจจุบัน
             updated_settings = {s: st.session_state.get(f"tog_{selected_brand}_{s}", brand_settings.get(s, True)) for s in shops}
 
-            # กรองสาขาตามที่พิมพ์
-            filtered_shops = [s for s in shops if search_query in s.lower()] if search_query else shops
+            # 2. กรองสาขา: ถ้ามีการเลือกใน Multiselect ให้โชว์ตามนั้น ถ้าไม่เลือกให้โชว์ทั้งหมด
+            filtered_shops = search_selection if search_selection else shops
 
-            if not filtered_shops:
-                st.write("ไม่พบสาขา...")
-            else:
-                for shop in filtered_shops:
-                    t_key = f"tog_{selected_brand}_{shop}"
-                    # รักษาค่าเดิมไว้ใน session
-                    if t_key not in st.session_state:
-                        st.session_state[t_key] = brand_settings.get(shop, True)
-                    
-                    # แสดง Toggle
-                    updated_settings[shop] = st.toggle(f"{shop}", key=t_key)
+            # 3. แสดง Toggle (ส่วนนี้จะเปลี่ยนทันทีที่ Multiselect มีการขยับ)
+            for shop in filtered_shops:
+                t_key = f"tog_{selected_brand}_{shop}"
+                if t_key not in st.session_state:
+                    st.session_state[t_key] = brand_settings.get(shop, True)
+                
+                updated_settings[shop] = st.toggle(f"{shop}", key=t_key)
             
             st.markdown("---")
             if st.button("💾 บันทึกการตั้งค่า", type="primary", use_container_width=True):
                 current_full_config[selected_brand] = updated_settings
                 save_config(current_full_config)
-                st.success("บันทึกเรียบร้อย!")
+                st.success("บันทึกสำเร็จ!")
                 st.rerun()
 
     # --- เตรียมโครงสร้างตาราง ---
