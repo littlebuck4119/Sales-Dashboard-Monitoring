@@ -93,53 +93,68 @@ with st.sidebar:
 # --- 4. MAIN CONTENT (หน้าขวาตอนยังไม่เลือกแบรนด์) ---
 
 if selected_brand == "🛑 SELECT BRAND 🛑":
-    # ใส่ CSS ตกแต่งพื้นหลังไล่เฉดสี
     st.markdown("""
         <style>
-        .welcome-container {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            padding: 100px 20px;
-            border-radius: 20px;
-            text-align: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-            margin-top: 50px;
+        /* สร้าง Container ให้เต็มความสูงหน้าจอและจัดวางกึ่งกลาง */
+        .welcome-outer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 70vh; /* ปรับความสูงให้สมดุลกับหน้าจอ */
         }
+        
+        .welcome-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* เปลี่ยนเฉดสีให้พรีเมียมขึ้น */
+            padding: 60px;
+            border-radius: 30px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            width: 80%;
+            max-width: 800px;
+            color: white;
+        }
+
         .main-title {
-            background: linear-gradient(to right, #1e3c72, #2a5298);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
             font-size: 3.5rem;
             font-weight: 800;
             margin-bottom: 10px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
+
         .sub-title {
-            color: #5c677d;
-            font-size: 1.2rem;
-            margin-bottom: 30px;
+            font-size: 1.3rem;
+            margin-bottom: 40px;
+            opacity: 0.9;
         }
+
         .hint-card {
-            background-color: white;
+            background: white;
             display: inline-block;
-            padding: 15px 30px;
+            padding: 18px 40px;
             border-radius: 50px;
-            color: #2a5298;
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            color: #764ba2; /* ใช้สีเดียวกับ Gradient */
+            font-weight: 800;
+            font-size: 1.2rem;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
             animation: pulse 2s infinite;
         }
+
         @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+            0% { transform: scale(1); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+            50% { transform: scale(1.08); box-shadow: 0 15px 30px rgba(0,0,0,0.2); }
+            100% { transform: scale(1); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
         }
         </style>
         
-        <div class="welcome-container">
-            <h1 class="main-title">Sales Monitoring</h1>
-            <p class="sub-title">Real-time Performance & Insights Dashboard</p>
-            <div style="font-size: 5rem; margin-bottom: 20px;">📊</div>
-            <div class="hint-card">
-                👈 Please Select a Brand from Sidebar
+        <div class="welcome-outer">
+            <div class="welcome-container">
+                <div style="font-size: 5rem; margin-bottom: 10px;">📊</div>
+                <h1 class="main-title">Sales Monitoring</h1>
+                <p class="sub-title">System is ready. Please choose a brand to continue.</p>
+                <div class="hint-card">
+                    👈 SELECT BRAND TO START
+                </div>
             </div>
         </div>
     """, unsafe_allow_html=True)
