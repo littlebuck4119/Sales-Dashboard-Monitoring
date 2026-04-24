@@ -84,16 +84,7 @@ with st.sidebar:
     # จองพื้นที่สรุปผลไว้ (ป้องกัน NameError ในอนาคต)
     summary_placeholder = st.empty()
     
-    # --- ส่วนจัดการสาขา (Expander) ---
-    # จะโชว์ต่อเมื่อเลือกแบรนด์แล้วเท่านั้น เพื่อความสะอาด
-    if selected_brand != "🛑 SELECT BRAND 🛑":
-        st.markdown("---")
-        with st.expander(f"🚫 จัดการ เปิด/ปิด สาขา", expanded=False):
-            from st_keyup import st_keyup
-            # ดึงรายชื่อร้านของแบรนด์ที่เลือกมา
-            shops = current_full_config.get(selected_brand, {}).keys() if 'current_full_config' in locals() else []
-            search_query = st_keyup("🔍 ค้นหาสาขา...", key=f"keyup_{selected_brand}").strip().lower()
-            # ... (ใส่ Logic Toggle ของพี่ตรงนี้ได้เลย) ...
+    
 
 # --- 4. MAIN CONTENT (หน้าขวาตอนยังไม่เลือกแบรนด์) ---
 
