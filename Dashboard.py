@@ -6,7 +6,7 @@ from datetime import datetime
 from st_keyup import st_keyup
 
 # --- 1. CONFIG & STYLES ---
-st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
+st.set_page_config(page_title="Sales Monitoring Heatmap", layout="collapse")
 
 st.markdown("""
     <style>
