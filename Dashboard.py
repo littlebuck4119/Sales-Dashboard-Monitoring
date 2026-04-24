@@ -81,13 +81,13 @@ with st.sidebar:
     st.markdown("---")
     with st.expander(f"🚫 **จัดการสาขา: {selected_brand}**", expanded=True):
         
-        # 1. ใช้ st_keyup แทน st.text_input 
-        # ตัวนี้จะส่งค่าออกมาทุกครั้งที่นิ้วขยับ (Debounce 0.1s) ไม่ต้อง Enter
+        # 1. ใช้ st_keyup เพื่อให้พิมพ์แล้วกรองทันทีแบบไม่ต้องกด Enter
         search_query = st_keyup(
             "🔍 ค้นหาสาขา...", 
-            key=f"keyup_{selected_brand}"
+            key=f"keyup_search_{selected_brand}"
         ).strip().lower()
 
+        # ปุ่ม Master Toggle เปิด/ปิด ทั้งหมด
         master_key = f"master_{selected_brand}"
         def on_master_change():
             for s in shops:
@@ -98,24 +98,26 @@ with st.sidebar:
         
         st.markdown("---")
         
-        # เตรียมค่าสถานะปัจจุบัน
+        # เตรียมค่าสถานะปัจจุบันของทุกสาขา
         updated_settings = {s: st.session_state.get(f"tog_{selected_brand}_{s}", brand_settings.get(s, True)) for s in shops}
 
-        # 2. กรองสาขา (ขยับตาม search_query ทันที)
+        # 2. กรองสาขาตามที่พิมพ์ใน search_query
         filtered_shops = [s for s in shops if search_query in s.lower()] if search_query else shops
 
+        # 3. แสดงรายการ Toggle (แก้ไข Syntax Error ให้แล้ว)
         if not filtered_shops:
-            st.info("ไม่พบสาขา...")
+            st.info("😔 ไม่พบสาขาที่ค้นหา...")
         else:
             for shop in filtered_shops:
                 t_key = f"tog_{selected_brand}_{shop}"
                 if t_key not in st.session_state:
                     st.session_state[t_key] = brand_settings.get(shop, True)
                 
-                # แสดง Toggle
+                # อัปเดตสถานะเข้า updated_settings
                 updated_settings[shop] = st.toggle(f"{shop}", key=t_key)
         
         st.markdown("---")
+        # ปุ่มบันทึกการตั้งค่าลง API
         if st.button("💾 บันทึกการตั้งค่า", type="primary", use_container_width=True):
             current_full_config[selected_brand] = updated_settings
             save_config(current_full_config)
