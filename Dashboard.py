@@ -57,7 +57,11 @@ def get_data_from_api(url):
 with st.sidebar:
     now = datetime.now()
     st.markdown(f'<div class="date-card"><div class="day-name">{now.strftime("%A")}</div><div class="date-number">{now.day}</div><div style="font-size: 0.75rem; color: #28a745; font-weight: bold;">● SYSTEM ONLINE</div></div>', unsafe_allow_html=True)
-    selected_brand = st.selectbox("เลือกแบรนด์", list(BRAND_CONFIG.keys()))
+    
+    # 1. เพิ่ม "Select Brand" เป็นค่า Default
+    brand_options = ["Select Brand"] + list(BRAND_CONFIG.keys())
+    selected_brand = st.selectbox("เลือกแบรนด์", brand_options, index=0)
+    
     col_y, col_m = st.columns(2)
     with col_y: y = st.selectbox("ปี", [2025, 2026], index=1)
     with col_m:
@@ -67,6 +71,13 @@ with st.sidebar:
     summary_placeholder = st.empty()
 
 # --- 4. MAIN CONTENT ---
+# 2. เช็คเงื่อนไข: ถ้ายังไม่เลือกแบรนด์ ไม่ต้องโหลดอะไรเลย
+if selected_brand == "Select Brand":
+    st.title("👋 ยินดีต้อนรับสู่ Sales Monitoring")
+    st.info("กรุณาเลือกแบรนด์ที่แถบด้านซ้าย เพื่อเริ่มตรวจสอบข้อมูล")
+    st.stop() # หยุดการทำงานของโค้ดบรรทัดล่างทั้งหมด จนกว่าจะเลือกแบรนด์
+
+# --- ตั้งแต่ตรงนี้ลงไป คือโค้ดเดิมที่จะทำงานเมื่อเลือกแบรนด์แล้วเท่านั้น ---
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
