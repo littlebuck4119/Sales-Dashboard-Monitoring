@@ -59,7 +59,7 @@ with st.sidebar:
     st.markdown(f'<div class="date-card"><div class="day-name">{now.strftime("%A")}</div><div class="date-number">{now.day}</div><div style="font-size: 0.75rem; color: #28a745; font-weight: bold;">● SYSTEM ONLINE</div></div>', unsafe_allow_html=True)
     
     # 1. เพิ่ม "Select Brand" เป็นค่า Default
-    brand_options = ["------Select Brand------"] + list(BRAND_CONFIG.keys())
+    brand_options = ["****** Select Brand ******"] + list(BRAND_CONFIG.keys())
     selected_brand = st.selectbox("เลือกแบรนด์", brand_options, index=0)
     
     col_y, col_m = st.columns(2)
