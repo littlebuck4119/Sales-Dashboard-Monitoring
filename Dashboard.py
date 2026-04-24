@@ -53,31 +53,40 @@ def get_data_from_api(url):
     except: pass
     return pd.DataFrame()
 
+ใจเย็นครับพี่! พังพินาศเพราะ HTML/CSS แน่นอน เพราะบางที Streamlit มันตีกับเครื่องหมายแปลกๆ ผมพาพี่กลับมาจุดที่ "ปลอดภัยและเสถียรที่สุด" ก่อนครับ
+
+ตัดส่วนกระพริบ HTML ออกไปก่อน (เพราะมันทำคอมพิวเตอร์งงได้) แล้วใช้แค่ Emoji ธรรมดาที่ "ไม่พัง" แต่เด่นชัดพอครับ
+
+ก๊อปชุดนี้ไปวางแทนที่ได้เลยครับ รับรองว่าฟื้นคืนชีพแน่นอน:
+
+Python
 # --- 3. SIDEBAR ---
 with st.sidebar:
-    # ... โค้ดส่วนวันที่ ...
-
-    # ใช้ Emoji ประกบหน้าหลังให้ดูเด่น
-    brand_options = ["🚨 Select Brand 🚨"] + list(BRAND_CONFIG.keys())
+    now = datetime.now()
+    # ส่วน Date Card (ถ้าพังให้เอาออกเหลือแค่ text ธรรมดา)
+    st.write(f"📅 {now.strftime('%A, %d %B %Y')}")
+    
+    # 1. ใช้ Emoji ที่ "ปลอดภัย" (ไม่มี HTML)
+    brand_options = ["🛑 SELECT BRAND 🛑"] + list(BRAND_CONFIG.keys())
     selected_brand = st.selectbox("เลือกแบรนด์", brand_options, index=0)
+    
+    col_y, col_m = st.columns(2)
+    with col_y: y = st.selectbox("ปี", [2025, 2026], index=1)
+    with col_m:
+        month_list = list(calendar.month_name)[1:]
+        m_name = st.selectbox("เดือน", month_list, index=now.month-1)
+        m = month_list.index(m_name) + 1
 
 # --- 4. MAIN CONTENT ---
-if selected_brand == "🚨 Select Brand 🚨":
-    st.markdown("""
-        <style>
-        @keyframes blinker {
-          50% { opacity: 0; }
-        }
-        .blink {
-          animation: blinker 1s linear infinite;
-          color: #ff4b4b;
-          font-weight: bold;
-          font-size: 20px;
-        }
-        </style>
-        <div class="blink">🚨 กรุณาเลือกแบรนด์เพื่อเริ่มระบบ 🚨</div>
-        """, unsafe_allow_html=True)
-    st.stop()
+# 2. เช็คเงื่อนไขหยุดการทำงาน (จุดนี้สำคัญมาก ต้องพิมพ์ให้ตรงกับด้านบน)
+if selected_brand == "🛑 SELECT BRAND 🛑":
+    st.title("👋 Welcome")
+    st.warning("กรุณาเลือกแบรนด์ที่แถบด้านซ้าย เพื่อโหลดข้อมูล")
+    st.stop()  # หยุดทุกอย่างไว้ที่นี่จนกว่าจะเลือกแบรนด์
+
+# --- 5. หลังจากเลือกแบรนด์แล้ว (โค้ดส่วนเดิมที่พี่ใช้งานได้) ---
+st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
+# ... โหลด API และทำ Heatmap ต่อ ...
 
 # --- ตั้งแต่ตรงนี้ลงไป คือโค้ดเดิมที่จะทำงานเมื่อเลือกแบรนด์แล้วเท่านั้น ---
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
