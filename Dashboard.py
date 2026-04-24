@@ -80,17 +80,13 @@ if not full_df.empty:
         st.markdown("---")
         with st.expander(f"🚫 **จัดการสาขา: {selected_brand}**", expanded=True):
             
-            # ใช้ช่อง Search แบบผูกกับ Session State โดยตรงเพื่อให้ Rerun ทันที
-            search_key = f"search_input_{selected_brand}"
+            # --- 1. Trick สำคัญ: ใช้ key ผูกกับ session_state เพื่อให้มัน Reactive ---
+            # เมื่อพิมพ์ลงไป Streamlit จะ Detect ความเปลี่ยนแปลงและ Rerun ทันทีที่นิ้วหยุด
             search_query = st.text_input(
                 "🔍 ค้นหาสาขา...", 
-                placeholder="พิมพ์แล้วกรองทันที...",
-                key=search_key
+                key=f"realtime_search_{selected_brand}"
             ).strip().lower()
 
-            # บรรทัดนี้จะบังคับให้โค้ดส่วนล่างทำงานใหม่ทุกครั้งที่ search_query เปลี่ยน
-            # โดยไม่ต้องรอ Enter
-            
             master_key = f"master_{selected_brand}"
             def on_master_change():
                 for s in shops:
@@ -101,30 +97,30 @@ if not full_df.empty:
             
             st.markdown("---")
             
-            # 1. เตรียมค่าจาก Session State ของทุกสาขา (กันค่าหายตอน Filter)
+            # 2. ดึงค่าจากทุกสาขาเตรียมไว้ (ห้ามลบทิ้ง)
             updated_settings = {s: st.session_state.get(f"tog_{selected_brand}_{s}", brand_settings.get(s, True)) for s in shops}
 
-            # 2. กรองสาขา (จะทำงานทันทีที่พิมพ์)
+            # 3. กรองสาขา (ขยับตาม search_query ที่ดึงมาจาก key ด้านบน)
             filtered_shops = [s for s in shops if search_query in s.lower()] if search_query else shops
 
-            # 3. แสดงรายการ Toggle
+            # 4. แสดงรายการ Toggle
             if not filtered_shops:
-                st.info("😔 ไม่พบสาขา...")
+                st.write("😔 ไม่พบสาขาที่ค้นหา...")
             else:
-                # วนลูปสร้าง Toggle ในลิสต์ที่กรองแล้ว
+                # ส่วนนี้จะ redraw ใหม่ทันทีที่ search_query เปลี่ยน
                 for shop in filtered_shops:
                     t_key = f"tog_{selected_brand}_{shop}"
                     if t_key not in st.session_state:
                         st.session_state[t_key] = brand_settings.get(shop, True)
                     
-                    # ตัว Toggle เองก็จะ Update ค่าเข้า updated_settings ทันที
+                    # อัปเดตค่าเข้า Dictionary ทันที
                     updated_settings[shop] = st.toggle(f"{shop}", key=t_key)
             
             st.markdown("---")
             if st.button("💾 บันทึกการตั้งค่า", type="primary", use_container_width=True):
                 current_full_config[selected_brand] = updated_settings
                 save_config(current_full_config)
-                st.success("บันทึกสำเร็จ!")
+                st.success("บันทึกเรียบร้อย!")
                 st.rerun()
 
     # --- เตรียมโครงสร้างตาราง ---
