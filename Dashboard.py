@@ -80,12 +80,7 @@ if not full_df.empty:
         st.markdown("---")
         with st.expander(f"🚫 **จัดการสาขา: {selected_brand}**", expanded=True):
             
-            # --- 1. Trick สำคัญ: ใช้ key ผูกกับ session_state เพื่อให้มัน Reactive ---
-            # เมื่อพิมพ์ลงไป Streamlit จะ Detect ความเปลี่ยนแปลงและ Rerun ทันทีที่นิ้วหยุด
-            search_query = st.text_input(
-                "🔍 ค้นหาสาขา...", 
-                key=f"realtime_search_{selected_brand}"
-            ).strip().lower()
+            search_query = st.text_input("🔍 ค้นหาสาขา (พิมพ์แล้ว Enter)", key=f"search_{selected_brand}").strip().lower()
 
             master_key = f"master_{selected_brand}"
             def on_master_change():
@@ -97,23 +92,22 @@ if not full_df.empty:
             
             st.markdown("---")
             
-            # 2. ดึงค่าจากทุกสาขาเตรียมไว้ (ห้ามลบทิ้ง)
+            # ดึงค่าจากสถานะปัจจุบันมาเตรียมไว้
             updated_settings = {s: st.session_state.get(f"tog_{selected_brand}_{s}", brand_settings.get(s, True)) for s in shops}
 
-            # 3. กรองสาขา (ขยับตาม search_query ที่ดึงมาจาก key ด้านบน)
+            # กรองสาขาตามที่พิมพ์
             filtered_shops = [s for s in shops if search_query in s.lower()] if search_query else shops
 
-            # 4. แสดงรายการ Toggle
             if not filtered_shops:
-                st.write("😔 ไม่พบสาขาที่ค้นหา...")
+                st.write("ไม่พบสาขา...")
             else:
-                # ส่วนนี้จะ redraw ใหม่ทันทีที่ search_query เปลี่ยน
                 for shop in filtered_shops:
                     t_key = f"tog_{selected_brand}_{shop}"
+                    # รักษาค่าเดิมไว้ใน session
                     if t_key not in st.session_state:
                         st.session_state[t_key] = brand_settings.get(shop, True)
                     
-                    # อัปเดตค่าเข้า Dictionary ทันที
+                    # แสดง Toggle
                     updated_settings[shop] = st.toggle(f"{shop}", key=t_key)
             
             st.markdown("---")
