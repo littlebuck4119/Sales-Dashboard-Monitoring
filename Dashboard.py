@@ -98,53 +98,89 @@ with st.sidebar:
 # --- 4. MAIN CONTENT (หน้าขวาตอนยังไม่เลือกแบรนด์) ---
 
 if selected_brand == "🛑 SELECT BRAND 🛑":
-    # ใส่ CSS ตกแต่งพื้นหลังไล่เฉดสี
+    # ไม้ตาย CSS: ระเบิดขอบ และแต่งสีเต็มหน้าจอ
     st.markdown("""
         <style>
-        .welcome-container {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            padding: 100px 20px;
-            border-radius: 20px;
-            text-align: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-            margin-top: 50px;
+        /* 1. ระเบิด Padding ของ Streamlit ให้สีเต็มจอ */
+        [data-testid="stAppViewBlockContainer"] {
+            padding: 0 !important;
+            max-width: 100% !important;
         }
+        
+        /* 2. สร้างพื้นหลังไล่เฉดสีแบบ Professional */
+        .full-screen-welcome {
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            height: 100vh;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 60px;
+            border-radius: 40px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            max-width: 700px;
+        }
+
         .main-title {
-            background: linear-gradient(to right, #1e3c72, #2a5298);
+            font-size: 4rem;
+            font-weight: 800;
+            letter-spacing: -2px;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #fff, #bdc3c7);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            font-size: 3.5rem;
-            font-weight: 800;
-            margin-bottom: 10px;
         }
-        .sub-title {
-            color: #5c677d;
-            font-size: 1.2rem;
-            margin-bottom: 30px;
+
+        /* ตกแต่งปุ่ม Streamlit ให้เข้ากับธีม */
+        div.stButton > button {
+            background: #4facfe !important;
+            background: linear-gradient(to right, #00f2fe 0%, #4facfe 100%) !important;
+            color: white !important;
+            border: none !important;
+            padding: 15px 40px !important;
+            font-size: 1.2rem !important;
+            font-weight: bold !important;
+            border-radius: 50px !important;
+            box-shadow: 0 10px 20px rgba(79, 172, 254, 0.4) !important;
+            transition: all 0.3s ease !important;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
-        .hint-card {
-            background-color: white;
-            display: inline-block;
-            padding: 15px 30px;
-            border-radius: 50px;
-            color: #2a5298;
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+        div.stButton > button:hover {
+            transform: scale(1.05) !important;
+            box-shadow: 0 15px 30px rgba(79, 172, 254, 0.6) !important;
         }
         </style>
         
-        <div class="welcome-container">
-            <h1 class="main-title">Sales Monitoring</h1>
-            <p class="sub-title">Real-time Performance & Insights Dashboard</p>
-            <div style="font-size: 5rem; margin-bottom: 20px;">📊</div>
-            <div class="hint-card">
-                👈 Please Select a Brand from Sidebar
+        <div class="full-screen-welcome">
+            <div class="glass-card">
+                <div style="font-size: 5rem; margin-bottom: 20px;">📈</div>
+                <h1 class="main-title">Sales Monitoring</h1>
+                <p style="font-size: 1.2rem; opacity: 0.7; margin-bottom: 40px;">
+                    Enterprise Performance Tracking Intelligence
+                </p>
+        """, unsafe_allow_html=True)
+
+    # วางปุ่มของ Streamlit ไว้ตรงกลาง card (เพื่อให้กดได้จริง)
+    if st.button("🚀 GET STARTED"):
+        st.session_state.sidebar_state = 'expanded'
+        st.rerun()
+
+    st.markdown("""
+                <p style="margin-top: 20px; font-size: 0.9rem; opacity: 0.5;">
+                    Click the button above to open control panel
+                </p>
             </div>
         </div>
     """, unsafe_allow_html=True)
