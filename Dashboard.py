@@ -3,6 +3,7 @@ import pandas as pd
 import requests
 import calendar
 from datetime import datetime
+from st_keyup import st_keyup
 
 # --- 1. CONFIG & STYLES ---
 st.set_page_config(page_title="Sales Monitoring Heatmap", layout="wide")
@@ -76,48 +77,50 @@ if not full_df.empty:
 
 
    # --- ส่วนจัดการสาขาใน Sidebar ---
-    with st.sidebar:
+with st.sidebar:
+    st.markdown("---")
+    with st.expander(f"🚫 **จัดการสาขา: {selected_brand}**", expanded=True):
+        
+        # 1. ใช้ st_keyup แทน st.text_input 
+        # ตัวนี้จะส่งค่าออกมาทุกครั้งที่นิ้วขยับ (Debounce 0.1s) ไม่ต้อง Enter
+        search_query = st_keyup(
+            "🔍 ค้นหาสาขา...", 
+            key=f"keyup_{selected_brand}"
+        ).strip().lower()
+
+        master_key = f"master_{selected_brand}"
+        def on_master_change():
+            for s in shops:
+                st.session_state[f"tog_{selected_brand}_{s}"] = st.session_state[master_key]
+        
+        all_on = all(brand_settings.get(s, True) for s in shops)
+        st.toggle("🔔 **เปิด/ปิด ทั้งหมด**", value=all_on, key=master_key, on_change=on_master_change)
+        
         st.markdown("---")
-        with st.expander(f"🚫 **จัดการสาขา: {selected_brand}**", expanded=True):
-            
-            # 1. ใช้ Multiselect แทนช่องพิมพ์ (พิมพ์ค้นหาได้เหมือนกัน แต่ขยับตามนิ้วชัวร์)
-            # พี่สามารถเลือกหลายร้านพร้อมกันเพื่อเปิด/ปิด หรือพิมพ์ชื่อร้านเพื่อกรองได้เลย
-            search_selection = st.multiselect(
-                "🔍 ค้นหา/เลือกสาขา...", 
-                options=shops,
-                placeholder="พิมพ์ชื่อเพื่อกรอง..."
-            )
+        
+        # เตรียมค่าสถานะปัจจุบัน
+        updated_settings = {s: st.session_state.get(f"tog_{selected_brand}_{s}", brand_settings.get(s, True)) for s in shops}
 
-            master_key = f"master_{selected_brand}"
-            def on_master_change():
-                for s in shops:
-                    st.session_state[f"tog_{selected_brand}_{s}"] = st.session_state[master_key]
-            
-            all_on = all(brand_settings.get(s, True) for s in shops)
-            st.toggle("🔔 **เปิด/ปิด ทั้งหมด**", value=all_on, key=master_key, on_change=on_master_change)
-            
-            st.markdown("---")
-            
-            # เตรียมค่าสถานะปัจจุบัน
-            updated_settings = {s: st.session_state.get(f"tog_{selected_brand}_{s}", brand_settings.get(s, True)) for s in shops}
+        # 2. กรองสาขา (ขยับตาม search_query ทันที)
+        filtered_shops = [s for s in shops if search_query in s.lower()] if search_query else shops
 
-            # 2. กรองสาขา: ถ้ามีการเลือกใน Multiselect ให้โชว์ตามนั้น ถ้าไม่เลือกให้โชว์ทั้งหมด
-            filtered_shops = search_selection if search_selection else shops
-
-            # 3. แสดง Toggle (ส่วนนี้จะเปลี่ยนทันทีที่ Multiselect มีการขยับ)
+        if not filtered_shops:
+            st.info("ไม่พบสาขา...")
+        else:
             for shop in filtered_shops:
                 t_key = f"tog_{selected_brand}_{shop}"
                 if t_key not in st.session_state:
                     st.session_state[t_key] = brand_settings.get(shop, True)
                 
+                # แสดง Toggle
                 updated_settings[shop] = st.toggle(f"{shop}", key=t_key)
-            
-            st.markdown("---")
-            if st.button("💾 บันทึกการตั้งค่า", type="primary", use_container_width=True):
-                current_full_config[selected_brand] = updated_settings
-                save_config(current_full_config)
-                st.success("บันทึกสำเร็จ!")
-                st.rerun()
+        
+        st.markdown("---")
+        if st.button("💾 บันทึกการตั้งค่า", type="primary", use_container_width=True):
+            current_full_config[selected_brand] = updated_settings
+            save_config(current_full_config)
+            st.success("บันทึกสำเร็จ!")
+            st.rerun()
 
     # --- เตรียมโครงสร้างตาราง ---
     mask = (full_df['sync_date'].dt.month == m) & (full_df['sync_date'].dt.year == y)
