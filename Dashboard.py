@@ -5,11 +5,17 @@ import calendar
 from datetime import datetime
 from st_keyup import st_keyup
 
-# --- 1. INITIAL SESSION STATE ---
+# --- 1. CONFIG & URL HANDLING (ไม้ตายเรื่องการกดปุ่ม) ---
+# ตรวจสอบว่ามีการกดปุ่ม Get Started ผ่าน URL หรือไม่
+query_params = st.query_params
+if query_params.get("action") == "get_started":
+    st.session_state.sidebar_state = 'expanded'
+    # ล้าง parameter ทิ้งเพื่อให้หน้าจอยังทำงานปกติ
+    st.query_params.clear()
+
 if 'sidebar_state' not in st.session_state:
     st.session_state.sidebar_state = 'collapsed'
 
-# --- 2. CONFIG ---
 st.set_page_config(
     page_title="Sales Monitoring",
     page_icon="📊",
@@ -17,34 +23,63 @@ st.set_page_config(
     initial_sidebar_state=st.session_state.sidebar_state
 )
 
-# --- 3. CSS (รวมทุกอย่างไว้ที่เดียว) ---
+# --- 2. CSS (ระเบิดขอบ และจัดกลางจอแบบ Absolute) ---
 st.markdown("""
     <style>
-    /* ระเบิดขอบเต็มจอสำหรับหน้า Welcome */
-    .stAppHeader { background: transparent !important; }
-    [data-testid="stSidebarContent"] { padding-top: 1rem !important; }
+    /* ซ่อน Header มาตรฐานของ Streamlit */
+    header {visibility: hidden;}
+    [data-testid="stAppViewBlockContainer"] { padding: 0 !important; max-width: 100% !important; }
     
-    /* แก้ไขการแสดงผล Dashboard ปกติ */
-    .dashboard-container { padding: 2rem; }
-    .problem-item { font-size: 0.85rem; padding: 8px 10px; background-color: #fff5f5; border-left: 4px solid #ff4b4b; border-radius: 4px; margin-bottom: 6px; }
-    footer { visibility: hidden; }
-
-    /* ปรับแต่งปุ่ม Get Started ให้เด่นกลางจอ */
-    div.stButton > button {
-        width: 100%;
-        background: linear-gradient(to right, #00f2fe 0%, #4facfe 100%) !important;
-        color: white !important;
-        border: none !important;
-        padding: 15px 40px !important;
-        font-size: 1.5rem !important;
-        font-weight: bold !important;
-        border-radius: 50px !important;
-        box-shadow: 0 10px 25px rgba(79, 172, 254, 0.4) !important;
+    .full-bg {
+        background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+        height: 100vh;
+        width: 100vw;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: fixed;
+        top: 0; left: 0;
+        z-index: 1000;
     }
+    
+    .glass-card {
+        background: rgba(255, 255, 255, 0.07);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 60px;
+        border-radius: 40px;
+        text-align: center;
+        box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+        width: 500px;
+    }
+
+    .btn-get-started {
+        display: inline-block;
+        background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%);
+        color: white !important;
+        text-decoration: none !important;
+        padding: 18px 50px;
+        font-size: 1.5rem;
+        font-weight: 800;
+        border-radius: 50px;
+        margin-top: 30px;
+        transition: 0.3s;
+        box-shadow: 0 10px 30px rgba(79, 172, 254, 0.5);
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-get-started:hover {
+        transform: scale(1.05);
+        box-shadow: 0 15px 40px rgba(79, 172, 254, 0.7);
+    }
+    
+    .problem-item { font-size: 0.85rem; padding: 8px 10px; background-color: #fff5f5; border-left: 4px solid #ff4b4b; border-radius: 4px; margin-bottom: 6px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. DATA & CONFIG LOGIC ---
+# --- 3. DATA CONFIG ---
 BRAND_CONFIG = {
     "Eat Am Are": "506e2020f13e6d515726",
     "JonesSalad": "695d80e67b2a8c1ca2ee", 
@@ -77,10 +112,11 @@ def get_data_from_api(url):
 
 current_full_config = get_config()
 
-# --- 5. SIDEBAR ---
+# --- 4. SIDEBAR ---
 with st.sidebar:
     now = datetime.now()
-    st.info(f"📅 Today: **{now.strftime('%d %b %Y')}**")
+    st.markdown(f"""<div style='text-align:center; padding:10px; background:#f0f2f6; border-radius:10px;'>
+                 <b>📅 Today: {now.strftime('%d %b %Y')}</b></div>""", unsafe_allow_html=True)
     
     brand_options = ["🛑 SELECT BRAND 🛑"] + list(BRAND_CONFIG.keys())
     selected_brand = st.selectbox("เลือกแบรนด์", brand_options, index=0)
@@ -92,30 +128,29 @@ with st.sidebar:
         m_name = st.selectbox("เดือน", month_list, index=now.month-1)
         m = month_list.index(m_name) + 1
     
-    # สร้าง Placeholder ไว้ใน Sidebar เลยเพื่อกัน NameError
     sidebar_summary = st.empty()
 
-# --- 6. WELCOME PAGE (Full Screen & Centralized) ---
+# --- 5. WELCOME PAGE (จัดกลางจอแบบเป๊ะ 100%) ---
 if selected_brand == "🛑 SELECT BRAND 🛑":
-    st.markdown("""
-        <div style="background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); 
-                    height: 100vh; display: flex; align-items: center; justify-content: center; margin: -100px -50px;">
-            <div style="background: rgba(255,255,255,0.05); padding: 80px; border-radius: 40px; 
-                        text-align: center; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(20px); width: 600px;">
-                <h1 style="font-size: 5rem; margin: 0;">📊</h1>
-                <h1 style="color: white; font-size: 3rem; font-weight: 800; margin-bottom: 10px;">Sales Monitoring</h1>
-                <p style="color: #bdc3c7; font-size: 1.2rem; margin-bottom: 40px;">Please open control panel to continue</p>
+    st.markdown(f"""
+        <div class="full-bg">
+            <div class="glass-card">
+                <div style="font-size: 5rem; margin-bottom: 10px;">📊</div>
+                <h1 style="color: white; font-size: 3rem; font-weight: 800; margin: 0;">Sales Monitoring</h1>
+                <p style="color: #bdc3c7; font-size: 1.1rem; margin-top: 10px;">Enterprise Intelligence Dashboard</p>
+                <a href="/?action=get_started" target="_self" class="btn-get-started">🚀 GET STARTED</a>
+                <p style="color: rgba(255,255,255,0.3); font-size: 0.8rem; margin-top: 30px;">
+                    Click to open control panel
+                </p>
+            </div>
+        </div>
     """, unsafe_allow_html=True)
-    
-    # ปุ่มอยู่ตรงนี้ กึ่งกลาง Card แน่นอน
-    if st.button("🚀 GET STARTED"):
-        st.session_state.sidebar_state = 'expanded'
-        st.rerun()
-        
-    st.markdown("</div></div>", unsafe_allow_html=True)
     st.stop()
 
-# --- 7. MAIN DASHBOARD CONTENT ---
+# --- 6. MAIN CONTENT (เมื่อเลือกแบรนด์แล้ว) ---
+# คืนค่า Padding ให้หน้า Dashboard ปกติ
+st.markdown("<style>[data-testid='stAppViewBlockContainer'] { padding: 2rem !important; } header {visibility: visible;}</style>", unsafe_allow_html=True)
+
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
@@ -126,13 +161,13 @@ if not full_df.empty:
     with st.sidebar:
         st.markdown("---")
         with st.expander("🚫 จัดการ เปิด/ปิด สาขา", expanded=False):
-            search_query = st_keyup("🔍 ค้นหา...", key=f"search_{selected_brand}").strip().lower()
+            search_query = st_keyup("🔍 ค้นหา...", key=f"src_{selected_brand}").strip().lower()
             master_key = f"master_{selected_brand}"
             def on_master_change():
                 for s in shops: st.session_state[f"tog_{selected_brand}_{s}"] = st.session_state[master_key]
             
             all_on = all(brand_settings.get(s, True) for s in shops)
-            st.toggle("🔔 เปิด/ปิด ทั้งหมด", value=all_on, key=master_key, on_change=on_master_change)
+            st.toggle("🔔 ทั้งหมด", value=all_on, key=master_key, on_change=on_master_change)
             
             updated_settings = {}
             for shop in shops:
@@ -141,13 +176,13 @@ if not full_df.empty:
                 if t_key not in st.session_state: st.session_state[t_key] = brand_settings.get(shop, True)
                 updated_settings[shop] = st.toggle(f"{shop}", key=t_key)
             
-            if st.button("💾 บันทึก", use_container_width=True):
-                current_full_config[selected_brand] = {s: st.session_state.get(f"tog_{selected_brand}_{s}", brand_settings.get(s, True)) for s in shops}
+            if st.button("💾 บันทึก", use_container_width=True, type="primary"):
+                current_full_config[selected_brand] = updated_settings
                 save_config(current_full_config)
                 st.success("Saved!")
                 st.rerun()
 
-    # Heatmap Logic
+    # Heatmap Setup
     mask = (full_df['sync_date'].dt.month == m) & (full_df['sync_date'].dt.year == y)
     df_filtered = full_df[mask].copy()
     _, last_day = calendar.monthrange(y, m)
@@ -159,22 +194,17 @@ if not full_df.empty:
         for shop in shops:
             if not brand_settings.get(shop, True): grid_df.loc[shop] = "DISABLED"
         for _, row in df_filtered.iterrows():
-            s_name, d, status = row['shop_name'], row['Day'], row['status_code']
-            if s_name in grid_df.index and grid_df.at[s_name, d] != "DISABLED":
-                grid_df.at[s_name, d] = "✅" if status == 2 else "⚠️" if status == 1 else "❌" if status == 0 else "N/A"
+            sn, dy, st_c = row['shop_name'], row['Day'], row['status_code']
+            if sn in grid_df.index and grid_df.at[sn, dy] != "DISABLED":
+                grid_df.at[sn, dy] = "✅" if st_c == 2 else "⚠️" if st_c == 1 else "❌" if st_c == 0 else "N/A"
 
-    # Sidebar Summary (ใช้ชื่อตัวแปรที่ประกาศไว้ข้างบน กัน NameError)
     with sidebar_summary.container():
-        active_shops = [s for s in shops if brand_settings.get(s, True)]
-        st.write(f"Active: **{len(active_shops)}** / **{len(shops)}**")
-        if active_shops:
-            active_grid = grid_df.loc[active_shops]
+        active_list = [s for s in shops if brand_settings.get(s, True)]
+        st.write(f"Active Shops: **{len(active_list)}**")
+        if active_list:
+            active_grid = grid_df.loc[active_list]
             prob_count = active_grid.isin(["⚠️", "❌"]).any(axis=1).sum()
-            st.metric("ปัญหา ⚠️/❌", prob_count)
-            prob_sum = (active_grid == "❌").sum(axis=1) + (active_grid == "⚠️").sum(axis=1)
-            top_prob = prob_sum[prob_sum > 0].sort_values(ascending=False).head(3)
-            for shop, count in top_prob.items():
-                st.markdown(f'<div class="problem-item"><b>{shop}</b> ({int(count)})</div>', unsafe_allow_html=True)
+            st.metric("Found Problems", prob_count)
 
     def apply_style(val):
         if val == "✅": return 'background-color: #d4edda; color: #155724;'
