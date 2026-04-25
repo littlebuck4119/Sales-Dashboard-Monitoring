@@ -298,22 +298,26 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
                 </div>
         """, unsafe_allow_html=True)
 
-    # inject CSS บังคับเปิด sidebar ถ้า session_state บอกให้เปิด
-    if st.session_state.get("open_sidebar"):
+    # ถ้าเพิ่งกดปุ่ม → inject JS คลิก sidebar toggle 1 ครั้ง แล้วเคลียร์ทันที
+    if st.session_state.pop("open_sidebar", False):
         st.markdown("""
-        <style>
-        /* บังคับ sidebar ให้โผล่ออกมา */
-        [data-testid="stSidebar"] {
-            transform: translateX(0) !important;
-            visibility: visible !important;
-            display: block !important;
-            width: 21rem !important;
-            min-width: 21rem !important;
-        }
-        [data-testid="stSidebarCollapsedControl"] {
-            display: none !important;
-        }
-        </style>
+        <script>
+        (function() {
+            // รอให้ Streamlit render เสร็จก่อนแล้วค่อย click
+            function clickSidebarBtn() {
+                const btn = window.parent.document.querySelector(
+                    '[data-testid="stSidebarCollapsedControl"] button, ' +
+                    'button[data-testid="collapsedControl"]'
+                );
+                if (btn) {
+                    btn.click();
+                } else {
+                    setTimeout(clickSidebarBtn, 100);
+                }
+            }
+            setTimeout(clickSidebarBtn, 200);
+        })();
+        </script>
         """, unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns([2.2, 1.5, 2.2])
