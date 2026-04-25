@@ -5,49 +5,61 @@ import calendar
 from datetime import datetime
 from st_keyup import st_keyup
 
-# --- 1. CONFIG ---
+# --- 1. CORE CONFIG ---
 st.set_page_config(
     page_title="Sales Monitoring",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded" # บังคับกาง Sidebar
+    initial_sidebar_state="expanded" # บังคับให้เมนูซ้ายกางเสมอ
 )
 
-# --- 2. CSS ล็อค Sidebar + ซ่อน Cursor ---
+# --- 2. THEME & CURSOR KILLER ---
 st.markdown("""
     <style>
-    /* ซ่อน Cursor กระพริบ */
+    /* ซ่อน Cursor กระพริบทั้งหมด */
     * { caret-color: transparent !important; }
     
-    /* ปิด Header/Footer */
-    header { visibility: hidden !important; }
-    footer { visibility: hidden !important; }
+    /* ซ่อน Header/Footer */
+    header, footer { visibility: hidden !important; }
 
-    /* ปรับแต่ง Sidebar ให้ดูแพง */
-    [data-testid="stSidebarContent"] {
-        background-color: #f1f5f9 !important;
+    /* บังคับความชัดเจนของ Sidebar */
+    [data-testid="stSidebar"] {
+        background-color: #f8fafc !important;
+        border-right: 1px solid #e2e8f0 !important;
+        min-width: 320px !important;
     }
     
-    /* การ์ดวันที่ */
-    .date-box {
+    /* ปรับแต่งช่องวันที่ให้ดูโปร */
+    .date-card {
         background: white;
-        padding: 15px;
-        border-radius: 10px;
+        padding: 1.2rem;
+        border-radius: 15px;
         border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         text-align: center;
-        margin-bottom: 20px;
+        margin-bottom: 1.5rem;
     }
-
-    /* หน้า Welcome แบบไม่ทับปุ่ม */
+    
+    /* หน้า Welcome Card สไตล์ Enterprise */
+    .welcome-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 80vh;
+    }
     .welcome-card {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        padding: 60px;
-        border-radius: 24px;
+        background: #0f172a;
+        padding: 4rem;
+        border-radius: 30px;
         color: white;
         text-align: center;
-        margin-top: 50px;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        max-width: 800px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        border: 1px solid #1e293b;
     }
+    .main-title { font-size: 3.5rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 0.5rem; }
+    .sub-text { font-size: 1.2rem; color: #94a3b8; font-weight: 300; }
+    .blue-bar { width: 50px; height: 4px; background: #38bdf8; margin: 1.5rem auto; border-radius: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -82,19 +94,20 @@ def get_data_from_api(url):
     except: pass
     return pd.DataFrame()
 
-# --- 4. SIDEBAR ---
+# --- 4. SIDEBAR IMPLEMENTATION ---
 with st.sidebar:
+    # แสดงวันที่ปัจจุบันแบบสะอาดตา
     now = datetime.now()
     st.markdown(f"""
-        <div class="date-box">
-            <div style="font-size: 0.8rem; color: #64748b;">CURRENT DATE</div>
-            <div style="font-size: 1.2rem; font-weight: bold; color: #1e293b;">{now.strftime("%A, %d %b %Y")}</div>
+        <div class="date-card">
+            <div style="font-size: 0.75rem; color: #64748b; font-weight: 600; letter-spacing: 0.05em;">SYSTEM DATE</div>
+            <div style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin-top: 4px;">{now.strftime("%A, %d %b %Y")}</div>
         </div>
     """, unsafe_allow_html=True)
 
-    st.subheader("Settings")
+    st.subheader("Brand Selection")
     brand_options = ["🛑 SELECT BRAND 🛑"] + list(BRAND_CONFIG.keys())
-    selected_brand = st.selectbox("Select Brand", brand_options, index=0)
+    selected_brand = st.selectbox("Choose a brand to monitor", brand_options, index=0)
     
     col_y, col_m = st.columns(2)
     with col_y: y = st.selectbox("Year", [2025, 2026], index=1)
@@ -103,26 +116,29 @@ with st.sidebar:
         m_name = st.selectbox("Month", month_list, index=now.month-1)
         m = month_list.index(m_name) + 1
 
-    st.markdown("---")
     summary_placeholder = st.empty()
+    st.markdown("---")
 
-# --- 5. MAIN CONTENT ---
+# --- 5. PAGE LOGIC ---
 if selected_brand == "🛑 SELECT BRAND 🛑":
-    # หน้า Welcome แบบ Card (ไม่ทับจอ)
+    # หน้า Welcome ที่แก้ไขให้ไม่ทับ Sidebar
     st.markdown("""
-        <div class="welcome-card">
-            <div style="font-size: 50px;">📊</div>
-            <h1 style="font-size: 3.5rem; font-weight: 800; margin: 10px 0;">Sales Monitoring</h1>
-            <div style="width: 50px; height: 3px; background: #38bdf8; margin: 20px auto;"></div>
-            <p style="font-size: 1.2rem; color: #94a3b8;">
-                Please select a brand on the <b>left sidebar</b> to start monitoring.
-            </p>
+        <div class="welcome-container">
+            <div class="welcome-card">
+                <div style="font-size: 4rem; margin-bottom: 1rem;">📈</div>
+                <h1 class="main-title">Sales Monitoring</h1>
+                <div class="blue-bar"></div>
+                <p class="sub-text">
+                    Please select a brand from the <b>sidebar on the left</b><br>
+                    to start tracking enterprise performance data.
+                </p>
+            </div>
         </div>
     """, unsafe_allow_html=True)
     st.stop()
 
-# --- 6. DASHBOARD (เมื่อเลือกแบรนด์) ---
-st.header(f"📈 {selected_brand}")
+# --- 6. DASHBOARD CONTENT ---
+st.header(f"📊 {selected_brand}")
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
 if not full_df.empty:
@@ -130,32 +146,34 @@ if not full_df.empty:
     current_full_config = get_config()
     brand_settings = current_full_config.get(selected_brand, {})
 
-    # ตัวจัดการสาขาใน Sidebar
+    # จัดการสาขาใน Sidebar
     with st.sidebar:
-        with st.expander("🚫 Branch Settings", expanded=False):
-            search = st_keyup("🔍 Search...", key=f"s_{selected_brand}").strip().lower()
+        with st.expander("⚙️ Branch Visibility Settings", expanded=False):
+            search = st_keyup("🔍 Search branch...", key=f"s_{selected_brand}").strip().lower()
             
+            # Master Toggle
             m_key = f"m_{selected_brand}"
-            def sync():
+            def sync_toggles():
                 for s in shops: st.session_state[f"t_{selected_brand}_{s}"] = st.session_state[m_key]
             
             all_on = all(brand_settings.get(s, True) for s in shops)
-            st.toggle("Toggle All", value=all_on, key=m_key, on_change=sync)
+            st.toggle("Select/Deselect All", value=all_on, key=m_key, on_change=sync_toggles)
+            st.markdown("---")
             
-            new_set = {}
+            new_config = {}
             for s in shops:
                 if search and search not in s.lower(): continue
                 t_key = f"t_{selected_brand}_{s}"
                 if t_key not in st.session_state: st.session_state[t_key] = brand_settings.get(s, True)
-                new_set[s] = st.toggle(s, key=t_key)
+                new_config[s] = st.toggle(s, key=t_key)
             
-            if st.button("Save Settings", type="primary", use_container_width=True):
+            if st.button("Apply & Save Settings", type="primary", use_container_width=True):
                 current_full_config[selected_brand] = {s: st.session_state.get(f"t_{selected_brand}_{s}", True) for s in shops}
                 save_config(current_full_config)
-                st.success("Saved!")
+                st.success("Settings Updated!")
                 st.rerun()
 
-    # ตาราง Heatmap
+    # ประมวลผล Heatmap
     mask = (full_df['sync_date'].dt.month == m) & (full_df['sync_date'].dt.year == y)
     df_f = full_df[mask].copy()
     _, last_day = calendar.monthrange(y, m)
@@ -170,13 +188,19 @@ if not full_df.empty:
                 stc = r['status_code']
                 grid.at[r['shop_name'], r['Day']] = "✅" if stc == 2 else "⚠️" if stc == 1 else "❌"
 
-    def style_table(v):
-        if v == "✅": return 'background-color: #d4edda; color: #155724;'
-        if v == "⚠️": return 'background-color: #fff3cd; color: #856404;'
-        if v == "❌": return 'background-color: #f8d7da; color: #721c24;'
-        if v == "DISABLED": return 'background-color: #f1f5f9; color: transparent;' 
-        return 'color: #e2e8f0;'
+    # สรุปข้อมูลใน Sidebar
+    active_shops = [s for s in shops if brand_settings.get(s, True)]
+    with summary_placeholder.container():
+        st.write(f"**Monitoring:** {len(active_shops)} / {len(shops)} Branches")
 
-    st.dataframe(grid.style.map(style_table), use_container_width=True, height=700)
+    # Styling Table
+    def color_cells(v):
+        if v == "✅": return 'background-color: #dcfce7; color: #166534;'
+        if v == "⚠️": return 'background-color: #fef9c3; color: #854d0e;'
+        if v == "❌": return 'background-color: #fee2e2; color: #991b1b;'
+        if v == "DISABLED": return 'background-color: #f1f5f9; color: transparent;' 
+        return 'color: #cbd5e1;'
+
+    st.dataframe(grid.style.map(color_cells), use_container_width=True, height=750)
 else:
-    st.warning("No data found.")
+    st.warning("No data found for the selected period.")
