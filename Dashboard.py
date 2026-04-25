@@ -5,36 +5,32 @@ import calendar
 from datetime import datetime
 from st_keyup import st_keyup
 
-# --- 1. SESSION STATE ล็อคสถานะ ---
-if "sidebar_active" not in st.session_state:
-    st.session_state.sidebar_active = True # บังคับให้เปิดไว้ก่อนเลย
-
-# --- 2. CONFIG แบบบ้านๆ ที่สุด ---
+# --- 1. CONFIG มาตรฐานที่สุด ---
 st.set_page_config(
     page_title="Sales Monitoring",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded" if st.session_state.sidebar_active else "collapsed"
+    initial_sidebar_state="expanded" # บังคับกาง Sidebar ทันที
 )
 
-# --- 3. CSS เฉพาะซ่อน CURSOR เท่านั้น (ไม่ยุ่งกับ Layout อื่นแล้ว) ---
+# --- 2. CSS เฉพาะซ่อน Cursor เท่านั้น ---
 st.markdown("""
     <style>
-    /* ซ่อน Cursor กระพริบ */
+    /* ซ่อน Cursor กระพริบถาวร */
     * { caret-color: transparent !important; }
     
-    /* ซ่อน Header/Footer */
+    /* ซ่อน Header/Footer ปกติ */
     header, footer { visibility: hidden !important; }
 
-    /* ทำให้ Sidebar มีสีต่างจากพื้นหลังนิดหน่อยให้ดูออก */
+    /* ปรับแต่ง Sidebar ให้เห็นชัดๆ ว่ามาแล้ว */
     [data-testid="stSidebar"] {
-        background-color: #f1f5f9 !important;
-        border-right: 1px solid #cbd5e1 !important;
+        background-color: #f8fafc !important;
+        border-right: 1px solid #e2e8f0 !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. DATA UTILS ---
+# --- 3. DATA UTILS ---
 BRAND_CONFIG = {
     "Eat Am Are": "506e2020f13e6d515726",
     "JonesSalad": "695d80e67b2a8c1ca2ee", 
@@ -65,37 +61,33 @@ def fetch_api_data(url):
     except: pass
     return pd.DataFrame()
 
-# --- 5. SIDEBAR (ใส่เนื้อหาแบบ Standard) ---
+# --- 4. SIDEBAR (เมนูด้านซ้าย) ---
 with st.sidebar:
-    st.title("⚙️ Control Panel")
+    st.header("📊 Monitoring Menu")
     now = datetime.now()
-    st.write(f"Current Date: **{now.strftime('%d %b %Y')}**")
+    
+    # แสดงวันที่แบบเรียบง่าย
+    st.info(f"วันที่ปัจจุบัน: {now.strftime('%d/%m/%Y')}")
     
     brand_list = ["🛑 SELECT BRAND 🛑"] + list(BRAND_CONFIG.keys())
-    selected_brand = st.selectbox("เลือกแบรนด์", brand_list, index=0)
+    selected_brand = st.selectbox("1. เลือกแบรนด์", brand_list, index=0)
     
-    y = st.selectbox("ปี", [2025, 2026], index=1)
+    y = st.selectbox("2. เลือกปี", [2025, 2026], index=1)
     m_names = list(calendar.month_name)[1:]
-    m_name = st.selectbox("เดือน", m_names, index=now.month-1)
+    m_name = st.selectbox("3. เลือกเดือน", m_names, index=now.month-1)
     m = m_names.index(m_name) + 1
     
     st.markdown("---")
 
-# --- 6. MAIN CONTENT ---
+# --- 5. MAIN CONTENT ---
+st.title("Sales Monitoring Dashboard")
+
 if selected_brand == "🛑 SELECT BRAND 🛑":
-    st.title("📊 Sales Monitoring System")
-    st.divider()
-    
-    st.warning("👈 **กรุณามองไปที่แถบสีเทาด้านซ้ายมือ** แล้วเลือกแบรนด์เพื่อเริ่มทำงาน")
-    
-    # ถ้ามองไม่เห็น Sidebar จริงๆ ให้กดปุ่มนี้เพื่อแก้ขัด
-    if st.button("ไม่เห็นเมนูทางซ้าย? กดตรงนี้เพื่อกางออก"):
-        st.session_state.sidebar_active = True
-        st.rerun()
+    st.warning("👈 กรุณาเลือกแบรนด์ที่แถบเมนูด้านซ้ายมือเพื่อดูข้อมูล")
     st.stop()
 
-# --- 7. DASHBOARD ---
-st.header(f"📈 ข้อมูลแบรนด์: {selected_brand}")
+# --- 6. DASHBOARD เมื่อเลือกแบรนด์แล้ว ---
+st.subheader(f"📍 กำลังดูข้อมูล: {selected_brand}")
 raw_df = fetch_api_data(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
 if not raw_df.empty:
@@ -103,16 +95,17 @@ if not raw_df.empty:
     all_configs = get_config()
     current_settings = all_configs.get(selected_brand, {})
 
+    # ส่วนจัดการสาขาใน Sidebar
     with st.sidebar:
-        with st.expander("🚫 ตั้งค่าการมองเห็นสาขา", expanded=False):
-            query = st_keyup("🔍 ค้นหา...", key=f"f_{selected_brand}").strip().lower()
+        with st.expander("🚫 ตั้งค่าการ เปิด/ปิด สาขา", expanded=False):
+            query = st_keyup("🔍 ค้นหาสาขา...", key=f"f_{selected_brand}").strip().lower()
             
             m_key = f"m_{selected_brand}"
             def sync_all():
                 for s in unique_shops: st.session_state[f"tg_{selected_brand}_{s}"] = st.session_state[m_key]
             
             is_all_on = all(current_settings.get(s, True) for s in unique_shops)
-            st.toggle("เปิดทั้งหมด", value=is_all_on, key=m_key, on_change=sync_all)
+            st.toggle("เลือกทั้งหมด", value=is_all_on, key=m_key, on_change=sync_all)
             
             for shop in unique_shops:
                 if query and query not in shop.lower(): continue
@@ -120,13 +113,13 @@ if not raw_df.empty:
                 if t_key not in st.session_state: st.session_state[t_key] = current_settings.get(shop, True)
                 st.toggle(shop, key=t_key)
             
-            if st.button("Save Settings", use_container_width=True, type="primary"):
+            if st.button("💾 บันทึกตั้งค่าสาขา", use_container_width=True, type="primary"):
                 all_configs[selected_brand] = {s: st.session_state.get(f"tg_{selected_brand}_{s}", True) for s in unique_shops}
                 save_config(all_configs)
-                st.success("บันทึกแล้ว")
+                st.success("บันทึกแล้ว!")
                 st.rerun()
 
-    # Heatmap
+    # จัดการข้อมูลตาราง Heatmap
     mask = (raw_df['sync_date'].dt.month == m) & (raw_df['sync_date'].dt.year == y)
     df_f = raw_df[mask].copy()
     _, last_day = calendar.monthrange(y, m)
@@ -141,13 +134,14 @@ if not raw_df.empty:
                 stc = r['status_code']
                 grid.at[r['shop_name'], r['Day']] = "✅" if stc == 2 else "⚠️" if stc == 1 else "❌"
 
+    # Styling ตาราง
     def style_cells(v):
-        if v == "✅": return 'background-color: #d4edda;'
-        if v == "⚠️": return 'background-color: #fff3cd;'
-        if v == "❌": return 'background-color: #f8d7da;'
-        if v == "DISABLED": return 'background-color: #e2e8f0; color: transparent;'
+        if v == "✅": return 'background-color: #d4edda; color: #155724;'
+        if v == "⚠️": return 'background-color: #fff3cd; color: #856404;'
+        if v == "❌": return 'background-color: #f8d7da; color: #721c24;'
+        if v == "DISABLED": return 'background-color: #f1f5f9; color: transparent;'
         return 'color: #ccc;'
 
-    st.dataframe(grid.style.map(style_cells), use_container_width=True, height=600)
+    st.dataframe(grid.style.map(style_cells), use_container_width=True, height=700)
 else:
-    st.warning("ไม่พบข้อมูล")
+    st.error("ไม่พบข้อมูลสำหรับช่วงเวลาที่เลือก")
