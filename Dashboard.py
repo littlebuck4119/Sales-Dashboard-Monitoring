@@ -18,6 +18,37 @@ st.markdown("""
     [data-testid="stSidebarContent"] { padding-top: 0rem !important; }
     [data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: 1.2rem !important; }
     .block-container { padding-top: 2rem !important; padding-left: 1rem !important; padding-right: 1rem !important; padding-bottom: 0rem !important; }
+
+    /* Sidebar กลืนกับ dark theme */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #0a0f1e 0%, #0d1f3c 100%) !important;
+        border-right: 1px solid rgba(99, 179, 237, 0.1) !important;
+    }
+    [data-testid="stSidebar"] * {
+        color: rgba(255,255,255,0.75) !important;
+    }
+    [data-testid="stSidebar"] .stSelectbox label,
+    [data-testid="stSidebar"] .stToggle label,
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] span {
+        color: rgba(255,255,255,0.65) !important;
+    }
+    /* Selectbox dropdown */
+    [data-testid="stSidebar"] [data-baseweb="select"] > div {
+        background-color: rgba(255,255,255,0.06) !important;
+        border-color: rgba(255,255,255,0.12) !important;
+        color: white !important;
+    }
+    /* Divider */
+    [data-testid="stSidebar"] hr {
+        border-color: rgba(255,255,255,0.08) !important;
+    }
+    /* Metric */
+    [data-testid="stSidebar"] [data-testid="stMetric"] {
+        background: rgba(255,255,255,0.04) !important;
+        border-radius: 8px !important;
+        padding: 8px !important;
+    }
     button[kind="primary"] { background-color: #28a745 !important; border-color: #28a745 !important; color: white !important; }
     .date-card { background-color: #ffffff; padding: 20px 15px; border-radius: 12px; border: 1px solid #e0e0e0; box-shadow: 0px 4px 6px rgba(0,0,0,0.05); margin-bottom: 10px; text-align: center; }
     .date-card .day-name { color: #ff4b4b; font-weight: bold; font-size: 0.9rem; text-transform: uppercase; }
