@@ -5,97 +5,29 @@ import calendar
 from datetime import datetime
 from st_keyup import st_keyup
 
-# --- 1. CONFIG & SYSTEM STYLES ---
+# --- 1. CONFIG & STYLES ---
 st.set_page_config(
     page_title="Sales Monitoring",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
-# บังคับ CSS ให้กลืนเป็นชิ้นเดียวกันทั้งแอป (ธีมเขียว Soft)
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-    
-    /* 1. พื้นหลังรวม - ไล่เฉดจากเขียว Soft ไปขาวเพื่อให้กลืนกับ Sidebar */
-    .stApp {
-        background: linear-gradient(90deg, rgb(240, 244, 241) 0%, rgb(248, 250, 252) 100%) !important;
-        font-family: 'Inter', sans-serif;
-    }
-
-    /* 2. Sidebar - สีเขียว Soft (Sage Green) */
-    [data-testid="stSidebar"] {
-        background-color: rgb(240, 244, 241) !important;
-        border-right: 1px solid rgba(0,0,0,0.05) !important;
-    }
-    
-    /* 3. Main Content Area */
-    [data-testid="stMain"], [data-testid="stAppViewContainer"] {
-        background-color: transparent !important;
-    }
-    [data-testid="stAppViewBlockContainer"] {
-        padding-top: 5rem !important;
-    }
-
-    /* 4. Welcome Card - Format ตามรูปที่ต้องการ (ไม่มีปุ่ม) */
-    .welcome-card {
-        background: rgba(255, 255, 255, 0.6) !important;
-        backdrop-filter: blur(15px);
-        border: 1px solid rgba(255, 255, 255, 0.8);
-        border-radius: 30px;
-        padding: 60px 20px;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.03);
-        text-align: center;
-        max-width: 800px;
-        margin: auto;
-    }
-
-    .main-title {
-        font-size: 3.5rem !important;
-        font-weight: 800 !important;
-        color: rgb(74, 93, 80) !important; /* เขียว Sage เข้ม */
-        margin-top: 15px !important;
-        margin-bottom: 5px !important;
-        letter-spacing: -1px;
-    }
-
-    .sub-title {
-        font-size: 1.1rem;
-        color: rgb(100, 120, 105);
-        line-height: 1.6;
-        margin-bottom: 20px;
-    }
-
-    /* 5. ตาราง Dashboard & รายการปัญหา */
-    .stDataFrame {
-        background: white !important;
-        border-radius: 15px !important;
-        padding: 10px !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.02) !important;
-    }
-    .problem-item { 
-        font-size: 0.85rem; 
-        padding: 8px 10px; 
-        background-color: rgba(255, 255, 255, 0.5); 
-        border-left: 4px solid rgb(74, 93, 80); 
-        border-radius: 4px; 
-        margin-bottom: 6px; 
-    }
-
-    /* 6. ส่วนเสริมอื่นๆ */
-    * { caret-color: transparent !important; }
-    header, footer { visibility: hidden; }
-    
-    button[kind="primary"] {
-        background-color: rgb(74, 93, 80) !important;
-        border: none !important;
-        border-radius: 8px !important;
-    }
+    [data-testid="stSidebarContent"] { padding-top: 0rem !important; }
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: 1.2rem !important; }
+    .block-container { padding-top: 2rem !important; padding-left: 1rem !important; padding-right: 1rem !important; padding-bottom: 0rem !important; }
+    button[kind="primary"] { background-color: #28a745 !important; border-color: #28a745 !important; color: white !important; }
+    .date-card { background-color: #ffffff; padding: 20px 15px; border-radius: 12px; border: 1px solid #e0e0e0; box-shadow: 0px 4px 6px rgba(0,0,0,0.05); margin-bottom: 10px; text-align: center; }
+    .date-card .day-name { color: #ff4b4b; font-weight: bold; font-size: 0.9rem; text-transform: uppercase; }
+    .date-card .date-number { font-size: 2.2rem; font-weight: 800; color: #1f1f1f; line-height: 1; margin: 8px 0; }
+    .problem-item { font-size: 0.85rem; padding: 8px 10px; background-color: #fff5f5; border-left: 4px solid #ff4b4b; border-radius: 4px; margin-bottom: 6px; }
+    footer { visibility: hidden; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. DATA UTILS ---
+# --- 2. DATA FETCHING ---
 BRAND_CONFIG = {
     "Eat Am Are": "506e2020f13e6d515726",
     "JonesSalad": "695d80e67b2a8c1ca2ee", 
@@ -113,7 +45,7 @@ def get_config():
 def save_config(full_config):
     requests.post(CONFIG_API, json=full_config)
 
-@st.cache_data(ttl=30)
+@st.cache_data(ttl=30) # ลดเวลา Cache ลงหน่อยให้พี่เติ้ลเห็นผลไวขึ้น
 def get_data_from_api(url):
     try:
         res = requests.get(url, timeout=10)
@@ -126,19 +58,21 @@ def get_data_from_api(url):
     except: pass
     return pd.DataFrame()
 
-# --- 3. SIDEBAR CONTROLS ---
+
+# --- 1. เตรียมพื้นที่ด้านบนสุดของ Sidebar (เพื่อให้โชว์ตลอดเวลา) ---
 with st.sidebar:
+    # ส่วนวันที่ (ใส่ไว้บนสุดเลยครับ)
     now = datetime.now()
-    # การ์ดวันที่ใน Sidebar (ปรับเป็นโทนเขียวขาว)
     st.markdown(f"""
-        <div style="background-color: white; padding: 15px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.05); margin-bottom: 20px;">
-            <div style="font-size: 0.75rem; color: rgb(74, 93, 80); font-weight: 700; text-transform: uppercase;">System Ready</div>
-            <div style="font-size: 1.1rem; font-weight: bold; color: rgb(40, 50, 45);">{now.strftime("%A, %d %b %Y")}</div>
+        <div style="background-color: #f0f2f6; padding: 10px; border-radius: 10px; border-left: 5px solid #4CAF50; margin-bottom: 20px;">
+            <div style="font-size: 0.8rem; color: #666;">📅 Today</div>
+            <div style="font-size: 1.1rem; font-weight: bold;">{now.strftime("%A, %d %b %Y")}</div>
         </div>
     """, unsafe_allow_html=True)
 
+    # เลือกแบรนด์
     brand_options = ["🛑 SELECT BRAND 🛑"] + list(BRAND_CONFIG.keys())
-    selected_brand = st.selectbox("เลือกแบรนด์ที่ต้องการ", brand_options, index=0)
+    selected_brand = st.selectbox("เลือกแบรนด์", brand_options, index=0)
     
     col_y, col_m = st.columns(2)
     with col_y: y = st.selectbox("ปี", [2025, 2026], index=1)
@@ -147,34 +81,90 @@ with st.sidebar:
         m_name = st.selectbox("เดือน", month_list, index=now.month-1)
         m = month_list.index(m_name) + 1
 
+    # จองพื้นที่สรุปผลไว้ (ป้องกัน NameError ในอนาคต)
     summary_placeholder = st.empty()
+    
+    
 
-# --- 4. MAIN CONTENT (หน้า Welcome - ตัดปุ่มออกตามคำขอ) ---
+# --- 4. MAIN CONTENT (หน้าขวาตอนยังไม่เลือกแบรนด์) ---
+
 if selected_brand == "🛑 SELECT BRAND 🛑":
+    # ไม้ตาย CSS: ระเบิดขอบ และแต่งสีเต็มหน้าจอ
     st.markdown("""
-        <div style="display: flex; justify-content: center; align-items: center; min-height: 70vh;">
-            <div class="welcome-card">
-                <div style="font-size: 4.5rem; margin-bottom: 0;">📊</div>
+        <style>
+        /* 1. ระเบิด Padding ของ Streamlit ให้สีเต็มจอ */
+        [data-testid="stAppViewBlockContainer"] {
+            padding: 0 !important;
+            max-width: 100% !important;
+        }
+        
+        /* 2. สร้างพื้นหลังไล่เฉดสีแบบ Professional */
+        .full-screen-welcome {
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            height: 100vh;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 60px;
+            border-radius: 40px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            max-width: 700px;
+        }
+
+        .main-title {
+            font-size: 4rem;
+            font-weight: 800;
+            letter-spacing: -2px;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #fff, #bdc3c7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* ตกแต่งปุ่ม Streamlit ให้เข้ากับธีม */
+        div.stButton > button {
+            background: #4facfe !important;
+            background: linear-gradient(to right, #00f2fe 0%, #4facfe 100%) !important;
+            color: white !important;
+            border: none !important;
+            padding: 15px 40px !important;
+            font-size: 1.2rem !important;
+            font-weight: bold !important;
+            border-radius: 50px !important;
+            box-shadow: 0 10px 20px rgba(79, 172, 254, 0.4) !important;
+            transition: all 0.3s ease !important;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        div.stButton > button:hover {
+            transform: scale(1.05) !important;
+            box-shadow: 0 15px 30px rgba(79, 172, 254, 0.6) !important;
+        }
+        </style>
+        
+        <div class="full-screen-welcome">
+            <div class="glass-card">
+                <div style="font-size: 5rem; margin-bottom: 20px;">📈</div>
                 <h1 class="main-title">Sales Monitoring</h1>
-                <div style="height: 3px; width: 45px; background: rgb(74, 93, 80); margin: 15px auto 25px; border-radius: 2px;"></div>
-                <p class="sub-title">
-                    Enterprise Performance Intelligence System<br>
-                    <span style="font-size: 0.95rem; opacity: 0.8; color: rgb(74, 93, 80);">
-                        กรุณาเลือกแบรนด์ที่เมนูด้านซ้ายเพื่อเริ่มต้นวิเคราะห์ข้อมูล
-                    </span>
+                <p style="font-size: 1.2rem; opacity: 0.7; margin-bottom: 40px;">
+                    Enterprise Performance Tracking Intelligence
                 </p>
-                <div style="margin-top: 30px; padding: 15px; border-top: 1px solid rgba(0,0,0,0.03);">
-                    <span style="font-size: 0.85rem; color: rgb(120, 140, 125); font-style: italic;">
-                        👈 Control panel is ready on your sidebar
-                    </span>
-                </div>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
     st.stop()
 
-# --- 5. DASHBOARD VIEW (เมื่อเลือกแบรนด์แล้ว) ---
-st.markdown(f"<h3 style='color: rgb(74, 93, 80); margin-bottom:1rem;'>📈 {selected_brand} Dashboard</h3>", unsafe_allow_html=True)
+st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
 if not full_df.empty:
@@ -182,76 +172,113 @@ if not full_df.empty:
     current_full_config = get_config()
     brand_settings = current_full_config.get(selected_brand, {})
 
+
+  # --- ส่วนจัดการสาขาใน Sidebar ---
     with st.sidebar:
         st.markdown("---")
-        with st.expander("⚙️ จัดการ เปิด/ปิด สาขา", expanded=False):
-            search_query = st_keyup("🔍 ค้นหาสาขา...", key=f"k_{selected_brand}").strip().lower()
+        # ใส่ข้อความใน "" ให้ชัดเจนครับพี่ มันจะได้โชว์บนหัว Expander
+        with st.expander("🚫 จัดการ เปิด/ปิด สาขา", expanded=False):
             
-            master_key = f"m_{selected_brand}"
-            def on_master():
-                for s in shops: st.session_state[f"t_{selected_brand}_{s}"] = st.session_state[master_key]
+            # 1. พิมพ์ค้นหา (KeyUp)
+            from st_keyup import st_keyup
+            search_query = st_keyup(
+                "🔍 ค้นหาสาขา...", 
+                key=f"keyup_search_{selected_brand}"
+            ).strip().lower()
+
+            master_key = f"master_{selected_brand}"
+            def on_master_change():
+                for s in shops:
+                    st.session_state[f"tog_{selected_brand}_{s}"] = st.session_state[master_key]
             
             all_on = all(brand_settings.get(s, True) for s in shops)
-            st.toggle("เลือกทั้งหมด", value=all_on, key=master_key, on_change=on_master)
+            st.toggle("🔔 **เปิด/ปิด ทั้งหมด**", value=all_on, key=master_key, on_change=on_master_change)
             
-            updated = {s: st.session_state.get(f"t_{selected_brand}_{s}", brand_settings.get(s, True)) for s in shops}
-            filtered = [s for s in shops if search_query in s.lower()] if search_query else shops
+            st.markdown("---")
+            
+            # ดึงค่า Config ปัจจุบัน
+            updated_settings = {s: st.session_state.get(f"tog_{selected_brand}_{s}", brand_settings.get(s, True)) for s in shops}
 
-            for shop in filtered:
-                t_key = f"t_{selected_brand}_{shop}"
-                if t_key not in st.session_state: st.session_state[t_key] = brand_settings.get(shop, True)
-                updated[shop] = st.toggle(shop, key=t_key)
+            # กรองรายชื่อสาขา
+            filtered_shops = [s for s in shops if search_query in s.lower()] if search_query else shops
 
-            if st.button("💾 บันทึกการตั้งค่า", use_container_width=True, type="primary"):
-                current_full_config[selected_brand] = updated
+            # ส่วนการแสดงผล Toggle
+            if not filtered_shops:
+                st.info("😔 ไม่พบสาขาที่ค้นหา...")
+            else:
+                for shop in filtered_shops:
+                    t_key = f"tog_{selected_brand}_{shop}"
+                    if t_key not in st.session_state:
+                        st.session_state[t_key] = brand_settings.get(shop, True)
+                    
+                    # บันทึกสถานะลงตัวแปร updated_settings ทันที
+                    updated_settings[shop] = st.toggle(f"{shop}", key=t_key)
+            
+            st.markdown("---")
+            # ปุ่มบันทึกข้อมูล
+            if st.button("💾 บันทึกการตั้งค่า", type="primary", use_container_width=True):
+                current_full_config[selected_brand] = updated_settings
                 save_config(current_full_config)
                 st.success("บันทึกสำเร็จ!")
                 st.rerun()
 
-    # เตรียมตาราง Heatmap
+    # --- เตรียมโครงสร้างตาราง ---
     mask = (full_df['sync_date'].dt.month == m) & (full_df['sync_date'].dt.year == y)
     df_filtered = full_df[mask].copy()
     _, last_day = calendar.monthrange(y, m)
-    grid_df = pd.DataFrame("N/A", index=shops, columns=range(1, last_day + 1))
+    days = list(range(1, last_day + 1))
+    grid_df = pd.DataFrame("N/A", index=shops, columns=days)
 
+    # --- จุดแก้ไขสำคัญ: วนลูปหยอดข้อมูลให้ตรงช่อง ---
     if not df_filtered.empty:
         df_filtered['Day'] = df_filtered['sync_date'].dt.day
+        
+        # 1. จัดการสาขาที่ถูก DISABLED (เทาทั้งแถว)
         for shop in shops:
-            if not brand_settings.get(shop, True): grid_df.loc[shop] = "DISABLED"
-        for _, row in df_filtered.iterrows():
-            s_name, d, status = row['shop_name'], row['Day'], row['status_code']
-            if s_name in grid_df.index and grid_df.at[s_name, d] != "DISABLED":
-                grid_df.at[s_name, d] = "✅" if status == 2 else "⚠️" if status == 1 else "❌"
+            if not brand_settings.get(shop, True):
+                grid_df.loc[shop] = "DISABLED"
 
-    # สรุปภาพรวมใน Sidebar
+        # 2. เอาข้อมูลจริงมาหยอดลงช่อง (ถ้าไม่ได้ DISABLED)
+        for _, row in df_filtered.iterrows():
+            shop = row['shop_name']
+            day = row['Day']
+            status = row['status_code']
+            
+            if shop in grid_df.index and grid_df.at[shop, day] != "DISABLED":
+                # ใส่ไอคอนตาม status_code จริงจาก API
+                icon = "✅" if status == 2 else "⚠️" if status == 1 else "❌" if status == 0 else "N/A"
+                grid_df.at[shop, day] = icon
+
+    # --- สรุปภาพรวม (Summary) ---
     active_shops = [s for s in shops if brand_settings.get(s, True)]
     active_grid = grid_df.loc[active_shops] if active_shops else pd.DataFrame()
+    
     with summary_placeholder.container():
-        st.markdown(f"**สถานะ: {len(active_shops)} สาขา**")
+        st.info(f"Monitor: **{len(active_shops)}** / **{len(shops)}** สาขา")
         m1, m2 = st.columns(2)
         if not active_grid.empty:
-            prob_rows = active_grid.isin(["⚠️", "❌"]).any(axis=1).sum()
-            m1.metric("ปกติ ✅", len(active_shops) - prob_rows)
-            m2.metric("ปัญหา ⚠️", prob_rows)
+            # เช็คว่าแถวไหนมี ⚠️ หรือ ❌ บ้าง
+            prob_count = active_grid.isin(["⚠️", "❌"]).any(axis=1).sum()
+            m1.metric("ปกติ ✅", len(active_shops) - prob_count)
+            m2.metric("ปัญหา ⚠️/❌", prob_count)
             
-            # สาขาที่มีปัญหาบ่อย
             prob_sum = (active_grid == "❌").sum(axis=1) + (active_grid == "⚠️").sum(axis=1)
             top_prob = prob_sum[prob_sum > 0].sort_values(ascending=False).head(3)
             if not top_prob.empty:
                 st.markdown("---")
-                st.write("**⚠️ ปัญหาบ่อยเดือนนี้:**")
+                st.write("**⚠️ สาขาที่พบปัญหาบ่อยเดือนนี้:**")
                 for shop, count in top_prob.items():
-                    st.markdown(f'<div class="problem-item"><b>{shop}</b><br>พบปัญหา {int(count)} ครั้ง</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="problem-item"><b>{shop}</b><br><span style="color:#d32f2f; font-size:0.8rem;">พบปัญหา {int(count)} ครั้ง</span></div>', unsafe_allow_html=True)
 
-    # ฟังก์ชันระบายสี Heatmap
-    def style_heatmap(v):
-        if v == "✅": return 'background-color: #f0fdf4; color: #166534; font-weight: bold;'
-        if v == "⚠️": return 'background-color: #fffbeb; color: #92400e; font-weight: bold;'
-        if v == "❌": return 'background-color: #fef2f2; color: #991b1b; font-weight: bold;'
-        if v == "DISABLED": return 'background-color: #f1f5f9; color: transparent;'
-        return 'color: #e2e8f0; font-size: 10px;'
+    # --- การระบายสี (Styling) ---
+    def apply_style(val):
+        if val == "✅": return 'background-color: #d4edda; color: #155724;'
+        if val == "⚠️": return 'background-color: #fff3cd; color: #856404;'
+        if val == "❌": return 'background-color: #f8d7da; color: #721c24;'
+        if val == "DISABLED": return 'background-color: #6c757d; color: transparent;' 
+        return 'color: #ced4da; font-size: 10px;'
 
-    st.dataframe(grid_df.style.map(style_heatmap), use_container_width=True, height=750,
-                 column_config={d: st.column_config.Column(width=35) for d in range(1, last_day + 1)})
+    st.dataframe(grid_df.style.map(apply_style), use_container_width=True, height=800, 
+                 column_config={d: st.column_config.Column(width=35) for d in days})
 else:
-    st.warning("⚠️ ไม่พบข้อมูลสำหรับแบรนด์ที่เลือก")
+    st.warning("⚠️ ไม่พบข้อมูลสำหรับแบรนด์นี้")
