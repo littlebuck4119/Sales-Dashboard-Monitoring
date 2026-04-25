@@ -15,24 +15,26 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    /* 1. ซ่อน Cursor กระพริบทั่วทั้งแอป */
+    /* 1. ซ่อน Cursor กระพริบทั่วทั้งระบบ */
     * { caret-color: transparent !important; }
     
-    /* 2. ซ่อน Header/Footer และเปิดทางให้ Sidebar */
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
+    /* 2. ซ่อน Header/Footer */
+    header { visibility: hidden !important; }
+    footer { visibility: hidden !important; }
     
-    /* 3. บังคับให้ปุ่มเปิด Sidebar ลอยเด่น ไม่โดนทับ */
+    /* 3. ล็อคปุ่มเปิด Sidebar ให้ลอยอยู่บนสุดและกดได้เสมอ */
     [data-testid="stSidebarCollapsedControl"] {
         z-index: 9999999 !important;
-        background-color: rgba(255,255,255,0.5);
-        border-radius: 50%;
+        display: flex !important;
+        background-color: rgba(255, 255, 255, 0.8) !important;
+        border-radius: 8px !important;
+        top: 10px !important;
+        left: 10px !important;
     }
 
-    /* 4. สไตล์ Sidebar Professional */
+    /* 4. สไตล์ Sidebar */
     [data-testid="stSidebarContent"] { 
-        padding-top: 1rem !important; 
-        background-color: #f8f9fa;
+        background-color: #f8f9fa !important;
     }
     .date-card { 
         background-color: #ffffff; padding: 15px; border-radius: 12px; 
@@ -72,13 +74,13 @@ def get_data_from_api(url):
     except: pass
     return pd.DataFrame()
 
-# --- 3. SIDEBAR ---
+# --- 3. SIDEBAR (เมนูทางซ้าย) ---
 with st.sidebar:
     now = datetime.now()
     st.markdown(f"""
         <div class="date-card">
-            <div style="font-size: 0.8rem; color: #666;">Current Date</div>
-            <div style="font-size: 1.1rem; font-weight: bold;">{now.strftime("%A, %d %b %Y")}</div>
+            <div style="font-size: 0.8rem; color: #666; text-transform: uppercase;">Current Date</div>
+            <div style="font-size: 1.1rem; font-weight: bold; color: #1f2937;">{now.strftime("%A, %d %b %Y")}</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -98,25 +100,23 @@ with st.sidebar:
 
 # --- 4. MAIN CONTENT ---
 if selected_brand == "🛑 SELECT BRAND 🛑":
+    # ใช้ CSS ที่ไม่ไปกวนการทำงานของ Sidebar
     st.markdown("""
         <style>
-        /* แก้ไขการแสดงผลเพื่อไม่ให้ทับ Sidebar Control */
-        [data-testid="stAppViewBlockContainer"] { 
-            padding: 0 !important; 
-            max-width: 100% !important; 
-        }
         .welcome-bg {
             background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
-            height: 100vh;
+            height: 90vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             color: #f1f5f9;
             text-align: center;
+            border-radius: 20px;
+            margin: 20px;
         }
-        .main-title { font-size: 4.5rem; font-weight: 800; letter-spacing: -2px; margin: 0; color: #ffffff; }
-        .sub-text { font-size: 1.4rem; color: #94a3b8; margin-top: 15px; }
+        .main-title { font-size: clamp(2rem, 8vw, 4.5rem); font-weight: 800; letter-spacing: -2px; margin: 0; color: #ffffff; }
+        .sub-text { font-size: clamp(1rem, 3vw, 1.4rem); color: #94a3b8; margin-top: 15px; }
         .accent-bar { width: 60px; height: 4px; background: #38bdf8; margin: 20px 0; border-radius: 2px; }
         </style>
         <div class="welcome-bg">
@@ -127,7 +127,7 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
     """, unsafe_allow_html=True)
     st.stop()
 
-# --- 5. DASHBOARD VIEW ---
+# --- 5. DASHBOARD VIEW (เมื่อเลือกแบรนด์แล้ว) ---
 st.markdown(f"### 📈 {selected_brand} Dashboard")
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
@@ -142,10 +142,10 @@ if not full_df.empty:
             
             m_key = f"master_{selected_brand}"
             def on_master_change():
-                for s in shops: st.session_state[f"tog_{selected_brand}_{s}"] = st.session_state[master_key]
+                for s in shops: st.session_state[f"tog_{selected_brand}_{s}"] = st.session_state[m_key]
             
             all_on = all(brand_settings.get(s, True) for s in shops)
-            st.toggle("Toggle All Branches", value=all_on, key=master_key, on_change=on_master_change)
+            st.toggle("Toggle All Branches", value=all_on, key=m_key, on_change=on_master_change)
             
             updated_settings = {}
             for shop in shops:
@@ -177,7 +177,7 @@ if not full_df.empty:
 
     with summary_placeholder.container():
         active_list = [s for s in shops if brand_settings.get(s, True)]
-        st.info(f"Active: **{len(active_list)}** / {len(shops)} branches")
+        st.info(f"Active: **{len(active_list)}** Branches")
 
     def apply_style(val):
         if val == "✅": return 'background-color: #d4edda; color: #155724;'
