@@ -6,8 +6,8 @@ from datetime import datetime
 from st_keyup import st_keyup
 
 # --- 1. CONFIG & STYLES ---
-# ดึง sidebar state จาก session_state (ถ้ากดปุ่มจะเป็น expanded)
-_sidebar_state = st.session_state.get("sidebar_state", "collapsed")
+# ใช้ query_params เพื่อควบคุม sidebar state (อ่านได้ก่อน set_page_config)
+_sidebar_state = "expanded" if st.query_params.get("sidebar") == "open" else "collapsed"
 
 st.set_page_config(
     page_title="Sales Monitoring",
@@ -235,30 +235,22 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
             font-style: italic;
         }
 
-        .welcome-btn-container {
-            display: flex;
-            justify-content: center;
+        .welcome-btn-container div.stButton > button {
+            background: linear-gradient(135deg, #2563eb 0%, #6366f1 100%) !important;
+            color: white !important;
+            border: none !important;
+            padding: 13px 40px !important;
+            font-size: 0.95rem !important;
+            font-weight: 600 !important;
+            font-family: 'DM Sans', sans-serif !important;
+            border-radius: 12px !important;
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35) !important;
+            letter-spacing: 0.4px !important;
+            transition: all 0.2s ease !important;
         }
-        .js-open-sidebar {
-            background: linear-gradient(135deg, #2563eb 0%, #6366f1 100%);
-            color: white;
-            border: none;
-            padding: 14px 44px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            font-family: 'DM Sans', sans-serif;
-            border-radius: 12px;
-            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
-            letter-spacing: 0.4px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .js-open-sidebar:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 28px rgba(99, 102, 241, 0.5);
-        }
-        .js-open-sidebar:active {
-            transform: translateY(0px);
+        .welcome-btn-container div.stButton > button:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 12px 28px rgba(99, 102, 241, 0.5) !important;
         }
 
         .brand-chips {
@@ -309,36 +301,13 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
                 </div>
         """, unsafe_allow_html=True)
 
-    # JS คลิก sidebar toggle button โดยตรง — ทำงานได้ทันทีโดยไม่ต้อง rerun
-    st.markdown('''
-    <div class="welcome-btn-container">
-        <button class="js-open-sidebar" onclick="openSidebar()">เริ่มต้นใช้งาน →</button>
-    </div>
-    <script>
-    function openSidebar() {
-        // หา sidebar toggle button ของ Streamlit แล้วคลิก
-        const tryClick = () => {
-            // Streamlit sidebar collapse button selectors (รองรับหลาย version)
-            const selectors = [
-                'button[data-testid="collapsedControl"]',
-                'button[kind="header"][aria-label*="sidebar"]',
-                '[data-testid="stSidebarCollapsedControl"] button',
-                'section[data-testid="stSidebar"] + div button',
-            ];
-            for (const sel of selectors) {
-                const btn = window.parent.document.querySelector(sel);
-                if (btn) { btn.click(); return true; }
-            }
-            return false;
-        };
-
-        if (!tryClick()) {
-            // ถ้ายังหาไม่เจอ ลองใหม่อีกครั้ง
-            setTimeout(tryClick, 300);
-        }
-    }
-    </script>
-    ''', unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([2.2, 1.5, 2.2])
+    with col2:
+        st.markdown('<div class="welcome-btn-container">', unsafe_allow_html=True)
+        if st.button("เริ่มต้นใช้งาน →", use_container_width=True):
+            st.query_params["sidebar"] = "open"
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("""
                 <p class="welcome-hint">← เลือกแบรนด์จาก Sidebar ด้านซ้ายเพื่อเริ่มต้น</p>
