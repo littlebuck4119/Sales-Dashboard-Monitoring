@@ -10,7 +10,7 @@ st.set_page_config(
     page_title="Sales Monitoring",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="auto"
 )
 
 st.markdown("""
@@ -298,34 +298,22 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
                 </div>
         """, unsafe_allow_html=True)
 
-    # ถ้าเพิ่งกดปุ่ม → inject JS คลิก sidebar toggle 1 ครั้ง แล้วเคลียร์ทันที
-    if st.session_state.pop("open_sidebar", False):
-        st.markdown("""
-        <script>
-        (function() {
-            // รอให้ Streamlit render เสร็จก่อนแล้วค่อย click
-            function clickSidebarBtn() {
-                const btn = window.parent.document.querySelector(
-                    '[data-testid="stSidebarCollapsedControl"] button, ' +
-                    'button[data-testid="collapsedControl"]'
-                );
-                if (btn) {
-                    btn.click();
-                } else {
-                    setTimeout(clickSidebarBtn, 100);
-                }
-            }
-            setTimeout(clickSidebarBtn, 200);
-        })();
-        </script>
-        """, unsafe_allow_html=True)
-
     col1, col2, col3 = st.columns([2.2, 1.5, 2.2])
     with col2:
         st.markdown('<div class="welcome-btn-container">', unsafe_allow_html=True)
-        if st.button("เริ่มต้นใช้งาน →", use_container_width=True):
-            st.session_state["open_sidebar"] = True
-            st.rerun()
+        st.markdown('''
+        <div style="text-align:center;">
+            <div style="
+                display:inline-flex; align-items:center; gap:10px;
+                background: linear-gradient(135deg, #2563eb 0%, #6366f1 100%);
+                color:white; padding:13px 32px; border-radius:12px;
+                font-family:'DM Sans',sans-serif; font-size:0.95rem; font-weight:600;
+                box-shadow:0 6px 20px rgba(99,102,241,0.35); letter-spacing:0.4px;
+            ">
+                ← เลือกแบรนด์จาก Sidebar ด้านซ้ายเพื่อเริ่มต้น
+            </div>
+        </div>
+        ''', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("""
