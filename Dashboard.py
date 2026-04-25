@@ -232,6 +232,18 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
             font-style: italic;
         }
 
+        .sidebar-hint {
+            margin-top: 28px;
+            padding: 11px 0;
+            border-top: 1px solid rgba(255,255,255,0.07);
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+            font-size: 0.82rem;
+            font-weight: 400;
+            color: rgba(255,255,255,0.35);
+            letter-spacing: 0.5px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
         .welcome-btn-container div.stButton > button {
             background: linear-gradient(135deg, #2563eb 0%, #6366f1 100%) !important;
             color: white !important;
@@ -296,28 +308,7 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
                         <div class="stat-label">Cache TTL</div>
                     </div>
                 </div>
-        """, unsafe_allow_html=True)
-
-    col1, col2, col3 = st.columns([2.2, 1.5, 2.2])
-    with col2:
-        st.markdown('<div class="welcome-btn-container">', unsafe_allow_html=True)
-        st.markdown('''
-        <div style="text-align:center;">
-            <div style="
-                display:inline-flex; align-items:center; gap:10px;
-                background: linear-gradient(135deg, #2563eb 0%, #6366f1 100%);
-                color:white; padding:13px 32px; border-radius:12px;
-                font-family:'DM Sans',sans-serif; font-size:0.95rem; font-weight:600;
-                box-shadow:0 6px 20px rgba(99,102,241,0.35); letter-spacing:0.4px;
-            ">
-                ← เลือกแบรนด์จาก Sidebar ด้านซ้ายเพื่อเริ่มต้น
-            </div>
-        </div>
-        ''', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown("""
-                <p class="welcome-hint">← เลือกแบรนด์จาก Sidebar ด้านซ้ายเพื่อเริ่มต้น</p>
+                <div class="sidebar-hint">← เลือกแบรนด์จาก Sidebar ด้านซ้ายเพื่อเริ่มต้น</div>
             </div>
         </div>
     """, unsafe_allow_html=True)
