@@ -159,7 +159,7 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
                 <div style="font-size: 5rem; margin-bottom: 20px;">📈</div>
                 <h1 class="main-title">Sales Monitoring</h1>
                 <p style="font-size: 1.2rem; opacity: 0.7; margin-bottom: 40px;">
-                    Enterprise Performance Tracking Intelligence
+                    Tracking Dashboard
                 </p>
         """, unsafe_allow_html=True)
 
