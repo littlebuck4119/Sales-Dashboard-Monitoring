@@ -6,11 +6,14 @@ from datetime import datetime
 from st_keyup import st_keyup
 
 # --- 1. CONFIG & STYLES ---
+# ดึง sidebar state จาก session_state (ถ้ากดปุ่มจะเป็น expanded)
+_sidebar_state = st.session_state.get("sidebar_state", "collapsed")
+
 st.set_page_config(
     page_title="Sales Monitoring",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state=_sidebar_state
 )
 
 st.markdown("""
