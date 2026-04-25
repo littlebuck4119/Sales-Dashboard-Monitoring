@@ -6,14 +6,11 @@ from datetime import datetime
 from st_keyup import st_keyup
 
 # --- 1. CONFIG & STYLES ---
-# ใช้ query_params เพื่อควบคุม sidebar state (อ่านได้ก่อน set_page_config)
-_sidebar_state = "expanded" if st.query_params.get("sidebar") == "open" else "collapsed"
-
 st.set_page_config(
     page_title="Sales Monitoring",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state=_sidebar_state
+    initial_sidebar_state="collapsed"
 )
 
 st.markdown("""
@@ -301,11 +298,29 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
                 </div>
         """, unsafe_allow_html=True)
 
+    # inject CSS บังคับเปิด sidebar ถ้า session_state บอกให้เปิด
+    if st.session_state.get("open_sidebar"):
+        st.markdown("""
+        <style>
+        /* บังคับ sidebar ให้โผล่ออกมา */
+        [data-testid="stSidebar"] {
+            transform: translateX(0) !important;
+            visibility: visible !important;
+            display: block !important;
+            width: 21rem !important;
+            min-width: 21rem !important;
+        }
+        [data-testid="stSidebarCollapsedControl"] {
+            display: none !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
     col1, col2, col3 = st.columns([2.2, 1.5, 2.2])
     with col2:
         st.markdown('<div class="welcome-btn-container">', unsafe_allow_html=True)
         if st.button("เริ่มต้นใช้งาน →", use_container_width=True):
-            st.query_params["sidebar"] = "open"
+            st.session_state["open_sidebar"] = True
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
