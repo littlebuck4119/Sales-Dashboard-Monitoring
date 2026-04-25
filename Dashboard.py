@@ -5,45 +5,53 @@ import calendar
 from datetime import datetime
 from st_keyup import st_keyup
 
-# --- 1. CONFIG & STYLES ---
+# --- 1. CONFIG ---
 st.set_page_config(
     page_title="Sales Monitoring",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded" # บังคับกาง Sidebar
 )
 
+# --- 2. CSS ล็อค Sidebar + ซ่อน Cursor ---
 st.markdown("""
     <style>
-    /* 1. ซ่อน Cursor กระพริบทั่วทั้งระบบ */
+    /* ซ่อน Cursor กระพริบ */
     * { caret-color: transparent !important; }
     
-    /* 2. ซ่อน Header/Footer */
+    /* ปิด Header/Footer */
     header { visibility: hidden !important; }
     footer { visibility: hidden !important; }
+
+    /* ปรับแต่ง Sidebar ให้ดูแพง */
+    [data-testid="stSidebarContent"] {
+        background-color: #f1f5f9 !important;
+    }
     
-    /* 3. ล็อคปุ่มเปิด Sidebar ให้ลอยอยู่บนสุดและกดได้เสมอ */
-    [data-testid="stSidebarCollapsedControl"] {
-        z-index: 9999999 !important;
-        display: flex !important;
-        background-color: rgba(255, 255, 255, 0.8) !important;
-        border-radius: 8px !important;
-        top: 10px !important;
-        left: 10px !important;
+    /* การ์ดวันที่ */
+    .date-box {
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        text-align: center;
+        margin-bottom: 20px;
     }
 
-    /* 4. สไตล์ Sidebar */
-    [data-testid="stSidebarContent"] { 
-        background-color: #f8f9fa !important;
-    }
-    .date-card { 
-        background-color: #ffffff; padding: 15px; border-radius: 12px; 
-        border: 1px solid #e0e0e0; text-align: center; margin-bottom: 20px;
+    /* หน้า Welcome แบบไม่ทับปุ่ม */
+    .welcome-card {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        padding: 60px;
+        border-radius: 24px;
+        color: white;
+        text-align: center;
+        margin-top: 50px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. DATA FETCHING ---
+# --- 3. DATA FETCHING ---
 BRAND_CONFIG = {
     "Eat Am Are": "506e2020f13e6d515726",
     "JonesSalad": "695d80e67b2a8c1ca2ee", 
@@ -74,17 +82,17 @@ def get_data_from_api(url):
     except: pass
     return pd.DataFrame()
 
-# --- 3. SIDEBAR (เมนูทางซ้าย) ---
+# --- 4. SIDEBAR ---
 with st.sidebar:
     now = datetime.now()
     st.markdown(f"""
-        <div class="date-card">
-            <div style="font-size: 0.8rem; color: #666; text-transform: uppercase;">Current Date</div>
-            <div style="font-size: 1.1rem; font-weight: bold; color: #1f2937;">{now.strftime("%A, %d %b %Y")}</div>
+        <div class="date-box">
+            <div style="font-size: 0.8rem; color: #64748b;">CURRENT DATE</div>
+            <div style="font-size: 1.2rem; font-weight: bold; color: #1e293b;">{now.strftime("%A, %d %b %Y")}</div>
         </div>
     """, unsafe_allow_html=True)
 
-    st.subheader("Control Panel")
+    st.subheader("Settings")
     brand_options = ["🛑 SELECT BRAND 🛑"] + list(BRAND_CONFIG.keys())
     selected_brand = st.selectbox("Select Brand", brand_options, index=0)
     
@@ -95,40 +103,26 @@ with st.sidebar:
         m_name = st.selectbox("Month", month_list, index=now.month-1)
         m = month_list.index(m_name) + 1
 
-    summary_placeholder = st.empty()
     st.markdown("---")
+    summary_placeholder = st.empty()
 
-# --- 4. MAIN CONTENT ---
+# --- 5. MAIN CONTENT ---
 if selected_brand == "🛑 SELECT BRAND 🛑":
-    # ใช้ CSS ที่ไม่ไปกวนการทำงานของ Sidebar
+    # หน้า Welcome แบบ Card (ไม่ทับจอ)
     st.markdown("""
-        <style>
-        .welcome-bg {
-            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
-            height: 90vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: #f1f5f9;
-            text-align: center;
-            border-radius: 20px;
-            margin: 20px;
-        }
-        .main-title { font-size: clamp(2rem, 8vw, 4.5rem); font-weight: 800; letter-spacing: -2px; margin: 0; color: #ffffff; }
-        .sub-text { font-size: clamp(1rem, 3vw, 1.4rem); color: #94a3b8; margin-top: 15px; }
-        .accent-bar { width: 60px; height: 4px; background: #38bdf8; margin: 20px 0; border-radius: 2px; }
-        </style>
-        <div class="welcome-bg">
-            <h1 class="main-title">Sales Monitoring</h1>
-            <div class="accent-bar"></div>
-            <p class="sub-text">Please select a brand on the <b>sidebar</b> to view data.</p>
+        <div class="welcome-card">
+            <div style="font-size: 50px;">📊</div>
+            <h1 style="font-size: 3.5rem; font-weight: 800; margin: 10px 0;">Sales Monitoring</h1>
+            <div style="width: 50px; height: 3px; background: #38bdf8; margin: 20px auto;"></div>
+            <p style="font-size: 1.2rem; color: #94a3b8;">
+                Please select a brand on the <b>left sidebar</b> to start monitoring.
+            </p>
         </div>
     """, unsafe_allow_html=True)
     st.stop()
 
-# --- 5. DASHBOARD VIEW (เมื่อเลือกแบรนด์แล้ว) ---
-st.markdown(f"### 📈 {selected_brand} Dashboard")
+# --- 6. DASHBOARD (เมื่อเลือกแบรนด์) ---
+st.header(f"📈 {selected_brand}")
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
 if not full_df.empty:
@@ -136,56 +130,53 @@ if not full_df.empty:
     current_full_config = get_config()
     brand_settings = current_full_config.get(selected_brand, {})
 
+    # ตัวจัดการสาขาใน Sidebar
     with st.sidebar:
-        with st.expander("🚫 Manage Branch Visibility", expanded=False):
-            search_query = st_keyup("🔍 Search branch...", key=f"search_{selected_brand}").strip().lower()
+        with st.expander("🚫 Branch Settings", expanded=False):
+            search = st_keyup("🔍 Search...", key=f"s_{selected_brand}").strip().lower()
             
-            m_key = f"master_{selected_brand}"
-            def on_master_change():
-                for s in shops: st.session_state[f"tog_{selected_brand}_{s}"] = st.session_state[m_key]
+            m_key = f"m_{selected_brand}"
+            def sync():
+                for s in shops: st.session_state[f"t_{selected_brand}_{s}"] = st.session_state[m_key]
             
             all_on = all(brand_settings.get(s, True) for s in shops)
-            st.toggle("Toggle All Branches", value=all_on, key=m_key, on_change=on_master_change)
+            st.toggle("Toggle All", value=all_on, key=m_key, on_change=sync)
             
-            updated_settings = {}
-            for shop in shops:
-                if search_query and search_query not in shop.lower(): continue
-                t_key = f"tog_{selected_brand}_{shop}"
-                if t_key not in st.session_state: st.session_state[t_key] = brand_settings.get(shop, True)
-                updated_settings[shop] = st.toggle(f"{shop}", key=t_key)
+            new_set = {}
+            for s in shops:
+                if search and search not in s.lower(): continue
+                t_key = f"t_{selected_brand}_{s}"
+                if t_key not in st.session_state: st.session_state[t_key] = brand_settings.get(s, True)
+                new_set[s] = st.toggle(s, key=t_key)
             
-            if st.button("💾 Save Settings", type="primary"):
-                current_full_config[selected_brand] = updated_settings
+            if st.button("Save Settings", type="primary", use_container_width=True):
+                current_full_config[selected_brand] = {s: st.session_state.get(f"t_{selected_brand}_{s}", True) for s in shops}
                 save_config(current_full_config)
-                st.success("Success!")
+                st.success("Saved!")
                 st.rerun()
 
-    # Table Processing
+    # ตาราง Heatmap
     mask = (full_df['sync_date'].dt.month == m) & (full_df['sync_date'].dt.year == y)
-    df_filtered = full_df[mask].copy()
+    df_f = full_df[mask].copy()
     _, last_day = calendar.monthrange(y, m)
-    grid_df = pd.DataFrame("N/A", index=shops, columns=range(1, last_day + 1))
+    grid = pd.DataFrame("N/A", index=shops, columns=range(1, last_day + 1))
 
-    if not df_filtered.empty:
-        df_filtered['Day'] = df_filtered['sync_date'].dt.day
+    if not df_f.empty:
+        df_f['Day'] = df_f['sync_date'].dt.day
         for s in shops:
-            if not brand_settings.get(s, True): grid_df.loc[s] = "DISABLED"
-        for _, row in df_filtered.iterrows():
-            if row['shop_name'] in grid_df.index and grid_df.at[row['shop_name'], row['Day']] != "DISABLED":
-                stc = row['status_code']
-                grid_df.at[row['shop_name'], row['Day']] = "✅" if stc == 2 else "⚠️" if stc == 1 else "❌"
+            if not brand_settings.get(s, True): grid.loc[s] = "DISABLED"
+        for _, r in df_f.iterrows():
+            if r['shop_name'] in grid.index and grid.at[r['shop_name'], r['Day']] != "DISABLED":
+                stc = r['status_code']
+                grid.at[r['shop_name'], r['Day']] = "✅" if stc == 2 else "⚠️" if stc == 1 else "❌"
 
-    with summary_placeholder.container():
-        active_list = [s for s in shops if brand_settings.get(s, True)]
-        st.info(f"Active: **{len(active_list)}** Branches")
-
-    def apply_style(val):
-        if val == "✅": return 'background-color: #d4edda; color: #155724;'
-        if val == "⚠️": return 'background-color: #fff3cd; color: #856404;'
-        if val == "❌": return 'background-color: #f8d7da; color: #721c24;'
-        if val == "DISABLED": return 'background-color: #f1f5f9; color: transparent;' 
+    def style_table(v):
+        if v == "✅": return 'background-color: #d4edda; color: #155724;'
+        if v == "⚠️": return 'background-color: #fff3cd; color: #856404;'
+        if v == "❌": return 'background-color: #f8d7da; color: #721c24;'
+        if v == "DISABLED": return 'background-color: #f1f5f9; color: transparent;' 
         return 'color: #e2e8f0;'
 
-    st.dataframe(grid_df.style.map(apply_style), use_container_width=True, height=750)
+    st.dataframe(grid.style.map(style_table), use_container_width=True, height=700)
 else:
     st.warning("No data found.")
