@@ -93,12 +93,22 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
 
-        /* ย้อม background เฉพาะ main content area ไม่แตะ sidebar */
-        [data-testid="stAppViewContainer"] > section[data-testid="stMain"] {
-            background: linear-gradient(145deg, #080e1c 0%, #0b1a33 45%, #0d2244 100%) !important;
+        /* โปะ background ทุก layer ของ main content — sidebar ไม่โดน */
+        .stApp {
+            background-color: #080e1c !important;
         }
+        [data-testid="stAppViewContainer"] {
+            background: transparent !important;
+        }
+        [data-testid="stMain"] {
+            background: linear-gradient(145deg, #080e1c 0%, #0b1a33 45%, #0d2244 100%) !important;
+            min-height: 100vh !important;
+        }
+        [data-testid="stMain"] > div,
         [data-testid="stMain"] .block-container {
+            background: transparent !important;
             padding-top: 0 !important;
+            padding-bottom: 0 !important;
         }
 
         .welcome-wrapper {
