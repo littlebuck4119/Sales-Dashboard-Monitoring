@@ -10,34 +10,34 @@ st.set_page_config(
     page_title="Sales Monitoring",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded" # บังคับให้ Sidebar กางออกเสมอ
+    initial_sidebar_state="expanded"
 )
 
 st.markdown("""
     <style>
-    /* ซ่อน Header และ Footer ของ Streamlit */
+    /* 1. ซ่อน Cursor กระพริบทั่วทั้งแอป */
+    * { caret-color: transparent !important; }
+    
+    /* 2. ซ่อน Header/Footer และเปิดทางให้ Sidebar */
     header {visibility: hidden;}
     footer {visibility: hidden;}
     
-    /* สไตล์ Sidebar ให้ดู Professional */
+    /* 3. บังคับให้ปุ่มเปิด Sidebar ลอยเด่น ไม่โดนทับ */
+    [data-testid="stSidebarCollapsedControl"] {
+        z-index: 9999999 !important;
+        background-color: rgba(255,255,255,0.5);
+        border-radius: 50%;
+    }
+
+    /* 4. สไตล์ Sidebar Professional */
     [data-testid="stSidebarContent"] { 
-        padding-top: 2rem !important; 
+        padding-top: 1rem !important; 
         background-color: #f8f9fa;
     }
-    
-    /* การ์ดวันที่ใน Sidebar */
     .date-card { 
-        background-color: #ffffff; 
-        padding: 15px; 
-        border-radius: 12px; 
-        border: 1px solid #e0e0e0; 
-        box-shadow: 0px 2px 4px rgba(0,0,0,0.05); 
-        text-align: center; 
-        margin-bottom: 20px;
+        background-color: #ffffff; padding: 15px; border-radius: 12px; 
+        border: 1px solid #e0e0e0; text-align: center; margin-bottom: 20px;
     }
-    
-    /* สไตล์ตัวอักษรและตาราง */
-    .stDataFrame { border-radius: 10px; overflow: hidden; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -72,13 +72,13 @@ def get_data_from_api(url):
     except: pass
     return pd.DataFrame()
 
-# --- 3. SIDEBAR (จัดเรียงใหม่ให้สวยงาม) ---
+# --- 3. SIDEBAR ---
 with st.sidebar:
     now = datetime.now()
     st.markdown(f"""
         <div class="date-card">
-            <div style="font-size: 0.8rem; color: #666; text-transform: uppercase;">Current Date</div>
-            <div style="font-size: 1.2rem; font-weight: bold; color: #1f2937;">{now.strftime("%A, %d %b %Y")}</div>
+            <div style="font-size: 0.8rem; color: #666;">Current Date</div>
+            <div style="font-size: 1.1rem; font-weight: bold;">{now.strftime("%A, %d %b %Y")}</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -96,11 +96,15 @@ with st.sidebar:
     summary_placeholder = st.empty()
     st.markdown("---")
 
-# --- 4. MAIN CONTENT (Professional Welcome Page) ---
+# --- 4. MAIN CONTENT ---
 if selected_brand == "🛑 SELECT BRAND 🛑":
     st.markdown("""
         <style>
-        [data-testid="stAppViewBlockContainer"] { padding: 0 !important; max-width: 100% !important; }
+        /* แก้ไขการแสดงผลเพื่อไม่ให้ทับ Sidebar Control */
+        [data-testid="stAppViewBlockContainer"] { 
+            padding: 0 !important; 
+            max-width: 100% !important; 
+        }
         .welcome-bg {
             background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
             height: 100vh;
@@ -111,22 +115,20 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
             color: #f1f5f9;
             text-align: center;
         }
-        .main-title { font-size: 4.5rem; font-weight: 800; letter-spacing: -2px; margin-bottom: 10px; color: #ffffff; }
-        .sub-text { font-size: 1.4rem; color: #94a3b8; margin-bottom: 20px; font-weight: 300; }
-        .accent-bar { width: 60px; height: 4px; background: #38bdf8; border-radius: 2px; }
+        .main-title { font-size: 4.5rem; font-weight: 800; letter-spacing: -2px; margin: 0; color: #ffffff; }
+        .sub-text { font-size: 1.4rem; color: #94a3b8; margin-top: 15px; }
+        .accent-bar { width: 60px; height: 4px; background: #38bdf8; margin: 20px 0; border-radius: 2px; }
         </style>
         <div class="welcome-bg">
-            <div style="font-size: 5rem; margin-bottom: 1rem;">📈</div>
             <h1 class="main-title">Sales Monitoring</h1>
             <div class="accent-bar"></div>
-            <br>
             <p class="sub-text">Please select a brand on the <b>sidebar</b> to view data.</p>
         </div>
     """, unsafe_allow_html=True)
     st.stop()
 
-# --- 5. DASHBOARD VIEW (เมื่อเลือกแบรนด์แล้ว) ---
-st.markdown(f"### 📈 {selected_brand} Performance Heatmap")
+# --- 5. DASHBOARD VIEW ---
+st.markdown(f"### 📈 {selected_brand} Dashboard")
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
 if not full_df.empty:
@@ -138,7 +140,7 @@ if not full_df.empty:
         with st.expander("🚫 Manage Branch Visibility", expanded=False):
             search_query = st_keyup("🔍 Search branch...", key=f"search_{selected_brand}").strip().lower()
             
-            master_key = f"master_{selected_brand}"
+            m_key = f"master_{selected_brand}"
             def on_master_change():
                 for s in shops: st.session_state[f"tog_{selected_brand}_{s}"] = st.session_state[master_key]
             
@@ -152,45 +154,4 @@ if not full_df.empty:
                 if t_key not in st.session_state: st.session_state[t_key] = brand_settings.get(shop, True)
                 updated_settings[shop] = st.toggle(f"{shop}", key=t_key)
             
-            if st.button("💾 Save Settings", type="primary"):
-                current_full_config[selected_brand] = updated_settings
-                save_config(current_full_config)
-                st.success("Success!")
-                st.rerun()
-
-    # Heatmap Logic
-    mask = (full_df['sync_date'].dt.month == m) & (full_df['sync_date'].dt.year == y)
-    df_filtered = full_df[mask].copy()
-    _, last_day = calendar.monthrange(y, m)
-    grid_df = pd.DataFrame("N/A", index=shops, columns=range(1, last_day + 1))
-
-    if not df_filtered.empty:
-        df_filtered['Day'] = df_filtered['sync_date'].dt.day
-        for s in shops:
-            if not brand_settings.get(s, True): grid_df.loc[s] = "DISABLED"
-        for _, row in df_filtered.iterrows():
-            if row['shop_name'] in grid_df.index and grid_df.at[row['shop_name'], row['Day']] != "DISABLED":
-                stc = row['status_code']
-                grid_df.at[row['shop_name'], row['Day']] = "✅" if stc == 2 else "⚠️" if stc == 1 else "❌"
-
-    # Sidebar Summary
-    active_shops = [s for s in shops if brand_settings.get(s, True)]
-    with summary_placeholder.container():
-        st.info(f"Monitoring: **{len(active_shops)}** Branches")
-        if active_shops:
-            active_grid = grid_df.loc[active_shops]
-            prob_count = active_grid.isin(["⚠️", "❌"]).any(axis=1).sum()
-            c1, c2 = st.columns(2)
-            c1.metric("Normal", len(active_shops) - prob_count)
-            c2.metric("Issues", prob_count)
-
-    def apply_style(val):
-        if val == "✅": return 'background-color: #d4edda; color: #155724;'
-        if val == "⚠️": return 'background-color: #fff3cd; color: #856404;'
-        if val == "❌": return 'background-color: #f8d7da; color: #721c24;'
-        if val == "DISABLED": return 'background-color: #eeeeee; color: transparent;' 
-        return 'color: #e2e8f0;'
-
-    st.dataframe(grid_df.style.map(apply_style), use_container_width=True, height=750)
-else:
-    st.warning("No data found.")
+            if st.button("💾 Save Settings
