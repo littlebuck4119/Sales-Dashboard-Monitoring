@@ -239,7 +239,7 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
             border-bottom: 1px solid rgba(255,255,255,0.07);
             font-size: 0.82rem;
             font-weight: 400;
-            color: rgba(255,255,255,0.35);
+            color: rgba(247, 251, 242,0.35);
             letter-spacing: 0.5px;
             font-family: 'DM Sans', sans-serif;
         }
