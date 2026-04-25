@@ -15,76 +15,151 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    [data-testid="stSidebarContent"] { padding-top: 0rem !important; }
-    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: 1.2rem !important; }
-    .block-container { padding-top: 2rem !important; padding-left: 1rem !important; padding-right: 1rem !important; padding-bottom: 0rem !important; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-    /* Main content area — เทาฟ้าอ่อนกลืนกับ sidebar */
-    .stApp {
-        background-color: #eef2f7 !important;
+    /* ===== BASE ===== */
+    html, body, .stApp {
+        font-family: 'Inter', sans-serif !important;
+        background-color: #f0f4f8 !important;
     }
-    [data-testid="stAppViewContainer"] {
-        background-color: #eef2f7 !important;
-    }
-    [data-testid="stMain"] {
-        background-color: #eef2f7 !important;
+    [data-testid="stAppViewContainer"],
+    [data-testid="stMain"],
+    [data-testid="stHeader"] {
+        background-color: #f0f4f8 !important;
     }
     [data-testid="stMain"] .block-container {
-        background-color: transparent !important;
-    }
-    /* Header bar */
-    [data-testid="stHeader"] {
-        background-color: #eef2f7 !important;
-    }
-    /* dataframe/table พื้นหลัง */
-    [data-testid="stDataFrame"] {
-        background: white !important;
-        border-radius: 12px !important;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.06) !important;
+        background: transparent !important;
+        padding-top: 1.5rem !important;
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+        padding-bottom: 1rem !important;
     }
 
-    /* Sidebar — เทาฟ้าเข้มกว่า main นิดนึง กลืนกันพอดี */
+    /* ===== SIDEBAR ===== */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1e2d45 0%, #243351 100%) !important;
-        border-right: 1px solid rgba(255,255,255,0.06) !important;
+        background-color: #1a2332 !important;
+        border-right: 1px solid #0f1923 !important;
     }
-    [data-testid="stSidebar"] * {
-        color: rgba(255,255,255,0.82) !important;
+    [data-testid="stSidebarContent"] {
+        padding-top: 0rem !important;
     }
-    [data-testid="stSidebar"] .stSelectbox label,
-    [data-testid="stSidebar"] .stToggle label,
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+        gap: 1rem !important;
+    }
+    /* ตัวหนังสือใน sidebar */
+    [data-testid="stSidebar"] label,
     [data-testid="stSidebar"] p,
-    [data-testid="stSidebar"] span {
-        color: rgba(255,255,255,0.65) !important;
+    [data-testid="stSidebar"] span:not([data-baseweb]),
+    [data-testid="stSidebar"] div[class*="metric"] {
+        color: #cbd5e1 !important;
     }
-    /* Selectbox dropdown */
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3 {
+        color: #f1f5f9 !important;
+    }
+    /* Selectbox ใน sidebar */
     [data-testid="stSidebar"] [data-baseweb="select"] > div {
-        background-color: rgba(255,255,255,0.08) !important;
-        border-color: rgba(255,255,255,0.15) !important;
-        color: white !important;
+        background-color: #243044 !important;
+        border-color: #334155 !important;
+        color: #e2e8f0 !important;
+    }
+    [data-testid="stSidebar"] [data-baseweb="select"] svg {
+        fill: #94a3b8 !important;
     }
     /* Divider */
     [data-testid="stSidebar"] hr {
-        border-color: rgba(255,255,255,0.1) !important;
+        border-color: #2d3f57 !important;
     }
-    /* Metric */
+    /* Metric boxes ใน sidebar */
     [data-testid="stSidebar"] [data-testid="stMetric"] {
-        background: rgba(255,255,255,0.07) !important;
+        background: #243044 !important;
+        border: 1px solid #2d3f57 !important;
         border-radius: 8px !important;
-        padding: 8px !important;
+        padding: 10px 12px !important;
     }
-    /* Date card ใน sidebar */
-    [data-testid="stSidebar"] .stAlert,
-    [data-testid="stSidebar"] [data-testid="stInfo"] {
-        background: rgba(255,255,255,0.08) !important;
-        border-color: rgba(255,255,255,0.12) !important;
+    [data-testid="stSidebar"] [data-testid="stMetricValue"],
+    [data-testid="stSidebar"] [data-testid="stMetricLabel"] {
+        color: #f1f5f9 !important;
+    }
+    /* Info box ใน sidebar */
+    [data-testid="stSidebar"] [data-testid="stAlert"],
+    [data-testid="stSidebar"] .stAlert {
+        background: #243044 !important;
+        border: 1px solid #2d3f57 !important;
+        color: #cbd5e1 !important;
+        border-radius: 8px !important;
+    }
+    /* Toggle */
+    [data-testid="stSidebar"] [data-testid="stToggle"] label {
+        color: #cbd5e1 !important;
+    }
+    /* Expander */
+    [data-testid="stSidebar"] [data-testid="stExpander"] {
+        background: #243044 !important;
+        border: 1px solid #2d3f57 !important;
+        border-radius: 8px !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stExpander"] summary {
+        color: #e2e8f0 !important;
+    }
+
+    /* ===== MAIN CONTENT COMPONENTS ===== */
+    /* Dataframe / table */
+    [data-testid="stDataFrame"] {
+        background: #ffffff !important;
+        border-radius: 10px !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+        overflow: hidden !important;
+    }
+    /* Heading */
+    [data-testid="stMain"] h1,
+    [data-testid="stMain"] h2,
+    [data-testid="stMain"] h3 {
+        color: #1e293b !important;
+        font-weight: 600 !important;
+    }
+
+    /* ===== COMPONENTS ===== */
+    button[kind="primary"] {
+        background-color: #2563eb !important;
+        border-color: #2563eb !important;
         color: white !important;
+        border-radius: 6px !important;
+        font-weight: 500 !important;
     }
-    button[kind="primary"] { background-color: #28a745 !important; border-color: #28a745 !important; color: white !important; }
-    .date-card { background-color: #ffffff; padding: 20px 15px; border-radius: 12px; border: 1px solid #e0e0e0; box-shadow: 0px 4px 6px rgba(0,0,0,0.05); margin-bottom: 10px; text-align: center; }
-    .date-card .day-name { color: #ff4b4b; font-weight: bold; font-size: 0.9rem; text-transform: uppercase; }
-    .date-card .date-number { font-size: 2.2rem; font-weight: 800; color: #1f1f1f; line-height: 1; margin: 8px 0; }
-    .problem-item { font-size: 0.85rem; padding: 8px 10px; background-color: #fff5f5; border-left: 4px solid #ff4b4b; border-radius: 4px; margin-bottom: 6px; }
+    .date-card {
+        background-color: #243044;
+        padding: 14px 12px;
+        border-radius: 8px;
+        border: 1px solid #2d3f57;
+        margin-bottom: 8px;
+        text-align: center;
+    }
+    .date-card .day-name {
+        color: #60a5fa;
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .date-card .date-number {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #f1f5f9;
+        line-height: 1;
+        margin: 6px 0;
+    }
+    .problem-item {
+        font-size: 0.82rem;
+        padding: 8px 10px;
+        background-color: #2d1f1f;
+        border-left: 3px solid #ef4444;
+        border-radius: 4px;
+        margin-bottom: 5px;
+        color: #fca5a5;
+    }
     footer { visibility: hidden; }
     </style>
     """, unsafe_allow_html=True)
