@@ -5,64 +5,59 @@ import calendar
 from datetime import datetime
 from st_keyup import st_keyup
 
-# --- 1. SIDEBAR STATE CONTROL ---
-# ใช้ Query Param เพื่อบังคับสถานะ Sidebar ให้ชัวร์ 100%
-if "nav" not in st.query_params:
-    st.query_params["nav"] = "closed"
-
+# --- 1. CORE CONFIG & ULTIMATE CSS ---
 st.set_page_config(
     page_title="Sales Monitoring",
     page_icon="📊",
     layout="wide",
-    # ถ้า nav เป็น open ให้กาง Sidebar ทันที
-    initial_sidebar_state="expanded" if st.query_params["nav"] == "open" else "collapsed"
+    initial_sidebar_state="expanded" 
 )
 
-# --- 2. THEME & CURSOR KILLER ---
 st.markdown("""
     <style>
-    /* ฆ่า Cursor กระพริบถาวร */
+    /* 1. ซ่อน Cursor ทุกจุด */
     * { caret-color: transparent !important; }
     
-    /* ซ่อน Header/Footer */
+    /* 2. ซ่อน Header/Footer มาตรฐาน */
     header, footer { visibility: hidden !important; }
 
-    /* ปรับแต่งปุ่ม OPEN CONTROL PANEL ให้เด่นสุดๆ */
-    div.stButton > button {
-        background: linear-gradient(90deg, #FF4B2B 0%, #FF416C 100%) !important;
-        color: white !important;
-        border: none !important;
-        padding: 15px 50px !important;
-        font-size: 1.3rem !important;
-        font-weight: 800 !important;
-        border-radius: 50px !important;
-        box-shadow: 0 10px 25px rgba(255, 75, 43, 0.4) !important;
-        transition: all 0.3s ease !important;
-        text-transform: uppercase;
-        margin: 0 auto;
-        display: block;
-    }
-    div.stButton > button:hover {
-        transform: scale(1.05) !important;
-        box-shadow: 0 15px 35px rgba(255, 75, 43, 0.6) !important;
+    /* 3. ดันปุ่มเปิด Sidebar (ลูกศรมุมซ้าย) ให้ลอยเหนือกราฟิกหน้า Welcome */
+    [data-testid="stSidebarCollapsedControl"] {
+        z-index: 999999 !important;
+        background-color: rgba(255, 255, 255, 0.5);
+        border-radius: 50%;
     }
 
-    /* Welcome Card สไตล์หรู */
-    .welcome-card {
+    /* 4. ปรับแต่งหน้า Welcome ไม่ให้ทับเลเยอร์ปุ่ม */
+    .welcome-screen {
         background: #0f172a;
         padding: 80px 40px;
         border-radius: 40px;
         color: white;
         text-align: center;
         max-width: 850px;
-        margin: 10vh auto 30px auto;
-        box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6);
+        margin: 5vh auto 20px auto;
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
         border: 1px solid #1e293b;
+        position: relative;
+        z-index: 1; /* ต่ำกว่า Sidebar */
+    }
+    
+    /* สไตล์ปุ่ม Get Started */
+    .stButton > button {
+        background: linear-gradient(90deg, #38bdf8 0%, #3b82f6 100%) !important;
+        color: white !important;
+        border: none !important;
+        padding: 12px 45px !important;
+        font-weight: 700 !important;
+        border-radius: 50px !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. DATA UTILS ---
+# --- 2. DATA UTILS ---
 BRAND_CONFIG = {
     "Eat Am Are": "506e2020f13e6d515726",
     "JonesSalad": "695d80e67b2a8c1ca2ee", 
@@ -93,13 +88,13 @@ def fetch_api_data(url):
     except: pass
     return pd.DataFrame()
 
-# --- 4. SIDEBAR NAVIGATION ---
+# --- 3. SIDEBAR IMPLEMENTATION ---
 with st.sidebar:
     now = datetime.now()
     st.markdown(f"""
         <div style="background: white; padding: 15px; border-radius: 15px; border: 1px solid #e2e8f0; text-align: center; margin-bottom: 25px;">
-            <div style="font-size: 0.75rem; color: #94a3b8; font-weight: bold; letter-spacing: 0.05em;">SYSTEM ACTIVE</div>
-            <div style="font-size: 1.15rem; font-weight: 700; color: #1e293b; margin-top: 5px;">{now.strftime("%d %b %Y")}</div>
+            <div style="font-size: 0.75rem; color: #94a3b8; font-weight: bold;">LAST SYNC</div>
+            <div style="font-size: 1.1rem; font-weight: 700; color: #1e293b;">{now.strftime("%d %b %Y")}</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -116,45 +111,28 @@ with st.sidebar:
     summary_st = st.empty()
     st.markdown("---")
 
-# --- 5. MAIN CONTENT (Welcome Screen) ---
+# --- 4. DISPLAY LOGIC ---
 if selected_brand == "🛑 SELECT BRAND 🛑":
     st.markdown("""
-        <div class="welcome-card">
-            <div style="font-size: 5rem; margin-bottom: 20px;">📈</div>
-            <h1 style="font-size: 3.8rem; font-weight: 800; letter-spacing: -2px; margin-bottom: 10px;">Sales Monitoring</h1>
-            <div style="width: 60px; height: 5px; background: #38bdf8; margin: 25px auto; border-radius: 10px;"></div>
-            <p style="font-size: 1.3rem; color: #94a3b8; margin-bottom: 40px; line-height: 1.6;">
-                Enterprise Performance Tracking System<br>
-                <span style="font-size: 1rem; opacity: 0.8;">กรุณากดปุ่มด้านล่างเพื่อเปิดเมนูจัดการข้อมูล</span>
+        <div class="welcome-screen">
+            <div style="font-size: 4.5rem; margin-bottom: 10px;">📊</div>
+            <h1 style="font-size: 3.5rem; font-weight: 800; letter-spacing: -2px; margin:0;">Sales Monitoring</h1>
+            <div style="width: 50px; height: 4px; background: #38bdf8; margin: 25px auto; border-radius: 10px;"></div>
+            <p style="font-size: 1.2rem; color: #94a3b8; margin-bottom: 35px;">
+                ระบบติดตามสถานะยอดขายสาขาเรียลไทม์<br>
+                กรุณาเลือกแบรนด์จากเมนูทางซ้ายเพื่อเริ่มต้น
             </p>
         </div>
     """, unsafe_allow_html=True)
-
-    # ปุ่มเปิด Sidebar แบบบังคับ Re-render
-    col_l, col_btn, col_r = st.columns([1, 2, 1])
+    
+    # วางปุ่มใน Main Page เพื่อสะกิดให้ Sidebar ทำงาน
+    col_l, col_btn, col_r = st.columns([1, 1.2, 1])
     with col_btn:
         if st.button("📂 OPEN CONTROL PANEL"):
-            st.query_params["nav"] = "open"
-            st.rerun()
-            
-    # ถ้า Sidebar กางแล้ว ให้แสดงคำแนะนำ
-    if st.query_params["nav"] == "open":
-        st.markdown("""
-            <div style="text-align: center; color: #3a7bd5; font-weight: bold; margin-top: 20px; animation: bounce 2s infinite;">
-                👈 เลือกแบรนด์ที่เมนูด้านซ้ายได้เลยครับ
-            </div>
-            <style>
-            @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateX(0);} 40% {transform: translateX(-10px);} 60% {transform: translateX(-5px);} }
-            </style>
-        """, unsafe_allow_html=True)
-        
+            st.toast("เปิดเมนูที่แถบด้านซ้ายมือ 👈", icon="ℹ️")
     st.stop()
 
-# --- 6. DASHBOARD VIEW (เมื่อเลือกแบรนด์แล้ว) ---
-# เมื่อเลือกแบรนด์แล้ว ให้ล้าง Query Param เพื่อความสะอาด
-if st.query_params.get("nav") == "open":
-    st.query_params["nav"] = "done"
-
+# --- 5. DASHBOARD VIEW ---
 st.title(f"📈 {selected_brand}")
 raw_df = fetch_api_data(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
@@ -164,8 +142,8 @@ if not raw_df.empty:
     current_settings = all_configs.get(selected_brand, {})
 
     with st.sidebar:
-        with st.expander("🚫 จัดการ เปิด/ปิด สาขา", expanded=False):
-            query = st_keyup("🔍 ค้นหาสาขา...", key=f"f_{selected_brand}").strip().lower()
+        with st.expander("🚫 การตั้งค่าสาขา", expanded=False):
+            query = st_keyup("🔍 ค้นหา...", key=f"f_{selected_brand}").strip().lower()
             
             m_key = f"m_{selected_brand}"
             def sync_all():
@@ -181,13 +159,13 @@ if not raw_df.empty:
                 if t_key not in st.session_state: st.session_state[t_key] = current_settings.get(shop, True)
                 new_settings[shop] = st.toggle(shop, key=t_key)
             
-            if st.button("💾 บันทึกการตั้งค่า", use_container_width=True, type="primary"):
+            if st.button("💾 SAVE SETTINGS", use_container_width=True):
                 all_configs[selected_brand] = {s: st.session_state.get(f"tg_{selected_brand}_{s}", True) for s in unique_shops}
                 save_config(all_configs)
-                st.success("บันทึกสำเร็จ!")
+                st.success("บันทึกแล้ว!")
                 st.rerun()
 
-    # ตาราง Heatmap
+    # Heatmap Logic
     mask = (raw_df['sync_date'].dt.month == target_m) & (raw_df['sync_date'].dt.year == target_y)
     df_filtered = raw_df[mask].copy()
     _, last_day = calendar.monthrange(target_y, target_m)
@@ -211,4 +189,4 @@ if not raw_df.empty:
 
     st.dataframe(heatmap_grid.style.map(cell_style), use_container_width=True, height=750)
 else:
-    st.warning("ไม่พบข้อมูลแบรนด์นี้")
+    st.warning("ไม่มีข้อมูล")
