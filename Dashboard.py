@@ -89,89 +89,207 @@ with st.sidebar:
 # --- 4. MAIN CONTENT (หน้าขวาตอนยังไม่เลือกแบรนด์) ---
 
 if selected_brand == "🛑 SELECT BRAND 🛑":
-    # ไม้ตาย CSS: ระเบิดขอบ และแต่งสีเต็มหน้าจอ
     st.markdown("""
         <style>
-        /* 1. ระเบิด Padding ของ Streamlit ให้สีเต็มจอ */
-        [data-testid="stAppViewBlockContainer"] {
-            padding: 0 !important;
-            max-width: 100% !important;
-        }
-        
-        /* 2. สร้างพื้นหลังไล่เฉดสีแบบ Professional */
-        .full-screen-welcome {
-            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
-            height: 100vh;
-            width: 100%;
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
+
+        .welcome-wrapper {
+            min-height: calc(100vh - 140px);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            color: white;
+            padding: 2rem 1rem;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .welcome-hero {
+            position: relative;
+            background: linear-gradient(145deg, #080e1c 0%, #0b1a33 45%, #0d2244 100%);
+            border-radius: 28px;
+            padding: 56px 64px 48px;
+            max-width: 760px;
+            width: 100%;
             text-align: center;
-            margin: 0;
-            font-family: 'Inter', sans-serif;
+            border: 1px solid rgba(99, 179, 237, 0.12);
+            box-shadow:
+                0 0 0 1px rgba(255,255,255,0.03),
+                0 32px 72px rgba(0,0,0,0.5),
+                inset 0 1px 0 rgba(255,255,255,0.06);
+            overflow: hidden;
         }
 
-        .glass-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 60px;
-            border-radius: 40px;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
-            max-width: 700px;
+        .welcome-hero::before {
+            content: '';
+            position: absolute;
+            top: -100px; left: -80px;
+            width: 320px; height: 320px;
+            background: radial-gradient(circle, rgba(56, 182, 255, 0.12) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .welcome-hero::after {
+            content: '';
+            position: absolute;
+            bottom: -80px; right: -60px;
+            width: 280px; height: 280px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.10) 0%, transparent 70%);
+            pointer-events: none;
         }
 
-        .main-title {
-            font-size: 4rem;
+        .welcome-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(56, 182, 255, 0.08);
+            border: 1px solid rgba(56, 182, 255, 0.2);
+            border-radius: 100px;
+            padding: 5px 18px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #7dd3fc;
+            margin-bottom: 28px;
+        }
+
+        .welcome-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 3.2rem;
             font-weight: 800;
-            letter-spacing: -2px;
-            margin-bottom: 10px;
-            background: linear-gradient(to right, #fff, #bdc3c7);
+            letter-spacing: -1.5px;
+            line-height: 1.06;
+            margin: 0 0 14px 0;
+            background: linear-gradient(130deg, #ffffff 20%, #93c5fd 65%, #a5b4fc 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
-        /* ตกแต่งปุ่ม Streamlit ให้เข้ากับธีม */
-        div.stButton > button {
-            background: #4facfe !important;
-            background: linear-gradient(to right, #00f2fe 0%, #4facfe 100%) !important;
+        .welcome-subtitle {
+            font-size: 0.98rem;
+            font-weight: 300;
+            color: rgba(255,255,255,0.38);
+            margin-bottom: 44px;
+            line-height: 1.7;
+        }
+
+        .welcome-stats {
+            display: flex;
+            justify-content: center;
+            gap: 0;
+            margin-bottom: 44px;
+            padding: 24px 0;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .stat-item {
+            flex: 1;
+            text-align: center;
+            padding: 0 8px;
+        }
+        .stat-item + .stat-item {
+            border-left: 1px solid rgba(255,255,255,0.06);
+        }
+        .stat-number {
+            font-family: 'Syne', sans-serif;
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1;
+        }
+        .stat-label {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.3);
+            margin-top: 5px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .welcome-hint {
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.2);
+            margin-top: 18px;
+            letter-spacing: 0.3px;
+            font-style: italic;
+        }
+
+        .welcome-btn-container div.stButton > button {
+            background: linear-gradient(135deg, #2563eb 0%, #6366f1 100%) !important;
             color: white !important;
             border: none !important;
-            padding: 15px 40px !important;
-            font-size: 1.2rem !important;
-            font-weight: bold !important;
-            border-radius: 50px !important;
-            box-shadow: 0 10px 20px rgba(79, 172, 254, 0.4) !important;
-            transition: all 0.3s ease !important;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            padding: 13px 40px !important;
+            font-size: 0.95rem !important;
+            font-weight: 600 !important;
+            font-family: 'DM Sans', sans-serif !important;
+            border-radius: 12px !important;
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35) !important;
+            letter-spacing: 0.4px !important;
+            transition: all 0.2s ease !important;
         }
-        div.stButton > button:hover {
-            transform: scale(1.05) !important;
-            box-shadow: 0 15px 30px rgba(79, 172, 254, 0.6) !important;
+        .welcome-btn-container div.stButton > button:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 12px 28px rgba(99, 102, 241, 0.5) !important;
+        }
+
+        .brand-chips {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 40px;
+        }
+        .brand-chip {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 6px 14px;
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.45);
+            letter-spacing: 0.3px;
         }
         </style>
-        
-        <div class="full-screen-welcome">
-            <div class="glass-card">
-                <div style="font-size: 5rem; margin-bottom: 20px;">📈</div>
-                <h1 class="main-title">Sales Monitoring</h1>
-                <p style="font-size: 1.2rem; opacity: 0.7; margin-bottom: 40px;">
-                    Tracking Dashboard
+
+        <div class="welcome-wrapper">
+            <div class="welcome-hero">
+                <div class="welcome-badge">📊 &nbsp; Real-time Intelligence</div>
+                <h1 class="welcome-title">Sales Monitoring<br>Dashboard</h1>
+                <p class="welcome-subtitle">
+                    ระบบติดตามยอดขายและสถานะการ Sync ข้อมูลแบบ Real-time<br>
+                    ครอบคลุมทุกสาขา ทุกแบรนด์ในเครือ
                 </p>
+                <div class="brand-chips">
+                    <div class="brand-chip">🍽️ Eat Am Are</div>
+                    <div class="brand-chip">🥗 JonesSalad</div>
+                    <div class="brand-chip">🦞 Laem Charoen Seafood</div>
+                    <div class="brand-chip">🍗 Saemaeul / BHC / Solsot</div>
+                </div>
+                <div class="welcome-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">4</div>
+                        <div class="stat-label">Brands</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" style="color: #7dd3fc; font-size: 1.2rem; padding-top: 4px;">Real-time</div>
+                        <div class="stat-label">Data Sync</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" style="color: #c4b5fd;">30s</div>
+                        <div class="stat-label">Cache TTL</div>
+                    </div>
+                </div>
         """, unsafe_allow_html=True)
 
-    # วางปุ่มของ Streamlit ไว้ตรงกลาง card (เพื่อให้กดได้จริง)
-    if st.button("🚀 GET STARTED"):
-        st.session_state.sidebar_state = 'expanded'
-        st.rerun()
+    st.markdown('<div class="welcome-btn-container">', unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([2.2, 1.5, 2.2])
+    with col2:
+        if st.button("เริ่มต้นใช้งาน →", use_container_width=True):
+            st.session_state.sidebar_state = 'expanded'
+            st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("""
-                <p style="margin-top: 20px; font-size: 0.9rem; opacity: 0.5;">
-                    Click the button above to open control panel
-                </p>
+                <p class="welcome-hint">← เลือกแบรนด์จาก Sidebar ด้านซ้ายเพื่อเริ่มต้น</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
