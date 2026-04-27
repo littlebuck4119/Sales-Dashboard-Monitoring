@@ -104,7 +104,7 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     # 2. Brand selector (ปรับกรอบให้แคบและเตี้ยลง)
-    st.markdown("<div style='font-size:0.65rem; font-weight:600; color:#64748b; text-transform:uppercase; margin-bottom:4px;'>เลือกแบรนด์</div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size:0.8rem; font-weight:600; color:#64748b; text-transform:uppercase; margin-bottom:4px;'>เลือกแบรนด์</div>", unsafe_allow_html=True)
 
     for i, brand in enumerate(brand_keys):
         cfg = monitors_config.get(brand, {})
