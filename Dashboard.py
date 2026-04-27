@@ -201,7 +201,7 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
             <div class="glass-card">
                 <div style="font-size: 5rem; margin-bottom: 20px;">📈</div>
                 <h1 style="font-size: 4rem; font-weight: 800;">Sales Monitoring System</h1>
-                <p style="font-size: 1.2rem; opacity: 0.7;">Performance Tracking Dashboard</p>
+                <p style="font-size: 1.2rem; opacity: 0.7;">History&Realtime Tracking Dashboard</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
