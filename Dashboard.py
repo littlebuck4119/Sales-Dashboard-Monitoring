@@ -16,16 +16,14 @@ st.set_page_config(
 st.markdown("""
     <style>
     [data-testid="stSidebarContent"] { padding-top: 0rem !important; }
-    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: 0.8rem !important; } /* ลด gap ระหว่าง element */
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: 0.8rem !important; }
     .block-container { padding-top: 2rem !important; padding-left: 1rem !important; padding-right: 1rem !important; padding-bottom: 0rem !important; }
     
-    /* ปุ่ม primary (สีเขียว) */
     button[kind="primary"] { background-color: #28a745 !important; border-color: #28a745 !important; color: white !important; }
-    
     .problem-item { font-size: 0.85rem; padding: 8px 10px; background-color: #fff5f5; border-left: 4px solid #ff4b4b; border-radius: 4px; margin-bottom: 6px; }
     footer { visibility: hidden; }
 
-    /* ปรับแต่งปุ่ม Back to Main Page สีน้ำเงินเข้ม */
+    /* ปรับแต่งปุ่ม Back to Main Page */
     div.stButton > button[key="back_to_welcome"] {
         background-color: #1e293b !important;
         color: white !important;
@@ -36,6 +34,11 @@ st.markdown("""
         font-size: 0.8rem !important;
         width: 100% !important;
         margin-top: 10px !important;
+    }
+
+    /* ปรับขนาดตัวอักษรในช่อง Input ของหน้า Config ให้ใหญ่ขึ้นเท่าด้านบน */
+    div[data-testid="stExpander"] input {
+        font-size: 0.9rem !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -83,7 +86,6 @@ with st.sidebar:
     if "selected_brand" not in st.session_state:
         st.session_state.selected_brand = "🛑 SELECT BRAND 🛑"
 
-    # Sidebar Styles ปรับขนาดปุ่มและกรอบให้เล็กลง
     st.markdown("""
         <style>
         div[data-testid="stSidebar"] button[kind="secondary"] { padding: 1px 2px !important; min-height: 32px !important; font-size: 0.6rem !important; }
@@ -95,7 +97,7 @@ with st.sidebar:
         </style>
     """, unsafe_allow_html=True)
 
-    # 1. Date card (ขนาดเล็กลง)
+    # 1. Date card
     st.markdown(f"""
         <div style="background:#1e293b; padding:8px 12px; border-radius:10px; margin-bottom:10px;">
             <div style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase;">📅 Today</div>
@@ -103,7 +105,7 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
 
-    # 2. Brand selector (ปรับกรอบให้แคบและเตี้ยลง)
+    # 2. Brand selector
     st.markdown("<div style='font-size:0.65rem; font-weight:600; color:#64748b; text-transform:uppercase; margin-bottom:4px;'>เลือกแบรนด์</div>", unsafe_allow_html=True)
 
     for i, brand in enumerate(brand_keys):
@@ -131,7 +133,7 @@ with st.sidebar:
 
     selected_brand = st.session_state.selected_brand
 
-    # 3. ปี / เดือน (ขนาดกะทัดรัด)
+    # 3. ปี / เดือน
     st.markdown("<div style='margin-top:5px'></div>", unsafe_allow_html=True)
     col_y, col_m = st.columns(2)
     with col_y:
@@ -152,13 +154,16 @@ with st.sidebar:
                 saved = monitors_config.get(brand, {})
                 cfg_color = saved.get("color", DEFAULT_COLORS[i % len(DEFAULT_COLORS)])
                 
-                st.markdown(f"<div style='border-left:3px solid {cfg_color}; padding-left:5px; font-size:0.75rem; font-weight:600;'>{brand}</div>", unsafe_allow_html=True)
+                # ปรับชื่อแบรนด์ในหน้า Config ให้ใหญ่ขึ้นนิดนึง
+                st.markdown(f"<div style='border-left:4px solid {cfg_color}; padding-left:7px; font-size:0.9rem; font-weight:700; margin-top:10px; margin-bottom:5px;'>{brand}</div>", unsafe_allow_html=True)
+                
                 c1, c2, c3 = st.columns([2, 2, 1])
-                with c1: m1_val = st.text_input("มือ1", value=saved.get("m1",""), key=f"mon_m1_{brand}", label_visibility="collapsed")
-                with c2: m2_val = st.text_input("มือ2", value=saved.get("m2",""), key=f"mon_m2_{brand}", label_visibility="collapsed")
+                with c1: m1_val = st.text_input("มือ1", value=saved.get("m1",""), key=f"mon_m1_{brand}", label_visibility="collapsed", placeholder="มือ 1")
+                with c2: m2_val = st.text_input("มือ2", value=saved.get("m2",""), key=f"mon_m2_{brand}", label_visibility="collapsed", placeholder="มือ 2")
                 with c3: color_val = st.color_picker("Color", value=cfg_color, key=f"mon_color_{brand}", label_visibility="collapsed")
                 new_monitors[brand] = {"m1": m1_val.strip(), "m2": m2_val.strip(), "color": color_val}
 
+            st.markdown("<br>", unsafe_allow_html=True)
             if st.button("💾 บันทึกผู้รับผิดชอบ", type="primary", use_container_width=True):
                 current_full_config["_monitors"] = new_monitors
                 save_config(current_full_config)
@@ -223,12 +228,10 @@ if not full_df.empty:
                 st.success("บันทึกสำเร็จ!")
                 st.rerun()
         
-        # ย้ายมาไว้ใต้ "จัดการ เปิด/ปิด สาขา" และแสดงเฉพาะหน้า Dashboard
         if st.button("🔙 Back to Main Page", key="back_to_welcome", use_container_width=True):
             st.session_state.selected_brand = "🛑 SELECT BRAND 🛑"
             st.rerun()
 
-    # Heatmap Logic
     mask = (full_df['sync_date'].dt.month == m) & (full_df['sync_date'].dt.year == y)
     df_filtered = full_df[mask].copy()
     _, last_day = calendar.monthrange(y, m)
@@ -262,7 +265,6 @@ if not full_df.empty:
             col1.metric("ปกติ ✅", len(active_shops) - prob_count)
             col2.metric("ปัญหา ⚠️/❌", prob_count)
 
-            # Top 3 Problems
             prob_sum = (active_grid == "❌").sum(axis=1) + (active_grid == "⚠️").sum(axis=1)
             top_prob = prob_sum[prob_sum > 0].sort_values(ascending=False).head(3)
             if not top_prob.empty:
