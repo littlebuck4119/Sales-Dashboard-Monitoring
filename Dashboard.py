@@ -181,36 +181,33 @@ with st.sidebar:
     # ── 4. Settings: ผู้รับผิดชอบ Monitor ───────────────────
     with st.expander("👤 กำหนดผู้รับผิดชอบ Monitor", expanded=False):
 
-        # header row
-        h0, h1, h2, h3 = st.columns([2, 1, 1, 0.65])
-        h0.markdown("<span style='font-size:0.7rem;color:#94a3b8;font-weight:600'>แบรนด์</span>", unsafe_allow_html=True)
-        h1.markdown("<span style='font-size:0.7rem;color:#94a3b8;font-weight:600'>มือ 1</span>", unsafe_allow_html=True)
-        h2.markdown("<span style='font-size:0.7rem;color:#94a3b8;font-weight:600'>มือ 2</span>", unsafe_allow_html=True)
-        h3.markdown("<span style='font-size:0.7rem;color:#94a3b8;font-weight:600'>สี</span>", unsafe_allow_html=True)
-
-        st.markdown("<hr style='border:none;border-top:1px solid #e2e8f0;margin:4px 0 8px;'>", unsafe_allow_html=True)
-
         new_monitors = {}
         for i, brand in enumerate(brand_keys):
-            saved = monitors_config.get(brand, {})
+            saved     = monitors_config.get(brand, {})
             cfg_color = saved.get("color", DEFAULT_COLORS[i % len(DEFAULT_COLORS)])
-            short_name = brand if len(brand) <= 14 else brand[:13] + "…"
 
-            c0, c1, c2, c3 = st.columns([2, 1, 1, 0.65])
-            c0.markdown(
-                f"<div style='font-size:0.78rem; font-weight:500; padding-top:9px; "
-                f"color:#1e293b; border-left:3px solid {cfg_color}; padding-left:6px;'>{short_name}</div>",
-                unsafe_allow_html=True
-            )
-            with c1:
-                m1_val = st.text_input("​", value=saved.get("m1",""), key=f"mon_m1_{brand}",
-                                       placeholder="มือ 1", label_visibility="collapsed")
-            with c2:
-                m2_val = st.text_input("​", value=saved.get("m2",""), key=f"mon_m2_{brand}",
-                                       placeholder="มือ 2", label_visibility="collapsed")
-            with c3:
+            # แถวบน: ชื่อแบรนด์ + color picker
+            row_name, row_color = st.columns([5, 1])
+            with row_name:
+                st.markdown(
+                    f"<div style='border-left:4px solid {cfg_color}; padding:5px 0 3px 9px; "
+                    f"font-size:0.83rem; font-weight:600; color:#1e293b; line-height:1.3;'>{brand}</div>",
+                    unsafe_allow_html=True
+                )
+            with row_color:
                 color_val = st.color_picker("​", value=cfg_color, key=f"mon_color_{brand}",
                                             label_visibility="collapsed")
+
+            # แถวล่าง: มือ 1 | มือ 2
+            c1, c2 = st.columns(2)
+            with c1:
+                m1_val = st.text_input("มือ 1", value=saved.get("m1",""), key=f"mon_m1_{brand}",
+                                       placeholder="ชื่อมือ 1")
+            with c2:
+                m2_val = st.text_input("มือ 2", value=saved.get("m2",""), key=f"mon_m2_{brand}",
+                                       placeholder="ชื่อมือ 2")
+
+            st.markdown("<div style='margin-bottom:6px'></div>", unsafe_allow_html=True)
             new_monitors[brand] = {"m1": m1_val.strip(), "m2": m2_val.strip(), "color": color_val}
 
         st.markdown("<div style='margin-top:10px'></div>", unsafe_allow_html=True)
