@@ -24,17 +24,6 @@ st.markdown("""
     .date-card .date-number { font-size: 2.2rem; font-weight: 800; color: #1f1f1f; line-height: 1; margin: 8px 0; }
     .problem-item { font-size: 0.85rem; padding: 8px 10px; background-color: #fff5f5; border-left: 4px solid #ff4b4b; border-radius: 4px; margin-bottom: 6px; }
     footer { visibility: hidden; }
-
-    /* ปรับแต่งปุ่ม Back to Main โดยเฉพาะ */
-    div.stButton > button[key="back_to_welcome"] {
-        background-color: #1e293b !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 8px !important;
-        padding: 0.5rem 1rem !important;
-        font-weight: 600 !important;
-        width: 100% !important;
-    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -83,7 +72,7 @@ with st.sidebar:
     if "selected_brand" not in st.session_state:
         st.session_state.selected_brand = "🛑 SELECT BRAND 🛑"
 
-    # Sidebar Styles เพิ่มเติมสำหรับปุ่ม Brand
+    # Sidebar Styles
     st.markdown("""
         <style>
         div[data-testid="stSidebar"] button[kind="secondary"] { padding: 2px 4px !important; min-height: 42px !important; font-size: 0.65rem !important; }
@@ -168,12 +157,6 @@ with st.sidebar:
                 save_config(current_full_config)
                 st.success("✅ บันทึกสำเร็จ!")
                 st.rerun()
-
-    # --- เพิ่มปุ่ม Back to Main Page ไว้ล่างสุดของ Sidebar ---
-    st.sidebar.markdown("<br>" * 2, unsafe_allow_html=True) # เว้นระยะห่างเล็กน้อย
-    if st.sidebar.button("🔙 Back to Main Page", key="back_to_welcome", use_container_width=True):
-        st.session_state.selected_brand = "🛑 SELECT BRAND 🛑"
-        st.rerun()
 
 
 # --- 4. MAIN CONTENT ---
