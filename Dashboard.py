@@ -186,7 +186,7 @@ with st.sidebar:
         with st.expander("👤 User Configuration", expanded=False):
             pwd = st.text_input("กรอกรหัสผ่านเพื่อแก้ไข", type="password", key="admin_pwd")
             if pwd == "SYN1234":
-                st.success("ปลดล็อคสำเร็จ")
+                st.success("Login Success")
                 new_monitors = {}
                 for i, brand in enumerate(brand_keys):
                     saved = monitors_config.get(brand, {})
