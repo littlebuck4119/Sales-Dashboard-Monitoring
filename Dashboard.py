@@ -4,6 +4,7 @@ import requests
 import calendar
 from datetime import datetime
 from st_keyup import st_keyup
+from datetime import datetime, timedelta
 
 # --- 1. CONFIG & STYLES ---
 st.set_page_config(
@@ -76,7 +77,7 @@ def get_data_from_api(url):
 
 # --- 3. SIDEBAR ---
 with st.sidebar:
-    now = datetime.now()
+    now = datetime.utcnow() + timedelta(hours=7)
     brand_keys = list(BRAND_CONFIG.keys())
     DEFAULT_COLORS = ["#4CAF50", "#2196F3", "#FF9800", "#9C27B0"]
 
