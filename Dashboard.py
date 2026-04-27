@@ -36,7 +36,7 @@ st.markdown("""
         margin-top: 10px !important;
     }
 
-    /* ปรับขนาดตัวอักษรในช่อง Input ของหน้า Config ให้ใหญ่ขึ้นเท่าด้านบน */
+    /* ปรับขนาดตัวอักษรในช่อง Input ของหน้า Config */
     div[data-testid="stExpander"] input {
         font-size: 0.9rem !important;
     }
@@ -146,29 +146,35 @@ with st.sidebar:
     summary_placeholder = st.empty()
     st.markdown("<hr style='border:none; border-top:1px solid #e2e8f0; margin:8px 0;'>", unsafe_allow_html=True)
 
-    # ── 4. Settings: แสดงเฉพาะตอนยังไม่เลือกแบรนด์ ───────────────────
+    # ── 4. Settings: ใส่รหัสผ่านเพื่อเข้าถึง ───────────────────
     if selected_brand == "🛑 SELECT BRAND 🛑":
         with st.expander("👤 กำหนดผู้รับผิดชอบ Monitor", expanded=False):
-            new_monitors = {}
-            for i, brand in enumerate(brand_keys):
-                saved = monitors_config.get(brand, {})
-                cfg_color = saved.get("color", DEFAULT_COLORS[i % len(DEFAULT_COLORS)])
-                
-                # ปรับชื่อแบรนด์ในหน้า Config ให้ใหญ่ขึ้นนิดนึง
-                st.markdown(f"<div style='border-left:4px solid {cfg_color}; padding-left:7px; font-size:0.9rem; font-weight:700; margin-top:10px; margin-bottom:5px;'>{brand}</div>", unsafe_allow_html=True)
-                
-                c1, c2, c3 = st.columns([2, 2, 1])
-                with c1: m1_val = st.text_input("มือ1", value=saved.get("m1",""), key=f"mon_m1_{brand}", label_visibility="collapsed", placeholder="มือ 1")
-                with c2: m2_val = st.text_input("มือ2", value=saved.get("m2",""), key=f"mon_m2_{brand}", label_visibility="collapsed", placeholder="มือ 2")
-                with c3: color_val = st.color_picker("Color", value=cfg_color, key=f"mon_color_{brand}", label_visibility="collapsed")
-                new_monitors[brand] = {"m1": m1_val.strip(), "m2": m2_val.strip(), "color": color_val}
+            # ส่วนตรวจรหัสผ่าน
+            pwd = st.text_input("กรอกรหัสผ่านเพื่อแก้ไข", type="password", key="admin_pwd")
+            
+            if pwd == "admin1234": # พี่สามารถเปลี่ยนรหัสตรงนี้ได้ครับ
+                st.success("ปลดล็อคสำเร็จ")
+                new_monitors = {}
+                for i, brand in enumerate(brand_keys):
+                    saved = monitors_config.get(brand, {})
+                    cfg_color = saved.get("color", DEFAULT_COLORS[i % len(DEFAULT_COLORS)])
+                    
+                    st.markdown(f"<div style='border-left:4px solid {cfg_color}; padding-left:7px; font-size:0.9rem; font-weight:700; margin-top:10px; margin-bottom:5px;'>{brand}</div>", unsafe_allow_html=True)
+                    
+                    c1, c2, c3 = st.columns([2, 2, 1])
+                    with c1: m1_val = st.text_input("มือ1", value=saved.get("m1",""), key=f"mon_m1_{brand}", label_visibility="collapsed", placeholder="มือ 1")
+                    with c2: m2_val = st.text_input("มือ2", value=saved.get("m2",""), key=f"mon_m2_{brand}", label_visibility="collapsed", placeholder="มือ 2")
+                    with c3: color_val = st.color_picker("Color", value=cfg_color, key=f"mon_color_{brand}", label_visibility="collapsed")
+                    new_monitors[brand] = {"m1": m1_val.strip(), "m2": m2_val.strip(), "color": color_val}
 
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("💾 บันทึกผู้รับผิดชอบ", type="primary", use_container_width=True):
-                current_full_config["_monitors"] = new_monitors
-                save_config(current_full_config)
-                st.success("บันทึกสำเร็จ!")
-                st.rerun()
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("💾 บันทึกผู้รับผิดชอบ", type="primary", use_container_width=True):
+                    current_full_config["_monitors"] = new_monitors
+                    save_config(current_full_config)
+                    st.success("บันทึกสำเร็จ!")
+                    st.rerun()
+            elif pwd != "":
+                st.error("รหัสผ่านไม่ถูกต้อง")
 
 # --- 4. MAIN CONTENT ---
 if selected_brand == "🛑 SELECT BRAND 🛑":
@@ -195,7 +201,7 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
     """, unsafe_allow_html=True)
     st.stop()
 
-# --- 5. DASHBOARD VIEW ---
+# --- 5. DASHBOARD VIEW (ส่วนที่เหลือคงเดิม) ---
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
