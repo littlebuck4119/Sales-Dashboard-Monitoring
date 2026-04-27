@@ -24,6 +24,18 @@ st.markdown("""
     .date-card .date-number { font-size: 2.2rem; font-weight: 800; color: #1f1f1f; line-height: 1; margin: 8px 0; }
     .problem-item { font-size: 0.85rem; padding: 8px 10px; background-color: #fff5f5; border-left: 4px solid #ff4b4b; border-radius: 4px; margin-bottom: 6px; }
     footer { visibility: hidden; }
+
+    /* ปุ่ม Back to Main Page สีน้ำเงินเข้ม */
+    div.stButton > button[key="back_to_welcome"] {
+        background-color: #1e293b !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 0.5rem 1rem !important;
+        font-weight: 600 !important;
+        width: 100% !important;
+        margin-top: 20px !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -40,8 +52,7 @@ def get_config():
     try:
         res = requests.get(CONFIG_API, timeout=5)
         return res.json() if res.status_code == 200 else {}
-    except:
-        return {}
+    except: return {}
 
 def save_config(full_config):
     requests.post(CONFIG_API, json=full_config)
@@ -56,8 +67,7 @@ def get_data_from_api(url):
                 df['status_code'] = pd.to_numeric(df['status_code'], errors='coerce')
                 df['sync_date'] = pd.to_datetime(df['sync_date'])
                 return df
-    except:
-        pass
+    except: pass
     return pd.DataFrame()
 
 # --- 3. SIDEBAR ---
@@ -157,6 +167,13 @@ with st.sidebar:
                 save_config(current_full_config)
                 st.success("✅ บันทึกสำเร็จ!")
                 st.rerun()
+    
+    # ── 5. ปุ่ม Back: แสดงเฉพาะหน้า "ด้านใน" (หลังจากเลือกแบรนด์แล้ว) ──
+    else:
+        st.sidebar.markdown("<br>", unsafe_allow_html=True)
+        if st.sidebar.button("🔙 Back to Main Page", key="back_to_welcome", use_container_width=True):
+            st.session_state.selected_brand = "🛑 SELECT BRAND 🛑"
+            st.rerun()
 
 
 # --- 4. MAIN CONTENT ---
@@ -233,7 +250,7 @@ if not full_df.empty:
             if s in grid_df.index and grid_df.at[s, d] != "DISABLED":
                 grid_df.at[s, d] = "✅" if st_code == 2 else "⚠️" if st_code == 1 else "❌" if st_code == 0 else "N/A"
 
-    # Summary
+    # --- Summary & Top 3 Problems ---
     active_shops = [s for s in shops if brand_settings.get(s, True)]
     active_grid = grid_df.loc[active_shops] if active_shops else pd.DataFrame()
 
@@ -246,10 +263,23 @@ if not full_df.empty:
         
         st.info(f"Monitor: **{len(active_shops)}** / **{len(shops)}** สาขา")
         if not active_grid.empty:
-            p_c = active_grid.isin(["⚠️", "❌"]).any(axis=1).sum()
+            prob_count = active_grid.isin(["⚠️", "❌"]).any(axis=1).sum()
             col1, col2 = st.columns(2)
-            col1.metric("ปกติ ✅", len(active_shops) - p_c)
-            col2.metric("ปัญหา ⚠️/❌", p_c)
+            col1.metric("ปกติ ✅", len(active_shops) - prob_count)
+            col2.metric("ปัญหา ⚠️/❌", prob_count)
+
+            # Top 3 Problems
+            prob_sum = (active_grid == "❌").sum(axis=1) + (active_grid == "⚠️").sum(axis=1)
+            top_prob = prob_sum[prob_sum > 0].sort_values(ascending=False).head(3)
+            if not top_prob.empty:
+                st.markdown("---")
+                st.write("**⚠️ สาขาที่พบปัญหาบ่อยเดือนนี้:**")
+                for shop, count in top_prob.items():
+                    st.markdown(
+                        f'<div class="problem-item"><b>{shop}</b><br>'
+                        f'<span style="color:#d32f2f; font-size:0.8rem;">พบปัญหา {int(count)} ครั้ง</span></div>',
+                        unsafe_allow_html=True
+                    )
 
     def apply_style(val):
         if val == "✅": return 'background-color: #d4edda; color: #155724;'
