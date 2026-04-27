@@ -174,7 +174,7 @@ with st.sidebar:
                     with c3: color_val = st.color_picker("Color", value=cfg_color, key=f"mon_color_{brand}", label_visibility="collapsed")
                     new_monitors[brand] = {"m1": m1_val.strip(), "m2": m2_val.strip(), "color": color_val}
                 st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("💾 บันทึกผู้รับผิดชอบ", type="primary", use_container_width=True):
+                if st.button("💾 บันทึกการตั้งค่า", type="primary", use_container_width=True):
                     current_full_config["_monitors"] = new_monitors
                     save_config(current_full_config)
                     st.success("บันทึกสำเร็จ!")
