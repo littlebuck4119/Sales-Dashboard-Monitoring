@@ -71,130 +71,154 @@ def get_brand_label(brand, monitors_config):
 
 # --- 4. SIDEBAR ---
 with st.sidebar:
-    # --- วันที่ ---
     now = datetime.now()
+    brand_keys   = list(BRAND_CONFIG.keys())
+    DEFAULT_COLORS = ["#4CAF50", "#2196F3", "#FF9800", "#9C27B0"]
+
+    current_full_config = get_config()
+    monitors_config     = current_full_config.get("_monitors", {})
+
+    if "selected_brand" not in st.session_state:
+        st.session_state.selected_brand = "🛑 SELECT BRAND 🛑"
+
+    # ── Global sidebar styles ──────────────────────────────────
+    st.markdown("""
+        <style>
+        /* ปุ่ม ▶ แถบสี */
+        div[data-testid="stSidebar"] button[kind="secondary"] {
+            padding: 2px 4px !important;
+            min-height: 42px !important;
+            font-size: 0.65rem !important;
+        }
+        /* ปุ่มบันทึกผู้รับผิดชอบ — โทนเข้ม slate */
+        div[data-testid="stSidebar"] button[kind="primary"] {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+            border: none !important;
+            color: #f1f5f9 !important;
+            font-size: 0.82rem !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.02em !important;
+            border-radius: 8px !important;
+            padding: 10px 0 !important;
+            box-shadow: 0 2px 8px rgba(30,41,59,0.35) !important;
+            transition: opacity .15s !important;
+        }
+        div[data-testid="stSidebar"] button[kind="primary"]:hover {
+            opacity: 0.88 !important;
+        }
+        /* compact text input ใน expander */
+        div[data-testid="stSidebar"] [data-testid="stExpander"] input {
+            padding: 4px 8px !important;
+            font-size: 0.78rem !important;
+        }
+        div[data-testid="stSidebar"] [data-testid="stExpander"] label {
+            font-size: 0.75rem !important;
+            margin-bottom: 0 !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # ── 1. Date card ──────────────────────────────────────────
     st.markdown(f"""
-        <div style="background-color: #f0f2f6; padding: 10px; border-radius: 10px; border-left: 5px solid #4CAF50; margin-bottom: 20px;">
-            <div style="font-size: 0.8rem; color: #666;">📅 Today</div>
-            <div style="font-size: 1.1rem; font-weight: bold;">{now.strftime("%A, %d %b %Y")}</div>
+        <div style="background:#1e293b; padding:12px 14px; border-radius:12px; margin-bottom:14px;">
+            <div style="font-size:0.72rem; color:#94a3b8; letter-spacing:0.05em; text-transform:uppercase;">📅 Today</div>
+            <div style="font-size:1.1rem; font-weight:700; color:#f1f5f9; margin-top:2px;">{now.strftime("%A, %d %b %Y")}</div>
         </div>
     """, unsafe_allow_html=True)
 
-    # โหลด config ครั้งเดียวเพื่อดึง monitors
-    current_full_config = get_config()
-    monitors_config = current_full_config.get("_monitors", {})
+    # ── 2. Brand selector (แถบสี) ─────────────────────────────
+    st.markdown("""
+        <div style="font-size:0.72rem; font-weight:600; color:#64748b;
+                    text-transform:uppercase; letter-spacing:0.07em; margin-bottom:6px;">
+            เลือกแบรนด์
+        </div>
+    """, unsafe_allow_html=True)
 
-    # --- เลือกแบรนด์ (แสดงชื่อ + วงเล็บผู้รับผิดชอบ) ---
-    brand_keys = list(BRAND_CONFIG.keys())
-    brand_display_options = ["🛑 SELECT BRAND 🛑"] + [
-        get_brand_label(b, monitors_config) for b in brand_keys
-    ]
-    selected_label = st.selectbox("เลือกแบรนด์", brand_display_options, index=0)
-
-    # แปลง label กลับเป็นชื่อ brand จริง
-    if selected_label == "🛑 SELECT BRAND 🛑":
-        selected_brand = "🛑 SELECT BRAND 🛑"
-    else:
-        selected_brand = brand_keys[brand_display_options.index(selected_label) - 1]
-
-    # --- แถบสีแสดง Brand + ผู้รับผิดชอบ ---
-    DEFAULT_COLORS = ["#4CAF50", "#2196F3", "#FF9800", "#9C27B0"]
-    brand_bands_html = ""
     for i, brand in enumerate(brand_keys):
-        cfg = monitors_config.get(brand, {})
+        cfg   = monitors_config.get(brand, {})
         color = cfg.get("color", DEFAULT_COLORS[i % len(DEFAULT_COLORS)])
-        m1 = cfg.get("m1", "")
-        m2 = cfg.get("m2", "")
+        m1    = cfg.get("m1", "")
+        m2    = cfg.get("m2", "")
         monitors_text = " / ".join([x for x in [m1, m2] if x]) or "—"
-        is_active = (brand == selected_brand)
-        bg = f"{color}22" if is_active else f"{color}0d"
-        border_w = "5px" if is_active else "3px"
-        font_w = "700" if is_active else "400"
-        brand_short = brand if len(brand) <= 16 else brand[:15] + "…"
-        brand_bands_html += (
-            f'<div style="border-left:{border_w} solid {color}; background:{bg}; '
-            f'padding:5px 8px; margin:3px 0; border-radius:0 6px 6px 0;">'
-            f'<div style="font-size:0.78rem; font-weight:{font_w}; color:#333; line-height:1.2">{brand_short}</div>'
-            f'<div style="font-size:0.72rem; color:{color}; font-weight:600">{monitors_text}</div>'
-            f'</div>'
-        )
-    st.markdown(brand_bands_html, unsafe_allow_html=True)
+        is_active  = (st.session_state.selected_brand == brand)
+        bg         = f"{color}30" if is_active else f"{color}10"
+        border_w   = "5px"        if is_active else "3px"
+        name_weight= "700"        if is_active else "500"
+        name_color = "#0f172a"    if is_active else "#475569"
+        brand_short = brand if len(brand) <= 20 else brand[:19] + "…"
 
+        col_band, col_btn = st.columns([5, 1])
+        with col_band:
+            st.markdown(
+                f'<div style="border-left:{border_w} solid {color}; background:{bg}; '
+                f'padding:7px 10px 6px; border-radius:0 10px 10px 0; margin:3px 0; transition:all .2s;">'
+                f'<div style="font-size:0.83rem; font-weight:{name_weight}; color:{name_color}; line-height:1.3;">{brand_short}</div>'
+                f'<div style="font-size:0.7rem; color:{color}; font-weight:600; margin-top:2px; opacity:0.9;">{monitors_text}</div>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
+        with col_btn:
+            if st.button("▶", key=f"brand_btn_{brand}", use_container_width=True, help=f"เลือก {brand}"):
+                st.session_state.selected_brand = brand
+                st.rerun()
+
+    selected_brand = st.session_state.selected_brand
+
+    # ── 3. ปี / เดือน ────────────────────────────────────────
+    st.markdown("<div style='margin-top:10px'></div>", unsafe_allow_html=True)
     col_y, col_m = st.columns(2)
     with col_y:
         y = st.selectbox("ปี", [2025, 2026], index=1)
     with col_m:
         month_list = list(calendar.month_name)[1:]
-        m_name = st.selectbox("เดือน", month_list, index=now.month - 1)
-        m = month_list.index(m_name) + 1
+        m_name     = st.selectbox("เดือน", month_list, index=now.month - 1)
+        m          = month_list.index(m_name) + 1
 
     summary_placeholder = st.empty()
 
-    st.markdown("---")
+    st.markdown("<hr style='border:none; border-top:1px solid #e2e8f0; margin:14px 0;'>", unsafe_allow_html=True)
 
-    # ─────────────────────────────────────────────────────────
-    # NEW: ตั้งค่าผู้รับผิดชอบ Monitor
-    # ─────────────────────────────────────────────────────────
+    # ── 4. Settings: ผู้รับผิดชอบ Monitor ───────────────────
     with st.expander("👤 กำหนดผู้รับผิดชอบ Monitor", expanded=False):
-        st.markdown(
-            "<style>"
-            # ลด padding ของ text_input ใน expander นี้ให้แน่นขึ้น
-            "[data-testid='stExpander'] input { padding: 4px 8px !important; font-size: 0.78rem !important; }"
-            "[data-testid='stExpander'] label { font-size: 0.75rem !important; margin-bottom: 0 !important; }"
-            "[data-testid='stExpander'] [data-testid='stTextInput'] { margin-bottom: 0 !important; }"
-            "</style>",
-            unsafe_allow_html=True
-        )
 
-        # Header row
-        h0, h1, h2, h3 = st.columns([2, 1, 1, 0.6])
-        h0.caption("แบรนด์")
-        h1.caption("มือ 1")
-        h2.caption("มือ 2")
-        h3.caption("สี")
+        # header row
+        h0, h1, h2, h3 = st.columns([2, 1, 1, 0.65])
+        h0.markdown("<span style='font-size:0.7rem;color:#94a3b8;font-weight:600'>แบรนด์</span>", unsafe_allow_html=True)
+        h1.markdown("<span style='font-size:0.7rem;color:#94a3b8;font-weight:600'>มือ 1</span>", unsafe_allow_html=True)
+        h2.markdown("<span style='font-size:0.7rem;color:#94a3b8;font-weight:600'>มือ 2</span>", unsafe_allow_html=True)
+        h3.markdown("<span style='font-size:0.7rem;color:#94a3b8;font-weight:600'>สี</span>", unsafe_allow_html=True)
 
-        DEFAULT_COLORS = ["#4CAF50", "#2196F3", "#FF9800", "#9C27B0"]
+        st.markdown("<hr style='border:none;border-top:1px solid #e2e8f0;margin:4px 0 8px;'>", unsafe_allow_html=True)
+
         new_monitors = {}
         for i, brand in enumerate(brand_keys):
             saved = monitors_config.get(brand, {})
+            cfg_color = saved.get("color", DEFAULT_COLORS[i % len(DEFAULT_COLORS)])
             short_name = brand if len(brand) <= 14 else brand[:13] + "…"
-            c0, c1, c2, c3 = st.columns([2, 1, 1, 0.6])
-            c0.markdown(f"<div style='font-size:0.78rem; padding-top:8px; line-height:1.3'>{short_name}</div>", unsafe_allow_html=True)
-            with c1:
-                m1_val = st.text_input(
-                    "​",
-                    value=saved.get("m1", ""),
-                    key=f"mon_m1_{brand}",
-                    placeholder="มือ 1",
-                    label_visibility="collapsed"
-                )
-            with c2:
-                m2_val = st.text_input(
-                    "​",
-                    value=saved.get("m2", ""),
-                    key=f"mon_m2_{brand}",
-                    placeholder="มือ 2",
-                    label_visibility="collapsed"
-                )
-            with c3:
-                color_val = st.color_picker(
-                    "​",
-                    value=saved.get("color", DEFAULT_COLORS[i % len(DEFAULT_COLORS)]),
-                    key=f"mon_color_{brand}",
-                    label_visibility="collapsed"
-                )
-            new_monitors[brand] = {
-                "m1": m1_val.strip(),
-                "m2": m2_val.strip(),
-                "color": color_val
-            }
 
-        if st.button("💾 บันทึกผู้รับผิดชอบ", type="primary", use_container_width=True):
+            c0, c1, c2, c3 = st.columns([2, 1, 1, 0.65])
+            c0.markdown(
+                f"<div style='font-size:0.78rem; font-weight:500; padding-top:9px; "
+                f"color:#1e293b; border-left:3px solid {cfg_color}; padding-left:6px;'>{short_name}</div>",
+                unsafe_allow_html=True
+            )
+            with c1:
+                m1_val = st.text_input("​", value=saved.get("m1",""), key=f"mon_m1_{brand}",
+                                       placeholder="มือ 1", label_visibility="collapsed")
+            with c2:
+                m2_val = st.text_input("​", value=saved.get("m2",""), key=f"mon_m2_{brand}",
+                                       placeholder="มือ 2", label_visibility="collapsed")
+            with c3:
+                color_val = st.color_picker("​", value=cfg_color, key=f"mon_color_{brand}",
+                                            label_visibility="collapsed")
+            new_monitors[brand] = {"m1": m1_val.strip(), "m2": m2_val.strip(), "color": color_val}
+
+        st.markdown("<div style='margin-top:10px'></div>", unsafe_allow_html=True)
+        if st.button("💾  บันทึกผู้รับผิดชอบ", type="primary", use_container_width=True):
             current_full_config["_monitors"] = new_monitors
             save_config(current_full_config)
             st.success("✅ บันทึกสำเร็จ!")
             st.rerun()
-    # ─────────────────────────────────────────────────────────
 
 
 # --- 5. MAIN CONTENT ---
