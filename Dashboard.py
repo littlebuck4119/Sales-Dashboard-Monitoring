@@ -152,7 +152,7 @@ with st.sidebar:
                 saved = monitors_config.get(brand, {})
                 cfg_color = saved.get("color", DEFAULT_COLORS[i % len(DEFAULT_COLORS)])
                 
-                st.markdown(f"<div style='border-left:3px solid {cfg_color}; padding-left:5px; font-size:0.6rem; font-weight:600;'>{brand}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='border-left:3px solid {cfg_color}; padding-left:5px; font-size:0.75rem; font-weight:600;'>{brand}</div>", unsafe_allow_html=True)
                 c1, c2, c3 = st.columns([2, 2, 1])
                 with c1: m1_val = st.text_input("มือ1", value=saved.get("m1",""), key=f"mon_m1_{brand}", label_visibility="collapsed")
                 with c2: m2_val = st.text_input("มือ2", value=saved.get("m2",""), key=f"mon_m2_{brand}", label_visibility="collapsed")
