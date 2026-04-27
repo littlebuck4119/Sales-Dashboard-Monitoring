@@ -104,7 +104,7 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     # 2. Brand selector (ปรับกรอบให้แคบและเตี้ยลง)
-    st.markdown("<div style='font-size:0.8rem; font-weight:600; color:#64748b; text-transform:uppercase; margin-bottom:4px;'>เลือกแบรนด์</div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size:0.65rem; font-weight:600; color:#64748b; text-transform:uppercase; margin-bottom:4px;'>เลือกแบรนด์</div>", unsafe_allow_html=True)
 
     for i, brand in enumerate(brand_keys):
         cfg = monitors_config.get(brand, {})
@@ -120,8 +120,8 @@ with st.sidebar:
         with col_band:
             st.markdown(
                 f'<div style="border-left:{border_w} solid {color}; background:{bg}; padding:4px 8px; border-radius:0 6px 6px 0; margin:2px 0;">'
-                f'<div style="font-size:0.75rem; font-weight:{"700" if is_active else "500"}; color:{"#0f172a" if is_active else "#475569"}; line-height:1.2;">{brand}</div>'
-                f'<div style="font-size:0.6rem; color:{color}; font-weight:600;">{monitors_text}</div>'
+                f'<div style="font-size:0.9rem; font-weight:{"700" if is_active else "500"}; color:{"#0f172a" if is_active else "#475569"}; line-height:1.2;">{brand}</div>'
+                f'<div style="font-size:0.75rem; color:{color}; font-weight:600;">{monitors_text}</div>'
                 f'</div>', unsafe_allow_html=True
             )
         with col_btn:
