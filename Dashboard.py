@@ -95,8 +95,30 @@ with st.sidebar:
     if selected_label == "🛑 SELECT BRAND 🛑":
         selected_brand = "🛑 SELECT BRAND 🛑"
     else:
-        # จับคู่กลับจาก label → brand key จริง
         selected_brand = brand_keys[brand_display_options.index(selected_label) - 1]
+
+    # --- แถบสีแสดง Brand + ผู้รับผิดชอบ ---
+    DEFAULT_COLORS = ["#4CAF50", "#2196F3", "#FF9800", "#9C27B0"]
+    brand_bands_html = ""
+    for i, brand in enumerate(brand_keys):
+        cfg = monitors_config.get(brand, {})
+        color = cfg.get("color", DEFAULT_COLORS[i % len(DEFAULT_COLORS)])
+        m1 = cfg.get("m1", "")
+        m2 = cfg.get("m2", "")
+        monitors_text = " / ".join([x for x in [m1, m2] if x]) or "—"
+        is_active = (brand == selected_brand)
+        bg = f"{color}22" if is_active else f"{color}0d"
+        border_w = "5px" if is_active else "3px"
+        font_w = "700" if is_active else "400"
+        brand_short = brand if len(brand) <= 16 else brand[:15] + "…"
+        brand_bands_html += (
+            f'<div style="border-left:{border_w} solid {color}; background:{bg}; '
+            f'padding:5px 8px; margin:3px 0; border-radius:0 6px 6px 0;">'
+            f'<div style="font-size:0.78rem; font-weight:{font_w}; color:#333; line-height:1.2">{brand_short}</div>'
+            f'<div style="font-size:0.72rem; color:{color}; font-weight:600">{monitors_text}</div>'
+            f'</div>'
+        )
+    st.markdown(brand_bands_html, unsafe_allow_html=True)
 
     col_y, col_m = st.columns(2)
     with col_y:
@@ -125,21 +147,22 @@ with st.sidebar:
         )
 
         # Header row
-        h0, h1, h2 = st.columns([2, 1, 1])
+        h0, h1, h2, h3 = st.columns([2, 1, 1, 0.6])
         h0.caption("แบรนด์")
-        h1.caption("1")
-        h2.caption("2")
+        h1.caption("มือ 1")
+        h2.caption("มือ 2")
+        h3.caption("สี")
 
+        DEFAULT_COLORS = ["#4CAF50", "#2196F3", "#FF9800", "#9C27B0"]
         new_monitors = {}
-        for brand in brand_keys:
+        for i, brand in enumerate(brand_keys):
             saved = monitors_config.get(brand, {})
-            # ย่อชื่อแบรนด์ถ้ายาวเกิน
             short_name = brand if len(brand) <= 14 else brand[:13] + "…"
-            c0, c1, c2 = st.columns([2, 1, 1])
+            c0, c1, c2, c3 = st.columns([2, 1, 1, 0.6])
             c0.markdown(f"<div style='font-size:0.78rem; padding-top:8px; line-height:1.3'>{short_name}</div>", unsafe_allow_html=True)
             with c1:
                 m1_val = st.text_input(
-                    "​",  # zero-width space เพื่อซ่อน label
+                    "​",
                     value=saved.get("m1", ""),
                     key=f"mon_m1_{brand}",
                     placeholder="มือ 1",
@@ -153,7 +176,18 @@ with st.sidebar:
                     placeholder="มือ 2",
                     label_visibility="collapsed"
                 )
-            new_monitors[brand] = {"m1": m1_val.strip(), "m2": m2_val.strip()}
+            with c3:
+                color_val = st.color_picker(
+                    "​",
+                    value=saved.get("color", DEFAULT_COLORS[i % len(DEFAULT_COLORS)]),
+                    key=f"mon_color_{brand}",
+                    label_visibility="collapsed"
+                )
+            new_monitors[brand] = {
+                "m1": m1_val.strip(),
+                "m2": m2_val.strip(),
+                "color": color_val
+            }
 
         if st.button("💾 บันทึกผู้รับผิดชอบ", type="primary", use_container_width=True):
             current_full_config["_monitors"] = new_monitors
