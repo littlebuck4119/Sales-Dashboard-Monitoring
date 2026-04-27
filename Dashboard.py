@@ -114,36 +114,46 @@ with st.sidebar:
     # NEW: ตั้งค่าผู้รับผิดชอบ Monitor
     # ─────────────────────────────────────────────────────────
     with st.expander("👤 กำหนดผู้รับผิดชอบ Monitor", expanded=False):
-        st.caption("กำหนดชื่อผู้ Monitor มือ 1 (หลัก) และ มือ 2 (สำรอง) ต่อแบรนด์ ชื่อจะแสดงในวงเล็บหลังชื่อแบรนด์")
-        st.markdown("")
+        st.markdown(
+            "<style>"
+            # ลด padding ของ text_input ใน expander นี้ให้แน่นขึ้น
+            "[data-testid='stExpander'] input { padding: 4px 8px !important; font-size: 0.78rem !important; }"
+            "[data-testid='stExpander'] label { font-size: 0.75rem !important; margin-bottom: 0 !important; }"
+            "[data-testid='stExpander'] [data-testid='stTextInput'] { margin-bottom: 0 !important; }"
+            "</style>",
+            unsafe_allow_html=True
+        )
 
-        # โหลดค่าปัจจุบันจาก config (ถ้ามี)
+        # Header row
+        h0, h1, h2 = st.columns([2, 1, 1])
+        h0.caption("แบรนด์")
+        h1.caption("มือ 1")
+        h2.caption("มือ 2")
+
         new_monitors = {}
         for brand in brand_keys:
             saved = monitors_config.get(brand, {})
-            st.markdown(f"**{brand}**")
-            c1, c2 = st.columns(2)
+            # ย่อชื่อแบรนด์ถ้ายาวเกิน
+            short_name = brand if len(brand) <= 14 else brand[:13] + "…"
+            c0, c1, c2 = st.columns([2, 1, 1])
+            c0.markdown(f"<div style='font-size:0.78rem; padding-top:8px; line-height:1.3'>{short_name}</div>", unsafe_allow_html=True)
             with c1:
                 m1_val = st.text_input(
-                    "มือ 1 (หลัก)",
+                    "​",  # zero-width space เพื่อซ่อน label
                     value=saved.get("m1", ""),
                     key=f"mon_m1_{brand}",
-                    placeholder="ชื่อผู้รับผิดชอบ"
+                    placeholder="มือ 1",
+                    label_visibility="collapsed"
                 )
             with c2:
                 m2_val = st.text_input(
-                    "มือ 2 (สำรอง)",
+                    "​",
                     value=saved.get("m2", ""),
                     key=f"mon_m2_{brand}",
-                    placeholder="ชื่อผู้รับผิดชอบ"
+                    placeholder="มือ 2",
+                    label_visibility="collapsed"
                 )
             new_monitors[brand] = {"m1": m1_val.strip(), "m2": m2_val.strip()}
-
-            # Preview แบบ real-time
-            parts = [x for x in [m1_val.strip(), m2_val.strip()] if x]
-            preview = f"{brand} ({' / '.join(parts)})" if parts else brand
-            st.caption(f"📌 ตัวอย่าง: `{preview}`")
-            st.markdown("---")
 
         if st.button("💾 บันทึกผู้รับผิดชอบ", type="primary", use_container_width=True):
             current_full_config["_monitors"] = new_monitors
