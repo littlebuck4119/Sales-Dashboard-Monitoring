@@ -97,11 +97,21 @@ with st.sidebar:
         </style>
     """, unsafe_allow_html=True)
 
-    # 1. Date card
+    # 1. ปรับปรุง Date & Time card ให้สวยขึ้น
     st.markdown(f"""
-        <div style="background:#1e293b; padding:8px 12px; border-radius:10px; margin-bottom:10px;">
-            <div style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase;">📅 Today</div>
-            <div style="font-size:0.95rem; font-weight:700; color:#f1f5f9;">{now.strftime("%d %b %Y")}</div>
+        <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); 
+                    padding: 12px 15px; border-radius: 12px; margin-bottom: 15px; 
+                    border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase; letter-spacing: 0.5px;">📅 Today</div>
+                    <div style="font-size:0.95rem; font-weight:700; color:#f8fafc;">{now.strftime("%d %b %Y")}</div>
+                </div>
+                <div style="text-align: right; border-left: 1px solid rgba(148, 163, 184, 0.3); padding-left: 12px;">
+                    <div style="font-size:0.65rem; color:#94a3b8; text-transform:uppercase; letter-spacing: 0.5px;">🕒 Time</div>
+                    <div style="font-size:1.1rem; font-weight:800; color:#38bdf8;">{now.strftime("%H:%M")}</div>
+                </div>
+            </div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -146,27 +156,22 @@ with st.sidebar:
     summary_placeholder = st.empty()
     st.markdown("<hr style='border:none; border-top:1px solid #e2e8f0; margin:8px 0;'>", unsafe_allow_html=True)
 
-    # ── 4. Settings: ใส่รหัสผ่านเพื่อเข้าถึง ───────────────────
+    # ── 4. Settings ──
     if selected_brand == "🛑 SELECT BRAND 🛑":
         with st.expander("👤 กำหนดผู้รับผิดชอบ Monitor", expanded=False):
-            # ส่วนตรวจรหัสผ่าน
             pwd = st.text_input("กรอกรหัสผ่านเพื่อแก้ไข", type="password", key="admin_pwd")
-            
-            if pwd == "SYN1234": # พี่สามารถเปลี่ยนรหัสตรงนี้ได้ครับ
+            if pwd == "SYN1234":
                 st.success("ปลดล็อคสำเร็จ")
                 new_monitors = {}
                 for i, brand in enumerate(brand_keys):
                     saved = monitors_config.get(brand, {})
                     cfg_color = saved.get("color", DEFAULT_COLORS[i % len(DEFAULT_COLORS)])
-                    
                     st.markdown(f"<div style='border-left:4px solid {cfg_color}; padding-left:7px; font-size:0.9rem; font-weight:700; margin-top:10px; margin-bottom:5px;'>{brand}</div>", unsafe_allow_html=True)
-                    
                     c1, c2, c3 = st.columns([2, 2, 1])
                     with c1: m1_val = st.text_input("มือ1", value=saved.get("m1",""), key=f"mon_m1_{brand}", label_visibility="collapsed", placeholder="มือ 1")
                     with c2: m2_val = st.text_input("มือ2", value=saved.get("m2",""), key=f"mon_m2_{brand}", label_visibility="collapsed", placeholder="มือ 2")
                     with c3: color_val = st.color_picker("Color", value=cfg_color, key=f"mon_color_{brand}", label_visibility="collapsed")
                     new_monitors[brand] = {"m1": m1_val.strip(), "m2": m2_val.strip(), "color": color_val}
-
                 st.markdown("<br>", unsafe_allow_html=True)
                 if st.button("💾 บันทึกผู้รับผิดชอบ", type="primary", use_container_width=True):
                     current_full_config["_monitors"] = new_monitors
@@ -201,7 +206,7 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
     """, unsafe_allow_html=True)
     st.stop()
 
-# --- 5. DASHBOARD VIEW (ส่วนที่เหลือคงเดิม) ---
+# --- 5. DASHBOARD VIEW ---
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
@@ -253,7 +258,6 @@ if not full_df.empty:
             if s in grid_df.index and grid_df.at[s, d] != "DISABLED":
                 grid_df.at[s, d] = "✅" if st_code == 2 else "⚠️" if st_code == 1 else "❌" if st_code == 0 else "N/A"
 
-    # --- Summary & Top 3 Problems ---
     active_shops = [s for s in shops if brand_settings.get(s, True)]
     active_grid = grid_df.loc[active_shops] if active_shops else pd.DataFrame()
 
