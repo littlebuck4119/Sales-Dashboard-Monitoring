@@ -127,8 +127,8 @@ with st.sidebar:
         # Header row
         h0, h1, h2 = st.columns([2, 1, 1])
         h0.caption("แบรนด์")
-        h1.caption("มือ 1")
-        h2.caption("มือ 2")
+        h1.caption("1")
+        h2.caption("2")
 
         new_monitors = {}
         for brand in brand_keys:
