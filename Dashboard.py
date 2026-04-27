@@ -116,15 +116,25 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
 
-    # 2. Brand selector
+    # 2. Brand selector (ปรับแต่งตามเงื่อนไขการเลือกแบรนด์)
     st.markdown("<div style='font-size:0.65rem; font-weight:600; color:#64748b; text-transform:uppercase; margin-bottom:4px;'>เลือกแบรนด์</div>", unsafe_allow_html=True)
 
-    for i, brand in enumerate(brand_keys):
+    # กรองรายการแบรนด์ที่จะแสดง
+    if selected_brand == "🛑 SELECT BRAND 🛑":
+        display_brands = brand_keys  # แสดงทั้งหมด
+    else:
+        display_brands = [selected_brand] # แสดงเฉพาะแบรนด์ที่เลือก
+
+    for i, brand in enumerate(display_brands):
+        # ดึง index ดั้งเดิมมาเพื่อใช้สีที่ถูกต้อง
+        original_idx = brand_keys.index(brand)
         cfg = monitors_config.get(brand, {})
-        color = cfg.get("color", DEFAULT_COLORS[i % len(DEFAULT_COLORS)])
+        color = cfg.get("color", DEFAULT_COLORS[original_idx % len(DEFAULT_COLORS)])
+        
         m1 = cfg.get("m1", "")
         m2 = cfg.get("m2", "")
         monitors_text = " / ".join([x for x in [m1, m2] if x]) or "—"
+        
         is_active = (st.session_state.selected_brand == brand)
         bg = f"{color}25" if is_active else f"{color}10"
         border_w = "4px" if is_active else "2px"
@@ -138,7 +148,9 @@ with st.sidebar:
                 f'</div>', unsafe_allow_html=True
             )
         with col_btn:
-            if st.button("▶", key=f"brand_btn_{brand}", use_container_width=True):
+            # ถ้าเลือกแบรนด์แล้ว เปลี่ยนปุ่มเป็น "🔄" (เพื่อสลับแบรนด์) หรือคงไว้เหมือนเดิมก็ได้
+            btn_label = "▶" if selected_brand == "🛑 SELECT BRAND 🛑" else "🔄"
+            if st.button(btn_label, key=f"brand_btn_{brand}", use_container_width=True):
                 st.session_state.selected_brand = brand
                 st.rerun()
 
