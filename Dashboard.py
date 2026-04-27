@@ -116,17 +116,20 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
 
-    # 2. Brand selector (ปรับแต่งตามเงื่อนไขการเลือกแบรนด์)
+    # --- 2. Brand selector (แก้ไขใหม่) ---
     st.markdown("<div style='font-size:0.65rem; font-weight:600; color:#64748b; text-transform:uppercase; margin-bottom:4px;'>เลือกแบรนด์</div>", unsafe_allow_html=True)
 
-    # กรองรายการแบรนด์ที่จะแสดง
+    # ดึงค่าแบรนด์ที่เลือกไว้จาก session_state มาใส่ตัวแปรเพื่อให้ Main Content ด้านล่างใช้งานได้
+    selected_brand = st.session_state.selected_brand
+
+    # กำหนดรายการแบรนด์ที่จะโชว์ใน Sidebar
     if selected_brand == "🛑 SELECT BRAND 🛑":
-        display_brands = brand_keys  # แสดงทั้งหมด
+        display_brands = brand_keys  # หน้าแรกโชว์ทุกแบรนด์
     else:
-        display_brands = [selected_brand] # แสดงเฉพาะแบรนด์ที่เลือก
+        display_brands = [selected_brand] # หน้าในโชว์แค่แบรนด์ที่เลือก
 
     for i, brand in enumerate(display_brands):
-        # ดึง index ดั้งเดิมมาเพื่อใช้สีที่ถูกต้อง
+        # ดึง index จริงจาก brand_keys เพื่อให้สีตรงกับ Config
         original_idx = brand_keys.index(brand)
         cfg = monitors_config.get(brand, {})
         color = cfg.get("color", DEFAULT_COLORS[original_idx % len(DEFAULT_COLORS)])
@@ -135,7 +138,8 @@ with st.sidebar:
         m2 = cfg.get("m2", "")
         monitors_text = " / ".join([x for x in [m1, m2] if x]) or "—"
         
-        is_active = (st.session_state.selected_brand == brand)
+        # ตรวจสอบสถานะว่าแบรนด์นี้กำลังถูกเลือกอยู่หรือไม่
+        is_active = (selected_brand == brand)
         bg = f"{color}25" if is_active else f"{color}10"
         border_w = "4px" if is_active else "2px"
         
@@ -148,7 +152,7 @@ with st.sidebar:
                 f'</div>', unsafe_allow_html=True
             )
         with col_btn:
-            # ถ้าเลือกแบรนด์แล้ว เปลี่ยนปุ่มเป็น "🔄" (เพื่อสลับแบรนด์) หรือคงไว้เหมือนเดิมก็ได้
+            # ถ้าอยู่หน้าใน (เลือกแบรนด์แล้ว) ปุ่มจะกลายเป็น 🔄 เพื่อให้กดสลับแบรนด์ได้ง่ายๆ
             btn_label = "▶" if selected_brand == "🛑 SELECT BRAND 🛑" else "🔄"
             if st.button(btn_label, key=f"brand_btn_{brand}", use_container_width=True):
                 st.session_state.selected_brand = brand
