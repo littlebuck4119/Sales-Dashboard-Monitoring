@@ -159,7 +159,7 @@ with st.sidebar:
 
     # ── 4. Settings ──
     if selected_brand == "🛑 SELECT BRAND 🛑":
-        with st.expander("👤 กำหนดผู้รับผิดชอบ Monitor", expanded=False):
+        with st.expander("👤 User Configuration", expanded=False):
             pwd = st.text_input("กรอกรหัสผ่านเพื่อแก้ไข", type="password", key="admin_pwd")
             if pwd == "SYN1234":
                 st.success("ปลดล็อคสำเร็จ")
