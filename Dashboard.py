@@ -217,31 +217,37 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
     justify-content: center; align-items: center; color: white; text-align: center;
 }
 .glass-card {
-    background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.1); padding: 60px; border-radius: 40px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 60px;
+    border-radius: 40px;
+}
+.icon-box {
+    width: 100px;
+    height: 100px;
+    border-radius: 25px;
+    background: rgba(0, 212, 255, 0.08);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto 25px;
+    box-shadow: 0 0 25px rgba(0,212,255,0.25);
 }
 </style>
 
 <div class="full-screen-welcome">
     <div class="glass-card">
-        
-        <!-- ICON แทน 📈 -->
-        <div style="margin-bottom: 20px;">
-            <svg width="80" height="80" viewBox="0 0 24 24"
+
+        <!-- ICON -->
+        <div class="icon-box">
+            <svg width="50" height="50" viewBox="0 0 24 24"
                  fill="none" stroke="#00d4ff" stroke-width="2.5"
-                 stroke-linecap="round" stroke-linejoin="round"
-                 style="filter: drop-shadow(0 0 10px #00d4ff);">
-
-                <rect x="3" y="12" width="2" height="6" fill="#00d4ff" opacity="0.4"/>
-                <rect x="7" y="10" width="2" height="8" fill="#00d4ff" opacity="0.5"/>
-                <rect x="11" y="8" width="2" height="10" fill="#00d4ff" opacity="0.6"/>
-                <rect x="15" y="5" width="2" height="13" fill="#00d4ff" opacity="0.8"/>
-
+                 stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 12 8 9 12 11 18 5"/>
                 <polyline points="16 5 18 5 18 7"/>
             </svg>
         </div>
-
         <h1 style="font-size: 4rem; font-weight: 800;">Sales Monitoring System</h1>
         <p style="font-size: 1.2rem; opacity: 0.7;">History & Real-time Tracking Dashboard</p>
     </div>
