@@ -69,7 +69,10 @@ def get_data_from_api(url):
         if res.status_code == 200:
             df = pd.DataFrame(res.json())
             if not df.empty:
-                df['status_code'] = pd.to_numeric(df['status_code'], errors='coerce')
+                # แปลงสถานะทุกฟิลด์ให้เป็นตัวเลขเพื่อความแม่นยำ
+                for col in ['status_code', 'status_log', 'status_realtime']:
+                    if col in df.columns:
+                        df[col] = pd.to_numeric(df[col], errors='coerce')
                 df['sync_date'] = pd.to_datetime(df['sync_date'])
                 return df
     except: pass
@@ -98,10 +101,10 @@ with st.sidebar:
         </style>
     """, unsafe_allow_html=True)
 
-    # 1. ปรับปรุง Date & Time card ให้สวยขึ้น
+    # 1. Date & Time card
     st.markdown(f"""
         <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); 
-                    padding: 12px 15px; border-radius: 12px; margin-bottom: 15px; 
+                    padding: 12px 15px; border-radius: 12px; margin-bottom: 10px; 
                     border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
@@ -116,20 +119,27 @@ with st.sidebar:
         </div>
     """, unsafe_allow_html=True)
 
-    # --- 2. Brand selector (แก้ไขใหม่) ---
+    # --- ADDED: Mode Toggle under Date Card ---
+    view_mode = st.radio(
+        "Display Mode",
+        ["📋 History (Log)", "⚡ Real-time"],
+        index=0,
+        horizontal=True,
+        label_visibility="collapsed"
+    )
+    st.markdown("<div style='margin-bottom:15px;'></div>", unsafe_allow_html=True)
+
+    # --- 2. Brand selector ---
     st.markdown("<div style='font-size:0.65rem; font-weight:600; color:#64748b; text-transform:uppercase; margin-bottom:4px;'>เลือกแบรนด์</div>", unsafe_allow_html=True)
 
-    # ดึงค่าแบรนด์ที่เลือกไว้จาก session_state มาใส่ตัวแปรเพื่อให้ Main Content ด้านล่างใช้งานได้
     selected_brand = st.session_state.selected_brand
 
-    # กำหนดรายการแบรนด์ที่จะโชว์ใน Sidebar
     if selected_brand == "🛑 SELECT BRAND 🛑":
-        display_brands = brand_keys  # หน้าแรกโชว์ทุกแบรนด์
+        display_brands = brand_keys
     else:
-        display_brands = [selected_brand] # หน้าในโชว์แค่แบรนด์ที่เลือก
+        display_brands = [selected_brand]
 
     for i, brand in enumerate(display_brands):
-        # ดึง index จริงจาก brand_keys เพื่อให้สีตรงกับ Config
         original_idx = brand_keys.index(brand)
         cfg = monitors_config.get(brand, {})
         color = cfg.get("color", DEFAULT_COLORS[original_idx % len(DEFAULT_COLORS)])
@@ -138,7 +148,6 @@ with st.sidebar:
         m2 = cfg.get("m2", "")
         monitors_text = " / ".join([x for x in [m1, m2] if x]) or "—"
         
-        # ตรวจสอบสถานะว่าแบรนด์นี้กำลังถูกเลือกอยู่หรือไม่
         is_active = (selected_brand == brand)
         bg = f"{color}25" if is_active else f"{color}10"
         border_w = "4px" if is_active else "2px"
@@ -152,7 +161,6 @@ with st.sidebar:
                 f'</div>', unsafe_allow_html=True
             )
         with col_btn:
-            # ถ้าอยู่หน้าใน (เลือกแบรนด์แล้ว) ปุ่มจะกลายเป็น 🔄 เพื่อให้กดสลับแบรนด์ได้ง่ายๆ
             btn_label = "▶" if selected_brand == "🛑 SELECT BRAND 🛑" else "🔄"
             if st.button(btn_label, key=f"brand_btn_{brand}", use_container_width=True):
                 st.session_state.selected_brand = brand
@@ -217,14 +225,15 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
             <div class="glass-card">
                 <div style="font-size: 5rem; margin-bottom: 20px;">📈</div>
                 <h1 style="font-size: 4rem; font-weight: 800;">Sales Monitoring System</h1>
-                <p style="font-size: 1.2rem; opacity: 0.7;">History&Realtime Tracking Dashboard</p>
+                <p style="font-size: 1.2rem; opacity: 0.7;">History & Real-time Tracking Dashboard</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
     st.stop()
 
 # --- 5. DASHBOARD VIEW ---
-st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand}")
+header_mode_suffix = "(Real-time)" if "⚡ Real-time" in view_mode else "(History Log)"
+st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand} <small style='color:#666; font-size:14px;'>{header_mode_suffix}</small>", unsafe_allow_html=True)
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
 if not full_df.empty:
@@ -270,8 +279,16 @@ if not full_df.empty:
         df_filtered['Day'] = df_filtered['sync_date'].dt.day
         for shop in shops:
             if not brand_settings.get(shop, True): grid_df.loc[shop] = "DISABLED"
+        
         for _, row in df_filtered.iterrows():
-            s, d, st_code = row['shop_name'], row['Day'], row['status_code']
+            s, d = row['shop_name'], row['Day']
+            
+            # --- เลือกสถานะตามโหมดที่เลือก (Fallback ไปที่ status_code ถ้าไม่มีฟิลด์ใหม่) ---
+            if "⚡ Real-time" in view_mode:
+                st_code = row.get('status_realtime', row.get('status_code', 0))
+            else:
+                st_code = row.get('status_log', row.get('status_code', 0))
+
             if s in grid_df.index and grid_df.at[s, d] != "DISABLED":
                 grid_df.at[s, d] = "✅" if st_code == 2 else "⚠️" if st_code == 1 else "❌" if st_code == 0 else "N/A"
 
