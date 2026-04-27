@@ -152,7 +152,7 @@ with st.sidebar:
             # ส่วนตรวจรหัสผ่าน
             pwd = st.text_input("กรอกรหัสผ่านเพื่อแก้ไข", type="password", key="admin_pwd")
             
-            if pwd == "admin1234": # พี่สามารถเปลี่ยนรหัสตรงนี้ได้ครับ
+            if pwd == "SYN1234": # พี่สามารถเปลี่ยนรหัสตรงนี้ได้ครับ
                 st.success("ปลดล็อคสำเร็จ")
                 new_monitors = {}
                 for i, brand in enumerate(brand_keys):
