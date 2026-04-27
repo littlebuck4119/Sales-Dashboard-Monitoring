@@ -209,50 +209,26 @@ with st.sidebar:
 # --- 4. MAIN CONTENT ---
 if selected_brand == "🛑 SELECT BRAND 🛑":
     st.markdown("""
-<style>
-[data-testid="stAppViewBlockContainer"] { padding: 0 !important; max-width: 100% !important; }
-.full-screen-welcome {
-    background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
-    height: 100vh; width: 100%; display: flex; flex-direction: column;
-    justify-content: center; align-items: center; color: white; text-align: center;
-}
-.glass-card {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(15px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 60px;
-    border-radius: 40px;
-}
-.icon-box {
-    width: 100px;
-    height: 100px;
-    border-radius: 25px;
-    background: rgba(0, 212, 255, 0.08);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0 auto 25px;
-    box-shadow: 0 0 25px rgba(0,212,255,0.25);
-}
-</style>
-
-<div class="full-screen-welcome">
-    <div class="glass-card">
-
-        <!-- ICON -->
-        <div class="icon-box">
-            <svg width="50" height="50" viewBox="0 0 24 24"
-                 fill="none" stroke="#00d4ff" stroke-width="2.5"
-                 stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="3 12 8 9 12 11 18 5"/>
-                <polyline points="16 5 18 5 18 7"/>
-            </svg>
+        <style>
+        [data-testid="stAppViewBlockContainer"] { padding: 0 !important; max-width: 100% !important; }
+        .full-screen-welcome {
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            height: 100vh; width: 100%; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; color: white; text-align: center;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1); padding: 60px; border-radius: 40px;
+        }
+        </style>
+        <div class="full-screen-welcome">
+            <div class="glass-card">
+                <div style="font-size: 5rem; margin-bottom: 20px;">📈</div>
+                <h1 style="font-size: 4rem; font-weight: 800;">Sales Monitoring System</h1>
+                <p style="font-size: 1.2rem; opacity: 0.7;">History&Realtime Tracking Dashboard</p>
+            </div>
         </div>
-        <h1 style="font-size: 4rem; font-weight: 800;">Sales Monitoring System</h1>
-        <p style="font-size: 1.2rem; opacity: 0.7;">History & Real-time Tracking Dashboard</p>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
     st.stop()
 
 # --- 5. DASHBOARD VIEW ---
