@@ -120,8 +120,10 @@ with st.sidebar:
                 </div>
             </div>
         </div>
-    """, unsafe_allow_html=True)\n
-
+    """, unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
     # --- ADDED: Mode Toggle under Date Card ---
     view_mode = st.radio(
         "Display Mode",
