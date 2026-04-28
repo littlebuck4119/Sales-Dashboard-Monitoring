@@ -50,7 +50,9 @@ BRAND_CONFIG = {
     "JonesSalad": "695d80e67b2a8c1ca2ee",
     "Laem Charoen Seafood": "98d3735c3a0a94a513f6",
     "Saemaeul/BHC/Solsot": "90a9e466a623369dfac4",
-    "Tenjo": "da133cadd434914e0816"
+    "Tenjo": "da133cadd434914e0816",
+    "Senju": "c9d33da3c6f38be07eb8",
+    "Wisdom": "0ce6c62297f8f0e3405e"
 }
 CONFIG_API = "https://api.npoint.io/9898efa2a5853bf5f886"
 
