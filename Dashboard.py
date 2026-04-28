@@ -83,7 +83,7 @@ def get_data_from_api(url):
 
 # --- 3. SIDEBAR ---
 with st.sidebar:
-    now = datetime.utcnow() + timedelta(hours=7)\n
+    now = datetime.utcnow() + timedelta(hours=7)
     brand_keys = list(BRAND_CONFIG.keys())
     DEFAULT_COLORS = ["#4CAF50", "#2196F3", "#FF9800", "#9C27B0"]
 
@@ -120,7 +120,7 @@ with st.sidebar:
                 </div>
             </div>
         </div>
-    """, unsafe_allow_html=True)
+    """, unsafe_allow_html=True)\n
 
     # --- ADDED: Mode Toggle under Date Card ---
     view_mode = st.radio(
