@@ -56,7 +56,7 @@ BRAND_CONFIG = {
     "Seefah": "41e908643e98b11931ee",
     "Bake Brother: "363e1bba0b9907b65532",
     "Ohsho": "abb1c88b8db54ca2ee87",
-    "ตั่วเปา" : "a8b719f0d97ea01d264c"
+    "ตั่วเปา": "a8b719f0d97ea01d264c",
 }
 CONFIG_API = "https://api.npoint.io/9898efa2a5853bf5f886"
 
