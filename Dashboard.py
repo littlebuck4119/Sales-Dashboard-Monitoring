@@ -52,7 +52,11 @@ BRAND_CONFIG = {
     "Saemaeul/BHC/Solsot": "90a9e466a623369dfac4",
     "Tenjo": "da133cadd434914e0816",
     "Senju": "c9d33da3c6f38be07eb8",
-    "Wisdom": "0ce6c62297f8f0e3405e"
+    "Wisdom": "0ce6c62297f8f0e3405e",
+    "Seefah": "41e908643e98b11931ee",
+    "Bake Brother: "363e1bba0b9907b65532",
+    "Ohsho": "abb1c88b8db54ca2ee87",
+    "ตั่วเปา" : "a8b719f0d97ea01d264c"
 }
 CONFIG_API = "https://api.npoint.io/9898efa2a5853bf5f886"
 
