@@ -91,15 +91,13 @@ def get_data_from_api(url):
 # --- 3. SIDEBAR ---
 with st.sidebar:
     now = datetime.utcnow() + timedelta(hours=7)
-    brand_keys = list(BRAND_CONFIG.keys())
-    DEFAULT_COLORS = ["#4CAF50", "#2196F3", "#FF9800", "#9C27B0"]
-
     current_full_config = get_config()
     monitors_config = current_full_config.get("_monitors", {})
-    def sort_brands(b):
-        return monitors_config.get(b, {}).get("order", 999)
-    brand_keys = sorted(list(BRAND_CONFIG.keys()), key=sort_brands)
-
+    def sort_brands_logic(b_name):
+        return int(monitors_config.get(b_name, {}).get("order", 999))
+    brand_keys = sorted(list(BRAND_CONFIG.keys()), key=sort_brands_logic)
+    DEFAULT_COLORS = ["#4CAF50", "#2196F3", "#FF9800", "#9C27B0"]
+    
     if "selected_brand" not in st.session_state:
         st.session_state.selected_brand = "🛑 SELECT BRAND 🛑"
 
