@@ -97,8 +97,8 @@ with st.sidebar:
     current_full_config = get_config()
     monitors_config = current_full_config.get("_monitors", {})
 def sort_brands(b):
-return monitors_config.get(b, {}).get("order", 999)
-brand_keys = sorted(list(BRAND_CONFIG.keys()), key=sort_brands)
+    return monitors_config.get(b, {}).get("order", 999)
+    brand_keys = sorted(list(BRAND_CONFIG.keys()), key=sort_brands)
 
     if "selected_brand" not in st.session_state:
         st.session_state.selected_brand = "🛑 SELECT BRAND 🛑"
