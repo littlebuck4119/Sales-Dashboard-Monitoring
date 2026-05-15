@@ -203,15 +203,34 @@ with st.sidebar:
             if pwd == "SYN1234":
                 st.success("Login Success")
                 new_monitors = {}
-                for i, brand in enumerate(brand_keys):
+                all_brands = list(BRAND_CONFIG.keys())
+                for i, brand in enumerate(all_brands):
                     saved = monitors_config.get(brand, {})
                     cfg_color = saved.get("color", DEFAULT_COLORS[i % len(DEFAULT_COLORS)])
+                    # ดึงค่า order เดิมมาแสดง ถ้าไม่มีให้ใช้ลำดับปัจจุบัน (i+1)
+                    cfg_order = saved.get("order", i + 1)
+                    
                     st.markdown(f"<div style='border-left:4px solid {cfg_color}; padding-left:7px; font-size:0.9rem; font-weight:700; margin-top:10px; margin-bottom:5px;'>{brand}</div>", unsafe_allow_html=True)
-                    c1, c2, c3 = st.columns([2, 2, 1])
-                    with c1: m1_val = st.text_input("มือ1", value=saved.get("m1",""), key=f"mon_m1_{brand}", label_visibility="collapsed", placeholder="มือ 1")
-                    with c2: m2_val = st.text_input("มือ2", value=saved.get("m2",""), key=f"mon_m2_{brand}", label_visibility="collapsed", placeholder="มือ 2")
-                    with c3: color_val = st.color_picker("Color", value=cfg_color, key=f"mon_color_{brand}", label_visibility="collapsed")
-                    new_monitors[brand] = {"m1": m1_val.strip(), "m2": m2_val.strip(), "color": color_val}
+                    
+                    # เพิ่ม c_ord เข้ามาด้านหน้าสุดเพื่อกรอกตัวเลขลำดับ
+                    c_ord, c1, c2, c3 = st.columns([0.7, 2, 2, 1])
+                    with c_ord: 
+                        ord_val = st.number_input("ลำดับ", value=int(cfg_order), min_value=1, step=1, key=f"mon_ord_{brand}", label_visibility="collapsed")
+                    with c1: 
+                        m1_val = st.text_input("มือ1", value=saved.get("m1",""), key=f"mon_m1_{brand}", label_visibility="collapsed", placeholder="มือ 1")
+                    with c2: 
+                        m2_val = st.text_input("มือ2", value=saved.get("m2",""), key=f"mon_m2_{brand}", label_visibility="collapsed", placeholder="มือ 2")
+                    with c3: 
+                        color_val = st.color_picker("Color", value=cfg_color, key=f"mon_color_{brand}", label_visibility="collapsed")
+                    
+                    # บันทึกค่า order ลงไปใน dictionary ด้วย
+                    new_monitors[brand] = {
+                        "m1": m1_val.strip(), 
+                        "m2": m2_val.strip(), 
+                        "color": color_val,
+                        "order": int(ord_val)
+                    }
+                
                 st.markdown("<br>", unsafe_allow_html=True)
                 if st.button("💾 บันทึกการตั้งค่า", type="primary", use_container_width=True):
                     current_full_config["_monitors"] = new_monitors
