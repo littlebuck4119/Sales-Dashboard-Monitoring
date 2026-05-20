@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
 import streamlit as st
 import pandas as pd
 import requests
 import calendar
-from datetime import datetime, timedelta
+from datetime import datetime
 from st_keyup import st_keyup
+from datetime import datetime, timedelta
 
 # --- 1. CONFIG & STYLES ---
 st.set_page_config(
@@ -45,7 +45,6 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- 2. DATA FETCHING ---
-# ลิงก์รหัส npoint ต้นฉบับ (เปรียบเสมือนค่าที่ Get มาจากโค้ดบน GitHub)
 BRAND_CONFIG = {
     "Eat Am Are": "506e2020f13e6d515726",
     "JonesSalad": "695d80e67b2a8c1ca2ee",
@@ -134,7 +133,7 @@ with st.sidebar:
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Mode Toggle under Date Card
+    # --- ADDED: Mode Toggle under Date Card ---
     view_mode = st.radio(
         "Display Mode",
         ["📋 History (Log)", "⚡ Real-time"],
@@ -144,7 +143,7 @@ with st.sidebar:
     )
     st.markdown("<div style='margin-bottom:15px;'></div>", unsafe_allow_html=True)
 
-    # 2. Brand selector
+    # --- 2. Brand selector ---
     st.markdown("<div style='font-size:0.65rem; font-weight:600; color:#64748b; text-transform:uppercase; margin-bottom:4px;'>เลือกแบรนด์</div>", unsafe_allow_html=True)
 
     selected_brand = st.session_state.selected_brand
@@ -196,7 +195,7 @@ with st.sidebar:
     summary_placeholder = st.empty()
     st.markdown("<hr style='border:none; border-top:1px solid #e2e8f0; margin:8px 0;'>", unsafe_allow_html=True)
 
-    # 4. Settings (แสดงเฉพาะหน้าแรกตามปกติ)
+    # ── 4. Settings ──
     if selected_brand == "🛑 SELECT BRAND 🛑":
         with st.expander("👤 User Configuration", expanded=False):
             pwd = st.text_input("กรอกรหัสผ่านเพื่อแก้ไข", type="password", key="admin_pwd")
@@ -207,10 +206,12 @@ with st.sidebar:
                 for i, brand in enumerate(all_brands):
                     saved = monitors_config.get(brand, {})
                     cfg_color = saved.get("color", DEFAULT_COLORS[i % len(DEFAULT_COLORS)])
+                    # ดึงค่า order เดิมมาแสดง ถ้าไม่มีให้ใช้ลำดับปัจจุบัน (i+1)
                     cfg_order = saved.get("order", i + 1)
                     
                     st.markdown(f"<div style='border-left:4px solid {cfg_color}; padding-left:7px; font-size:0.9rem; font-weight:700; margin-top:10px; margin-bottom:5px;'>{brand}</div>", unsafe_allow_html=True)
                     
+                    # เพิ่ม c_ord เข้ามาด้านหน้าสุดเพื่อกรอกตัวเลขลำดับ
                     c_ord, c1, c2, c3 = st.columns([0.7, 2, 2, 1])
                     with c_ord: 
                         ord_val = st.number_input("ลำดับ", value=int(cfg_order), min_value=1, step=1, key=f"mon_ord_{brand}", label_visibility="collapsed")
@@ -221,6 +222,7 @@ with st.sidebar:
                     with c3: 
                         color_val = st.color_picker("Color", value=cfg_color, key=f"mon_color_{brand}", label_visibility="collapsed")
                     
+                    # บันทึกค่า order ลงไปใน dictionary ด้วย
                     new_monitors[brand] = {
                         "m1": m1_val.strip(), 
                         "m2": m2_val.strip(), 
@@ -237,7 +239,7 @@ with st.sidebar:
             elif pwd != "":
                 st.error("รหัสผ่านไม่ถูกต้อง")
 
-# --- 4. MAIN CONTENT (WELCOME PAGE) ---
+# --- 4. MAIN CONTENT ---
 if selected_brand == "🛑 SELECT BRAND 🛑":
     st.markdown("""
         <style>
@@ -265,14 +267,8 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
 # --- 5. DASHBOARD VIEW ---
 header_mode_suffix = "(Real-time)" if "⚡ Real-time" in view_mode else "(History Log)"
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand} <small style='color:#666; font-size:14px;'>{header_mode_suffix}</small>", unsafe_allow_html=True)
+full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
-# ── ดึงค่า URL จาก BRAND_CONFIG ที่อยู่ในโค้ดมาใช้และแสดงผล ──
-target_brand_url = f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}"
-st.markdown(f"🔗 **API Source:** `{target_brand_url}`")
-
-full_df = get_data_from_api(target_brand_url)
-
-# --- 6. RENDER HEATMAP TABLE ---
 if not full_df.empty:
     shops = sorted(full_df['shop_name'].unique())
     brand_settings = current_full_config.get(selected_brand, {})
@@ -320,7 +316,7 @@ if not full_df.empty:
         for _, row in df_filtered.iterrows():
             s, d = row['shop_name'], row['Day']
             
-            # เลือกสถานะตามโหมดที่เลือก (Fallback ไปที่ status_code ถ้าไม่มีฟิลด์ใหม่)
+            # --- เลือกสถานะตามโหมดที่เลือก (Fallback ไปที่ status_code ถ้าไม่มีฟิลด์ใหม่) ---
             if "⚡ Real-time" in view_mode:
                 st_code = row.get('status_realtime', row.get('status_code', 0))
             else:
