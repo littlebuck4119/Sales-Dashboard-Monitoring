@@ -299,11 +299,12 @@ if not full_df.empty:
             filtered_shops = [s for s in shops if search_query in s.lower()] if search_query else shops
 
             # หัวตารางแบบคลีนๆ สบายสายตา
+# หัวตารางแบบคลีนๆ
             st.markdown("""
                 <div style="display: flex; background-color: #f1f5f9; padding: 6px 4px; border-radius: 6px; margin-bottom: 8px; font-size: 0.75rem; font-weight: bold; color: #475569;">
-                    <div style="flex: 2;">📍 ชื่อสาขา</div>
-                    <div style="flex: 1; text-align: center;">แสดงผล</div>
-                    <div style="flex: 1; text-align: center;">ระงับดึงยอด</div>
+                    <div style="flex: 1.8;">📍 ชื่อสาขา</div>
+                    <div style="flex: 1.1; text-align: center;">แสดงผล</div>
+                    <div style="flex: 1.1; text-align: center;">ระงับดึงยอด</div>
                 </div>
             """, unsafe_allow_html=True)
 
@@ -311,25 +312,29 @@ if not full_df.empty:
                 display_shop_name = shop.replace('--', '').strip()
                 
                 with st.container():
-                    col_name, col_act, col_sync = st.columns([2, 1, 1])
+                    col_name, col_act, col_sync = st.columns([1.8, 1.1, 1.1])
                     
                     with col_name:
-                        st.markdown(f"<div style='font-size: 0.8rem; font-weight: 500; padding-top: 4px; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;' title='{shop}'>{display_shop_name}</div>", unsafe_allow_html=True)
+                        # 💡 เอา white-space: nowrap ออก เพื่อให้ชื่อสาขายาวๆ สามารถตัดลงมาสองบรรทัดได้ ไม่โดนตัด ...
+                        st.markdown(f"<div style='font-size: 0.8rem; font-weight: 500; line-height: 1.3; padding-top: 2px; color: #1e293b; word-break: break-word;' title='{shop}'>{display_shop_name}</div>", unsafe_allow_html=True)
                     
                     with col_act:
                         t_active_key = f"tog_act_{selected_brand}_{shop}"
                         if t_active_key not in st.session_state:
                             st.session_state[t_active_key] = updated_settings[shop]["active"]
-                        # ปุ่มที่ 1 (Active) -> จะเข้า Style CSS แรก กลายเป็นสีเขียว 🟢 
+                        
+                        # หุ้ม ID ไว้ให้ CSS สีเขียวมาจับทำงานได้ถูกต้อง 🟢
+                        st.markdown(f'<div id="tog_act_wrap_{shop}">', unsafe_allow_html=True)
                         val_active = st.toggle("Active", key=t_active_key, label_visibility="collapsed")
+                        st.markdown('</div>', unsafe_allow_html=True)
                     
                     with col_sync:
                         t_sync_key = f"tog_sync_{selected_brand}_{shop}"
                         if t_sync_key not in st.session_state:
                             st.session_state[t_sync_key] = updated_settings[shop]["disable_sync"]
                         
-                        # เพื่อให้ CSS ล็อคสีแดงเจาะจงได้แม่นยำ ต้องหุ้ม Div div id แทรกลงไปให้กับสวิตช์ Block 🔴
-                        st.markdown(f'<div id="tog_sync_{shop}">', unsafe_allow_html=True)
+                        # หุ้ม ID ไว้ให้ CSS สีแดงมาจับทำงานได้ถูกต้อง 🔴
+                        st.markdown(f'<div id="tog_sync_wrap_{shop}">', unsafe_allow_html=True)
                         val_sync = st.toggle("Block", key=t_sync_key, label_visibility="collapsed")
                         st.markdown('</div>', unsafe_allow_html=True)
                     
@@ -337,8 +342,8 @@ if not full_df.empty:
                         "active": val_active,
                         "disable_sync": val_sync
                     }
-                    st.markdown("<div style='margin: 2px 0; border-bottom: 1px solid #f8fafc;'></div>", unsafe_allow_html=True)
-
+                    st.markdown("<div style='margin: 4px 0; border-bottom: 1px solid #f1f5f9;'></div>", unsafe_allow_html=True);
+                    
             st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
             if st.button("💾 บันทึกการตั้งค่าสาขา", type="primary", use_container_width=True, key="save_shops"):
                 current_full_config[selected_brand] = updated_settings
