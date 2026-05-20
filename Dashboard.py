@@ -36,17 +36,18 @@ st.markdown("""
     /* ปรับขนาดตัวอักษรในช่อง Input ของหน้า Config */
     div[data-testid="stExpander"] input { font-size: 0.9rem !important; }
 
-    /* 🟢 ล็อคเป้าสไตล์สวิตช์แสดงผล (Active) บังคับให้เป็น สีเขียว */
-    div[data-testid="stSidebar"] div[id^="tog_act_wrap_"] div[data-testid="stCheckboxTarget"] div[data-focus-visible="true"] + div,
-    div[data-testid="stSidebar"] div[id^="tog_act_wrap_"] button[aria-checked="true"] {
+/* 🟢 คอลัมน์ที่ 2 (Active) ใน Expander → สีเขียว */
+    [data-testid="stExpander"] [data-testid="column"]:nth-child(2) [data-testid="stToggle"] input:checked + div,
+    [data-testid="stExpander"] [data-testid="column"]:nth-child(2) [data-testid="stToggle"] input:checked ~ div {
         background-color: #28a745 !important;
     }
-    
-    /* 🔴 ล็อคเป้าสไตล์สวิตช์ระงับยอด (Block) บังคับให้เป็น สีแดง */
-    div[data-testid="stSidebar"] div[id^="tog_sync_wrap_"] div[data-testid="stCheckboxTarget"] div[data-focus-visible="true"] + div,
-    div[data-testid="stSidebar"] div[id^="tog_sync_wrap_"] button[aria-checked="true"] {
+
+    /* 🔴 คอลัมน์ที่ 3 (Block) ใน Expander → สีแดง */
+    [data-testid="stExpander"] [data-testid="column"]:nth-child(3) [data-testid="stToggle"] input:checked + div,
+    [data-testid="stExpander"] [data-testid="column"]:nth-child(3) [data-testid="stToggle"] input:checked ~ div {
         background-color: #dc3545 !important;
     }
+    
     </style>
     """, unsafe_allow_html=True)
 
@@ -324,9 +325,7 @@ if not full_df.empty:
                             st.session_state[t_active_key] = updated_settings[shop]["active"]
                         
                         # หุ้ม ID ไว้ให้ CSS สีเขียวมาจับทำงานได้ถูกต้อง 🟢
-                        st.markdown(f'<div id="tog_act_wrap_{shop}">', unsafe_allow_html=True)
                         val_active = st.toggle("Active", key=t_active_key, label_visibility="collapsed")
-                        st.markdown('</div>', unsafe_allow_html=True)
                     
                     with col_sync:
                         t_sync_key = f"tog_sync_{selected_brand}_{shop}"
@@ -334,9 +333,8 @@ if not full_df.empty:
                             st.session_state[t_sync_key] = updated_settings[shop]["disable_sync"]
                         
                         # หุ้ม ID ไว้ให้ CSS สีแดงมาจับทำงานได้ถูกต้อง 🔴
-                        st.markdown(f'<div id="tog_sync_wrap_{shop}">', unsafe_allow_html=True)
                         val_sync = st.toggle("Block", key=t_sync_key, label_visibility="collapsed")
-                        st.markdown('</div>', unsafe_allow_html=True)
+
                     
                     updated_settings[shop] = {
                         "active": val_active,
