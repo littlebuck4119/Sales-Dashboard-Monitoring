@@ -276,10 +276,11 @@ if not full_df.empty:
 
     with st.sidebar:
         st.markdown("---")
+# --- ลบของเก่าช่วงเด็ดยอดสาขา แล้ววางแทนด้วยอันนี้ได้เลยครับ ---
         with st.expander("🚫 จัดการ เปิด/ปิด / ดึงยอด สาขา", expanded=False):
             search_query = st_keyup("🔍 ค้นหาสาขา...", key=f"keyup_search_{selected_brand}").strip().lower()
             
-            # ดึงค่า configuration เก่ามาแมป (รองรับทั้ง Dict รูปแบบใหม่ และ True/False รูปแบบเก่า)
+            # ดึงค่า configuration เก่ามาแมป
             updated_settings = {}
             for s in shops:
                 old_val = brand_settings.get(s, True)
@@ -296,27 +297,49 @@ if not full_df.empty:
 
             filtered_shops = [s for s in shops if search_query in s.lower()] if search_query else shops
 
-            for shop in filtered_shops:
-                st.markdown(f"**📍 {shop}**")
-                
-                # ปุ่มที่ 1: เปิด/ปิด การแสดงผลสาขา (Active/Inactive สำหรับส่งเมล)
-                t_active_key = f"tog_act_{selected_brand}_{shop}"
-                if t_active_key not in st.session_state:
-                    st.session_state[t_active_key] = updated_settings[shop]["active"]
-                val_active = st.toggle("เปิดใช้งานสาขา", key=t_active_key)
-                
-                # ปุ่มที่ 2: ปิดส่งยอดขาย (Disable Sync -> ส่งไปเป็นเงื่อนไขให้ฝั่งสาขาขึ้น Out of Warranty)
-                t_sync_key = f"tog_sync_{selected_brand}_{shop}"
-                if t_sync_key not in st.session_state:
-                    st.session_state[t_sync_key] = updated_settings[shop]["disable_sync"]
-                val_sync = st.toggle("🛑 ปิดดึงยอดขาย (Out of Warranty)", key=t_sync_key)
-                
-                updated_settings[shop] = {
-                    "active": val_active,
-                    "disable_sync": val_sync
-                }
-                st.markdown("<div style='margin-bottom:8px; border-bottom:1px dashed #eee;'></div>", unsafe_allow_html=True)
+            # 💡 [ปรับให้สวย] หัวตาราง เพื่อย่อสวิตช์ให้สั้นลง ไม่รกตา
+            st.markdown("""
+                <div style="display: flex; background-color: #f1f5f9; padding: 6px 4px; border-radius: 6px; margin-bottom: 8px; font-size: 0.75rem; font-weight: bold; color: #475569;">
+                    <div style="flex: 2;">📍 ชื่อสาขา</div>
+                    <div style="flex: 1; text-align: center;">แสดงผล</div>
+                    <div style="flex: 1; text-align: center;">ระงับดึงยอด</div>
+                </div>
+            """, unsafe_allow_html=True)
 
+            # วนลูปสร้างตารางจัดการสาขา แบบคลีนๆ
+            for shop in filtered_shops:
+                # ทำความสะอาดชื่อสาขาเพื่อแสดงผลสวยๆ (เช่น ตัดขีด -- ออกถ้ามี)
+                display_shop_name = shop.replace('--', '').strip()
+                
+                # ครอบ Container จางๆ แยกแต่ละสาขาออกจากกัน
+                with st.container():
+                    col_name, col_act, col_sync = st.columns([2, 1, 1])
+                    
+                    with col_name:
+                        st.markdown(f"<div style='font-size: 0.8rem; font-weight: 500; padding-top: 4px; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;' title='{shop}'>{display_shop_name}</div>", unsafe_allow_html=True)
+                    
+                    with col_act:
+                        t_active_key = f"tog_act_{selected_brand}_{shop}"
+                        if t_active_key not in st.session_state:
+                            st.session_state[t_active_key] = updated_settings[shop]["active"]
+                        # ซ่อน Label เพื่อให้ปุ่มเหลือกว้างเท่าที่จำเป็น
+                        val_active = st.toggle("Active", key=t_active_key, label_visibility="collapsed")
+                    
+                    with col_sync:
+                        t_sync_key = f"tog_sync_{selected_brand}_{shop}"
+                        if t_sync_key not in st.session_state:
+                            st.session_state[t_sync_key] = updated_settings[shop]["disable_sync"]
+                        # ซ่อน Label เช่นกัน
+                        val_sync = st.toggle("Block", key=t_sync_key, label_visibility="collapsed")
+                    
+                    updated_settings[shop] = {
+                        "active": val_active,
+                        "disable_sync": val_sync
+                    }
+                    # เส้นคั่นบางๆ บางมากก เพื่อไม่ให้รกสายตา
+                    st.markdown("<div style='margin: 2px 0; border-bottom: 1px solid #f8fafc;'></div>", unsafe_allow_html=True)
+
+            st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
             if st.button("💾 บันทึกการตั้งค่าสาขา", type="primary", use_container_width=True, key="save_shops"):
                 current_full_config[selected_brand] = updated_settings
                 save_config(current_full_config)
