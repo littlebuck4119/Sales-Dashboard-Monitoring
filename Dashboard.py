@@ -288,6 +288,7 @@ if not full_df.empty:
 
     with st.sidebar:
         st.markdown("---")
+# --- เปลี่ยนโค้ดภายใน st.sidebar -> st.expander("🚫 จัดการ เปิด/ปิด / ดึงยอด สาขา") เป็นก้อนนี้ได้เลยครับ ---
         with st.expander("🚫 จัดการ เปิด/ปิด / ดึงยอด สาขา", expanded=False):
             search_query = st_keyup("🔍 ค้นหาสาขา...", key=f"keyup_search_{selected_brand}").strip().lower()
             
@@ -307,26 +308,34 @@ if not full_df.empty:
 
             filtered_shops = [s for s in shops if search_query in s.lower()] if search_query else shops
 
-            # ➕ --- เพิ่มปุ่ม Select All / Deselect All ทั้งสองฝั่ง ---
-            col_all_act, col_all_sync = st.columns(2)
-            with col_all_act:
-                # ตรวจสอบสถานะฝั่ง Active ปัจจุบัน (ถ้าเปิดหมด ให้ปุ่มเป็นปิดหมด)
-                all_act_state = all(updated_settings[s]["active"] for s in filtered_shops) if filtered_shops else False
-                act_btn_label = "⬜ Deselect All (เปิดร้าน)" if all_act_state else "⬛ Select All (เปิดร้าน)"
-                if st.button(act_btn_label, key=f"btn_all_act_{selected_brand}", use_container_width=True):
+            # 🛠️ [แก้ไขใหม่] แยกปุ่ม Action ให้ชัดเจน ไม่พึ่งพาการคำนวณแบบเดิมที่ทำให้ปุ่มค้าง
+            st.markdown("<div style='font-size: 0.75rem; font-weight: bold; color: #475569; margin-bottom: 2px;'>🟢 ฝั่งเปิด-ปิดร้าน</div>", unsafe_allow_html=True)
+            col_act_on, col_act_off = st.columns(2)
+            with col_act_on:
+                if st.button("🟩 เปิดร้านทั้งหมด", key=f"btn_act_on_{selected_brand}", use_container_width=True):
                     for s in filtered_shops:
-                        st.session_state[f"tog_act_{selected_brand}_{s}"] = not all_act_state
+                        st.session_state[f"tog_act_{selected_brand}_{s}"] = True
+                    st.rerun()
+            with col_act_off:
+                if st.button("🟥 ปิดร้านทั้งหมด", key=f"btn_act_off_{selected_brand}", use_container_width=True):
+                    for s in filtered_shops:
+                        st.session_state[f"tog_act_{selected_brand}_{s}"] = False
                     st.rerun()
 
-            with col_all_sync:
-                # ตรวจสอบสถานะฝั่ง Block ปัจจุบัน (ถ้าปิดหมด ให้ปุ่มเป็นเปิดหมด)
-                all_sync_state = all(updated_settings[s]["disable_sync"] for s in filtered_shops) if filtered_shops else False
-                sync_btn_label = "⬜ Deselect All (ปิดส่งยอด)" if all_sync_state else "⬛ Select All (ปิดส่งยอด)"
-                if st.button(sync_btn_label, key=f"btn_all_sync_{selected_brand}", use_container_width=True):
+            st.markdown("<div style='font-size: 0.75rem; font-weight: bold; color: #475569; margin-top: 5px; margin-bottom: 2px;'>🔴 ฝั่งระงับส่งยอด</div>", unsafe_allow_html=True)
+            col_sync_on, col_sync_off = st.columns(2)
+            with col_sync_on:
+                if st.button("🟩 ส่งยอดทั้งหมด", key=f"btn_sync_on_{selected_brand}", use_container_width=True):
                     for s in filtered_shops:
-                        st.session_state[f"tog_sync_{selected_brand}_{s}"] = not all_sync_state
+                        st.session_state[f"tog_sync_{selected_brand}_{s}"] = False
                     st.rerun()
-            # --------------------------------------------------
+            with col_sync_off:
+                if st.button("🟥 ระงับทั้งหมด", key=f"btn_sync_off_{selected_brand}", use_container_width=True):
+                    for s in filtered_shops:
+                        st.session_state[f"tog_sync_{selected_brand}_{s}"] = True
+                    st.rerun()
+
+            st.markdown("<hr style='margin: 10px 0; border: none; border-top: 1px dashed #cbd5e1;'>", unsafe_allow_html=True)
 
             # หัวตารางแบบคลีนๆ
             st.markdown("""
@@ -351,7 +360,6 @@ if not full_df.empty:
                         if t_active_key not in st.session_state:
                             st.session_state[t_active_key] = updated_settings[shop]["active"]
                         
-                        # หุ้ม ID ไว้ให้ CSS สีเขียวมาจับทำงานได้ถูกต้อง 🟢
                         val_active = st.toggle("Active", key=t_active_key, label_visibility="collapsed")
                     
                     with col_sync:
@@ -359,15 +367,13 @@ if not full_df.empty:
                         if t_sync_key not in st.session_state:
                             st.session_state[t_sync_key] = updated_settings[shop]["disable_sync"]
                         
-                        # หุ้ม ID ไว้ให้ CSS สีแดงมาจับทำงานได้ถูกต้อง 🔴
                         val_sync = st.toggle("Block", key=t_sync_key, label_visibility="collapsed")
 
-                    
                     updated_settings[shop] = {
                         "active": val_active,
                         "disable_sync": val_sync
                     }
-                    st.markdown("<div style='margin: 4px 0; border-bottom: 1px solid #f1f5f9;'></div>", unsafe_allow_html=True);
+                    st.markdown("<div style='margin: 4px 0; border-bottom: 1px solid #f1f5f9;'></div>", unsafe_allow_html=True)
                     
             st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
             if st.button("💾 บันทึกการตั้งค่าสาขา", type="primary", use_container_width=True, key="save_shops"):
