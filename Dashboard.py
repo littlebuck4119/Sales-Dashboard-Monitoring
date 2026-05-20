@@ -16,6 +16,8 @@ st.set_page_config(
 )
 
 # 💡 [ปรับปรุง CSS ขั้นสูง] เจาะลึกเข้าแท็กสวิตช์ของ Streamlit เวอร์ชันใหม่ ปรับ Active เป็นเขียว และ Block เป็นแดง
+#💡 ให้ก๊อบปี้เฉพาะก้อนสไตล์นี้ไปวางทับในโซน CSS ด้านบนของโค้ดพี่ได้เลยครับ ปลอดภัยแน่นอน
+
 st.markdown("""
     <style>
     [data-testid="stSidebarContent"] { padding-top: 0rem !important; }
@@ -36,26 +38,30 @@ st.markdown("""
     /* ปรับขนาดตัวอักษรในช่อง Input ของหน้า Config */
     div[data-testid="stExpander"] input { font-size: 0.9rem !important; }
 
-    /* 🟢 ล็อคสเปกปุ่มฝั่งแสดงผล (Active) ให้เป็นสีเขียวตองอ่อน/เขียวเข้ม ทั้งตอนเปิดและสถานะภายใน */
-    div[id^="tog_act_wrap_"] div[data-testid="stCheckboxTarget"] div {
-        background-color: transparent !important;
-    }
-    div[id^="tog_act_wrap_"] button[aria-checked="true"] {
+    /* ======================================================= */
+    /* 🟢 แก้ไขสวิตช์ฝั่ง "แสดงผล" (คอลัมน์แรก) ให้เป็นสีเขียว */
+    /* ======================================================= */
+    div[id^="tog_act_wrap_"] div[data-testid="stCheckboxTarget"] button[aria-checked="true"],
+    div[id^="tog_act_wrap_"] [data-testid="stWidgetLabel"] + div button[aria-checked="true"],
+    div[id^="tog_act_wrap_"] button[data-testid="stToggleButtonActive"],
+    div[id^="tog_act_wrap_"] .st-emotion-cache-1sh63z0[aria-checked="true"] {
         background-color: #28a745 !important;
     }
     div[id^="tog_act_wrap_"] button[aria-checked="true"] > div {
-        background-color: #28a745 !important;
+        background-color: #ffffff !important; /* ให้ปุ่มกลมด้านในเป็นสีขาวเวลาเปิด */
     }
-    
-    /* 🔴 ล็อคสเปกปุ่มฝั่งระงับยอด (Block) ให้เป็นสีแดงสดเด่นชัด */
-    div[id^="tog_sync_wrap_"] div[data-testid="stCheckboxTarget"] div {
-        background-color: transparent !important;
-    }
-    div[id^="tog_sync_wrap_"] button[aria-checked="true"] {
+
+    /* ======================================================= */
+    /* 🔴 แก้ไขสวิตช์ฝั่ง "ระงับดึงยอด" (คอลัมน์สอง) ให้เป็นสีแดงตามเดิม */
+    /* ======================================================= */
+    div[id^="tog_sync_wrap_"] div[data-testid="stCheckboxTarget"] button[aria-checked="true"],
+    div[id^="tog_sync_wrap_"] [data-testid="stWidgetLabel"] + div button[aria-checked="true"],
+    div[id^="tog_sync_wrap_"] button[data-testid="stToggleButtonActive"],
+    div[id^="tog_sync_wrap_"] .st-emotion-cache-1sh63z0[aria-checked="true"] {
         background-color: #dc3545 !important;
     }
     div[id^="tog_sync_wrap_"] button[aria-checked="true"] > div {
-        background-color: #dc3545 !important;
+        background-color: #ffffff !important; /* ให้ปุ่มกลมด้านในเป็นสีขาวเวลาเปิด */
     }
     </style>
     """, unsafe_allow_html=True)
