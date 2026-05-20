@@ -15,7 +15,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 💡 [ปรับปรุง CSS เจาะจงสีปุ่ม] สวิตช์ Active เป็นสีเขียว / สวิตช์ Block เป็นสีแดง
+# 💡 [ปรับปรุง CSS ขั้นสูง] เจาะลึกเข้าแท็กสวิตช์ของ Streamlit เวอร์ชันใหม่ ปรับ Active เป็นเขียว และ Block เป็นแดง
 st.markdown("""
     <style>
     [data-testid="stSidebarContent"] { padding-top: 0rem !important; }
@@ -36,19 +36,25 @@ st.markdown("""
     /* ปรับขนาดตัวอักษรในช่อง Input ของหน้า Config */
     div[data-testid="stExpander"] input { font-size: 0.9rem !important; }
 
-    /* 🟢 สไตล์สวิตช์ฝั่งแสดงผล (Active) บังคับเปลี่ยนเป็น สีเขียว */
-    div[id^="tog_act_wrap_"] div[data-testid="stCheckboxTarget"] > div:first-child[style*="background-color"] {
-        background-color: rgb(40, 167, 69) !important;
+    /* 🟢 ล็อคสเปกปุ่มฝั่งแสดงผล (Active) ให้เป็นสีเขียวตองอ่อน/เขียวเข้ม ทั้งตอนเปิดและสถานะภายใน */
+    div[id^="tog_act_wrap_"] div[data-testid="stCheckboxTarget"] div {
+        background-color: transparent !important;
     }
     div[id^="tog_act_wrap_"] button[aria-checked="true"] {
         background-color: #28a745 !important;
     }
-
-    /* 🔴 สไตล์สวิตช์ฝั่งระงับยอด (Block) บังคับเปลี่ยนเป็น สีแดง */
-    div[id^="tog_sync_wrap_"] div[data-testid="stCheckboxTarget"] > div:first-child[style*="background-color"] {
-        background-color: rgb(220, 53, 69) !important;
+    div[id^="tog_act_wrap_"] button[aria-checked="true"] > div {
+        background-color: #28a745 !important;
+    }
+    
+    /* 🔴 ล็อคสเปกปุ่มฝั่งระงับยอด (Block) ให้เป็นสีแดงสดเด่นชัด */
+    div[id^="tog_sync_wrap_"] div[data-testid="stCheckboxTarget"] div {
+        background-color: transparent !important;
     }
     div[id^="tog_sync_wrap_"] button[aria-checked="true"] {
+        background-color: #dc3545 !important;
+    }
+    div[id^="tog_sync_wrap_"] button[aria-checked="true"] > div {
         background-color: #dc3545 !important;
     }
     </style>
@@ -410,8 +416,14 @@ if not full_df.empty:
                 st.markdown("---")
                 st.write("**⚠️ สาขาที่พบปัญหาบ่อยเดือนนี้:**")
                 for shop, count in top_prob.items():
-                    try: display_count = int(count)
-                    except: display_count = 0
+                    # 💡 [อุดรอยรั่วความปลอดภัย] ตรวจจับประเภทตัวแปร ป้องกันปัญหา Error int(None) หน้าเว็บพัง
+                    try:
+                        if pd.isna(count) or count is None:
+                            display_count = 0
+                        else:
+                            display_count = int(count)
+                    except: 
+                        display_count = 0
                         
                     st.markdown(
                         f'<div class="problem-item"><b>{shop}</b><br>'
