@@ -28,29 +28,23 @@ st.markdown("""
 
     /* ปรับแต่งปุ่ม Back to Main Page */
     div.stButton > button[key="back_to_welcome"] {
-        background-color: #1e293b !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 6px !important;
-        padding: 0.4rem 0.8rem !important;
-        font-weight: 600 !important;
-        font-size: 0.8rem !important;
-        width: 100% !important;
-        margin-top: 10px !important;
+        background-color: #1e293b !important; color: white !important; border: none !important;
+        border-radius: 6px !important; padding: 0.4rem 0.8rem !important;
+        font-weight: 600 !important; font-size: 0.8rem !important; width: 100% !important; margin-top: 10px !important;
     }
 
     /* ปรับขนาดตัวอักษรในช่อง Input ของหน้า Config */
-    div[data-testid="stExpander"] input {
-        font-size: 0.9rem !important;
-    }
+    div[data-testid="stExpander"] input { font-size: 0.9rem !important; }
 
-    /* 🟢 สไตล์สวิตช์ เปิดใช้งานสาขา (Active) ให้เป็นสีเขียว */
-    div[data-testid^="stSidebar"] div[data-testid="stMarkdownContainer"] + div [data-testid="stWidgetLabel"] + div button[aria-checked="true"] {
+    /* 🟢 ล็อคเป้าสไตล์สวิตช์แสดงผล (Active) บังคับให้เป็น สีเขียว */
+    div[data-testid="stSidebar"] div[id^="tog_act_wrap_"] div[data-testid="stCheckboxTarget"] div[data-focus-visible="true"] + div,
+    div[data-testid="stSidebar"] div[id^="tog_act_wrap_"] button[aria-checked="true"] {
         background-color: #28a745 !important;
     }
     
-    /* 🔴 สไตล์สวิตช์ ปิดดึงยอดขาย (Block) ที่มีคำว่า 'sync' ในคีย์ ให้เป็นสีแดง */
-    div[id^="tog_sync_"] button[aria-checked="true"] {
+    /* 🔴 ล็อคเป้าสไตล์สวิตช์ระงับยอด (Block) บังคับให้เป็น สีแดง */
+    div[data-testid="stSidebar"] div[id^="tog_sync_wrap_"] div[data-testid="stCheckboxTarget"] div[data-focus-visible="true"] + div,
+    div[data-testid="stSidebar"] div[id^="tog_sync_wrap_"] button[aria-checked="true"] {
         background-color: #dc3545 !important;
     }
     </style>
