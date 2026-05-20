@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import streamlit as st
 import pandas as pd
 import requests
@@ -267,6 +268,11 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
 # --- 5. DASHBOARD VIEW ---
 header_mode_suffix = "(Real-time)" if "⚡ Real-time" in view_mode else "(History Log)"
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand} <small style='color:#666; font-size:14px;'>{header_mode_suffix}</small>", unsafe_allow_html=True)
+
+# ─── โชว์ค่า URL ของแบรนด์ที่ดึงค่ามาจาก BRAND_CONFIG ในโค้ด (ไม่มีช่องแก้ ดึงมาแสดงเฉยๆ) ───
+st.markdown(f"🔗 **API Source:** `https://api.npoint.io/{BRAND_CONFIG[selected_brand]}`")
+
+# บรรทัดดึงข้อมูลดั้งเดิมของคุณ (ไม่มีการยุ่งเกี่ยวกับการแก้ตัวแปร)
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
 if not full_df.empty:
