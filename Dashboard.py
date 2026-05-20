@@ -1,10 +1,10 @@
+# -*- coding: utf-8 -*-
 import streamlit as st
 import pandas as pd
 import requests
 import calendar
-from datetime import datetime
-from st_keyup import st_keyup
 from datetime import datetime, timedelta
+from st_keyup import st_keyup
 
 # --- 1. CONFIG & STYLES ---
 st.set_page_config(
@@ -45,23 +45,12 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- 2. DATA FETCHING ---
-BRAND_CONFIG = {
-    "Eat Am Are": "506e2020f13e6d515726",
-    "JonesSalad": "695d80e67b2a8c1ca2ee",
-    "Laem Charoen Seafood": "98d3735c3a0a94a513f6",
-    "Saemaeul/BHC/Solsot": "90a9e466a623369dfac4",
-    "Tenjo": "da133cadd434914e0816",
-    "Senju": "c9d33da3c6f38be07eb8",
-    "Wisdom": "0ce6c62297f8f0e3405e",
-    "Seefah": "41e908643e98b11931ee",
-    "Bake Brother": "363e1bba0b9907b65532",
-    "Ohsho": "abb1c88b8db54ca2ee87",
-    "ตั่วเปา": "a8b719f0d97ea01d264c",
-    "Maesriruen": "2e8f853bc23b3ba8b140",
-    "You&I": "6111d22633f84f5ee575",
-    "เสวย": "e7a4885887fc49db4765",
-    "Shinkanzen": "5aae88055a5ff0d32c96"
-}
+# รายชื่อแบรนด์ทั้งหมดในระบบ
+ALL_BRANDS = [
+    "Eat Am Are", "JonesSalad", "Laem Charoen Seafood", "Saemaeul/BHC/Solsot", 
+    "Tenjo", "Senju", "Wisdom", "Seefah", "Bake Brother", "Ohsho", 
+    "ตั่วเปา", "Maesriruen", "You&I", "เสวย", "Shinkanzen"
+]
 CONFIG_API = "https://api.npoint.io/9898efa2a5853bf5f886"
 
 def get_config():
@@ -71,10 +60,14 @@ def get_config():
     except: return {}
 
 def save_config(full_config):
-    requests.post(CONFIG_API, json=full_config)
+    try:
+        requests.post(CONFIG_API, json=full_config, timeout=5)
+    except: pass
 
 @st.cache_data(ttl=30)
 def get_data_from_api(url):
+    if not url or not url.startswith("http"):
+        return pd.DataFrame()
     try:
         res = requests.get(url, timeout=10)
         if res.status_code == 200:
@@ -94,9 +87,11 @@ with st.sidebar:
     now = datetime.utcnow() + timedelta(hours=7)
     current_full_config = get_config()
     monitors_config = current_full_config.get("_monitors", {})
+    brand_api_urls = current_full_config.get("_brand_api_urls", {}) # ดึงข้อมูลแมปปิ้ง URL จาก Cloud
+    
     def sort_brands_logic(b_name):
         return int(monitors_config.get(b_name, {}).get("order", 999))
-    brand_keys = sorted(list(BRAND_CONFIG.keys()), key=sort_brands_logic)
+    brand_keys = sorted(ALL_BRANDS, key=sort_brands_logic)
     DEFAULT_COLORS = ["#4CAF50", "#2196F3", "#FF9800", "#9C27B0"]
     
     if "selected_brand" not in st.session_state:
@@ -133,7 +128,7 @@ with st.sidebar:
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # --- ADDED: Mode Toggle under Date Card ---
+    # Mode Toggle under Date Card
     view_mode = st.radio(
         "Display Mode",
         ["📋 History (Log)", "⚡ Real-time"],
@@ -143,7 +138,7 @@ with st.sidebar:
     )
     st.markdown("<div style='margin-bottom:15px;'></div>", unsafe_allow_html=True)
 
-    # --- 2. Brand selector ---
+    # 2. Brand selector
     st.markdown("<div style='font-size:0.65rem; font-weight:600; color:#64748b; text-transform:uppercase; margin-bottom:4px;'>เลือกแบรนด์</div>", unsafe_allow_html=True)
 
     selected_brand = st.session_state.selected_brand
@@ -195,23 +190,20 @@ with st.sidebar:
     summary_placeholder = st.empty()
     st.markdown("<hr style='border:none; border-top:1px solid #e2e8f0; margin:8px 0;'>", unsafe_allow_html=True)
 
-    # ── 4. Settings ──
+    # 4. Settings (แสดงที่หน้าแรกสำหรับจัดอันดับ/ตั้งค่าแบรนด์ภาพรวม)
     if selected_brand == "🛑 SELECT BRAND 🛑":
         with st.expander("👤 User Configuration", expanded=False):
             pwd = st.text_input("กรอกรหัสผ่านเพื่อแก้ไข", type="password", key="admin_pwd")
             if pwd == "SYN1234":
                 st.success("Login Success")
                 new_monitors = {}
-                all_brands = list(BRAND_CONFIG.keys())
-                for i, brand in enumerate(all_brands):
+                for i, brand in enumerate(ALL_BRANDS):
                     saved = monitors_config.get(brand, {})
                     cfg_color = saved.get("color", DEFAULT_COLORS[i % len(DEFAULT_COLORS)])
-                    # ดึงค่า order เดิมมาแสดง ถ้าไม่มีให้ใช้ลำดับปัจจุบัน (i+1)
                     cfg_order = saved.get("order", i + 1)
                     
                     st.markdown(f"<div style='border-left:4px solid {cfg_color}; padding-left:7px; font-size:0.9rem; font-weight:700; margin-top:10px; margin-bottom:5px;'>{brand}</div>", unsafe_allow_html=True)
                     
-                    # เพิ่ม c_ord เข้ามาด้านหน้าสุดเพื่อกรอกตัวเลขลำดับ
                     c_ord, c1, c2, c3 = st.columns([0.7, 2, 2, 1])
                     with c_ord: 
                         ord_val = st.number_input("ลำดับ", value=int(cfg_order), min_value=1, step=1, key=f"mon_ord_{brand}", label_visibility="collapsed")
@@ -222,7 +214,6 @@ with st.sidebar:
                     with c3: 
                         color_val = st.color_picker("Color", value=cfg_color, key=f"mon_color_{brand}", label_visibility="collapsed")
                     
-                    # บันทึกค่า order ลงไปใน dictionary ด้วย
                     new_monitors[brand] = {
                         "m1": m1_val.strip(), 
                         "m2": m2_val.strip(), 
@@ -231,7 +222,7 @@ with st.sidebar:
                     }
                 
                 st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("💾 บันทึกการตั้งค่า", type="primary", use_container_width=True):
+                if st.button("💾 บันทึกการตั้งค่า", type="primary", use_container_width=True, key="save_global_config"):
                     current_full_config["_monitors"] = new_monitors
                     save_config(current_full_config)
                     st.success("บันทึกสำเร็จ!")
@@ -239,7 +230,7 @@ with st.sidebar:
             elif pwd != "":
                 st.error("รหัสผ่านไม่ถูกต้อง")
 
-# --- 4. MAIN CONTENT ---
+# --- 4. MAIN CONTENT (WELCOME PAGE) ---
 if selected_brand == "🛑 SELECT BRAND 🛑":
     st.markdown("""
         <style>
@@ -264,11 +255,36 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
     """, unsafe_allow_html=True)
     st.stop()
 
-# --- 5. DASHBOARD VIEW ---
+# --- 5. DASHBOARD VIEW (เมื่อเลือกแบรนด์เข้ามาแล้ว) ---
 header_mode_suffix = "(Real-time)" if "⚡ Real-time" in view_mode else "(History Log)"
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand} <small style='color:#666; font-size:14px;'>{header_mode_suffix}</small>", unsafe_allow_html=True)
-full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
+# ดึง npoint API URL ของแบรนด์นี้มาใช้งานจากก้อนคลาวด์ตรงๆ
+target_brand_api = brand_api_urls.get(selected_brand, "")
+full_df = get_data_from_api(target_brand_api)
+
+# ── ADDED: ย้ายส่วนกล่องแก้ไข API ข้อมูลของแต่ละแบรนด์ มาแสดงที่แถบซ้ายของหน้านั้น ๆ ──
+with st.sidebar:
+    with st.expander(f"⚙️ ตั้งค่า API แบรนด์ {selected_brand}", expanded=False):
+        pwd_brand = st.text_input("กรอกรหัสผ่านเพื่อตั้งค่า API", type="password", key=f"pwd_brand_{selected_brand}")
+        if pwd_brand == "SYN1234":
+            st.success("สิทธิ์การเข้าถึงถูกต้อง")
+            
+            # ฟิลด์สำหรับพิมพ์แก้ไขเฉพาะ npoint URL ของแบรนด์ที่กำลังเปิดอยู่
+            new_api_url = st.text_input("🔗 npoint API URL", value=target_brand_api, placeholder="พิมพ์ https://api.npoint.io/...")
+            
+            if st.button("💾 บันทึก URL แบรนด์นี้", type="primary", use_container_width=True, key=f"save_api_{selected_brand}"):
+                # บันทึกทับเฉพาะคู่คีย์ของแบรนด์นี้
+                brand_api_urls[selected_brand] = new_api_url.strip()
+                current_full_config["_brand_api_urls"] = brand_api_urls
+                
+                save_config(current_full_config)
+                st.success("บันทึก URL ใหม่สำเร็จ!")
+                st.rerun()
+        elif pwd_brand != "":
+            st.error("รหัสผ่านไม่ถูกต้อง")
+
+# --- 6. RENDER HEATMAP TABLE ---
 if not full_df.empty:
     shops = sorted(full_df['shop_name'].unique())
     brand_settings = current_full_config.get(selected_brand, {})
@@ -316,7 +332,6 @@ if not full_df.empty:
         for _, row in df_filtered.iterrows():
             s, d = row['shop_name'], row['Day']
             
-            # --- เลือกสถานะตามโหมดที่เลือก (Fallback ไปที่ status_code ถ้าไม่มีฟิลด์ใหม่) ---
             if "⚡ Real-time" in view_mode:
                 st_code = row.get('status_realtime', row.get('status_code', 0))
             else:
@@ -364,4 +379,12 @@ if not full_df.empty:
     st.dataframe(grid_df.style.map(apply_style), use_container_width=True, height=800,
                  column_config={d: st.column_config.Column(width=35) for d in days})
 else:
-    st.warning("⚠️ ไม่พบข้อมูลสำหรับแบรนด์นี้")
+    with st.sidebar:
+        if st.button("🔙 Back to Main Page", key="back_to_welcome", use_container_width=True):
+            st.session_state.selected_brand = "🛑 SELECT BRAND 🛑"
+            st.rerun()
+            
+    if not target_brand_api:
+        st.warning(f"⚠️ แบรนด์ {selected_brand} ยังไม่ได้ตั้งค่า npoint API URL ในระบบ กรุณาใส่รหัสผ่านในกล่อง 'ตั้งค่า API แบรนด์' ที่ Sidebar ด้านซ้ายเพื่อผูกข้อมูล")
+    else:
+        st.error(f"❌ ไม่สามารถดึงข้อมูลได้จากลิงก์: {target_brand_api} โปรดตรวจสอบความถูกต้องของ URL")
