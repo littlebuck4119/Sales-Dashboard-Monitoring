@@ -15,6 +15,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# 💡 [ปรับแต่งเพิ่มเติม] ใส่ CSS Custom Style ให้กับสวิตช์ Toggle ทั้งสองประเภทแยกสีกันชัดเจน
 st.markdown("""
     <style>
     [data-testid="stSidebarContent"] { padding-top: 0rem !important; }
@@ -41,6 +42,16 @@ st.markdown("""
     /* ปรับขนาดตัวอักษรในช่อง Input ของหน้า Config */
     div[data-testid="stExpander"] input {
         font-size: 0.9rem !important;
+    }
+
+    /* 🟢 สไตล์สวิตช์ เปิดใช้งานสาขา (Active) ให้เป็นสีเขียว */
+    div[data-testid^="stSidebar"] div[data-testid="stMarkdownContainer"] + div [data-testid="stWidgetLabel"] + div button[aria-checked="true"] {
+        background-color: #28a745 !important;
+    }
+    
+    /* 🔴 สไตล์สวิตช์ ปิดดึงยอดขาย (Block) ที่มีคำว่า 'sync' ในคีย์ ให้เป็นสีแดง */
+    div[id^="tog_sync_"] button[aria-checked="true"] {
+        background-color: #dc3545 !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -81,7 +92,6 @@ def get_data_from_api(url):
         if res.status_code == 200:
             df = pd.DataFrame(res.json())
             if not df.empty:
-                # แปลงสถานะทุกฟิลด์ให้เป็นตัวเลขเพื่อความแม่นยำ
                 for col in ['status_code', 'status_log', 'status_realtime']:
                     if col in df.columns:
                         df[col] = pd.to_numeric(df[col], errors='coerce')
@@ -134,7 +144,6 @@ with st.sidebar:
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # --- ADDED: Mode Toggle under Date Card ---
     view_mode = st.radio(
         "Display Mode",
         ["📋 History (Log)", "⚡ Real-time"],
@@ -276,11 +285,9 @@ if not full_df.empty:
 
     with st.sidebar:
         st.markdown("---")
-# --- ลบของเก่าช่วงเด็ดยอดสาขา แล้ววางแทนด้วยอันนี้ได้เลยครับ ---
         with st.expander("🚫 จัดการ เปิด/ปิด / ดึงยอด สาขา", expanded=False):
             search_query = st_keyup("🔍 ค้นหาสาขา...", key=f"keyup_search_{selected_brand}").strip().lower()
             
-            # ดึงค่า configuration เก่ามาแมป
             updated_settings = {}
             for s in shops:
                 old_val = brand_settings.get(s, True)
@@ -297,21 +304,18 @@ if not full_df.empty:
 
             filtered_shops = [s for s in shops if search_query in s.lower()] if search_query else shops
 
-            # 💡 [ปรับให้สวย] หัวตาราง เพื่อย่อสวิตช์ให้สั้นลง ไม่รกตา
+            # หัวตารางแบบคลีนๆ สบายสายตา
             st.markdown("""
                 <div style="display: flex; background-color: #f1f5f9; padding: 6px 4px; border-radius: 6px; margin-bottom: 8px; font-size: 0.75rem; font-weight: bold; color: #475569;">
                     <div style="flex: 2;">📍 ชื่อสาขา</div>
-                    <div style="flex: 1; text-align: center;">เปิด-ปิดสาขา</div>
-                    <div style="flex: 1; text-align: center;">ปิดการดึงยอด</div>
+                    <div style="flex: 1; text-align: center;">แสดงผล</div>
+                    <div style="flex: 1; text-align: center;">ระงับดึงยอด</div>
                 </div>
             """, unsafe_allow_html=True)
 
-            # วนลูปสร้างตารางจัดการสาขา แบบคลีนๆ
             for shop in filtered_shops:
-                # ทำความสะอาดชื่อสาขาเพื่อแสดงผลสวยๆ (เช่น ตัดขีด -- ออกถ้ามี)
                 display_shop_name = shop.replace('--', '').strip()
                 
-                # ครอบ Container จางๆ แยกแต่ละสาขาออกจากกัน
                 with st.container():
                     col_name, col_act, col_sync = st.columns([2, 1, 1])
                     
@@ -322,21 +326,23 @@ if not full_df.empty:
                         t_active_key = f"tog_act_{selected_brand}_{shop}"
                         if t_active_key not in st.session_state:
                             st.session_state[t_active_key] = updated_settings[shop]["active"]
-                        # ซ่อน Label เพื่อให้ปุ่มเหลือกว้างเท่าที่จำเป็น
+                        # ปุ่มที่ 1 (Active) -> จะเข้า Style CSS แรก กลายเป็นสีเขียว 🟢 
                         val_active = st.toggle("Active", key=t_active_key, label_visibility="collapsed")
                     
                     with col_sync:
                         t_sync_key = f"tog_sync_{selected_brand}_{shop}"
                         if t_sync_key not in st.session_state:
                             st.session_state[t_sync_key] = updated_settings[shop]["disable_sync"]
-                        # ซ่อน Label เช่นกัน
+                        
+                        # เพื่อให้ CSS ล็อคสีแดงเจาะจงได้แม่นยำ ต้องหุ้ม Div div id แทรกลงไปให้กับสวิตช์ Block 🔴
+                        st.markdown(f'<div id="tog_sync_{shop}">', unsafe_allow_html=True)
                         val_sync = st.toggle("Block", key=t_sync_key, label_visibility="collapsed")
+                        st.markdown('</div>', unsafe_allow_html=True)
                     
                     updated_settings[shop] = {
                         "active": val_active,
                         "disable_sync": val_sync
                     }
-                    # เส้นคั่นบางๆ บางมากก เพื่อไม่ให้รกสายตา
                     st.markdown("<div style='margin: 2px 0; border-bottom: 1px solid #f8fafc;'></div>", unsafe_allow_html=True)
 
             st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
@@ -375,7 +381,6 @@ if not full_df.empty:
             if s in grid_df.index and grid_df.at[s, d] != "DISABLED":
                 grid_df.at[s, d] = "✅" if st_code == 2 else "⚠️" if st_code == 1 else "❌" if st_code == 0 else "N/A"
 
-    # กรองสาขาที่ไม่ได้ปิดทิ้งไปในการคำนวณ Summary
     active_shops = []
     for s in shops:
         s_cfg = brand_settings.get(s, True)
