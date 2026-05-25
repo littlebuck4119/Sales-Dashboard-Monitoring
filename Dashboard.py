@@ -74,7 +74,8 @@ BRAND_CONFIG = {
     "Maesriruen": "2e8f853bc23b3ba8b140",
     "You&I": "6111d22633f84f5ee575",
     "เสวย": "e7a4885887fc49db4765",
-    "Shinkanzen": "5aae88055a5ff0d32c96"
+    "Shinkanzen": "5aae88055a5ff0d32c96",
+    "Tudari": "ead94150854efcbfe331"
 }
 CONFIG_API = "https://api.npoint.io/9898efa2a5853bf5f886"
 
