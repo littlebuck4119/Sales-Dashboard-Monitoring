@@ -60,7 +60,7 @@ st.markdown("""
 
 # --- 2. DATA FETCHING ---
 BRAND_CONFIG = {
-    "Eat Am Are": "506e2020f13e6d515726",
+    "Eat Am Are": "03018b865e46122e4d4f",
     "JonesSalad": "695d80e67b2a8c1ca2ee",
     "Laem Charoen Seafood": "98d3735c3a0a94a513f6",
     "Saemaeul/BHC/Solsot": "90a9e466a623369dfac4",
