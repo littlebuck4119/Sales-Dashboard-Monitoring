@@ -81,7 +81,8 @@ BRAND_CONFIG = {
     "DeanAndDeluca": "64ecf510fcbb2541ec33",
     "Missmamon&Taroto": "273634731d081a1230f6",
     "Lukkaithong": "131746fdd8eca1e25881",
-    "Kaithong": "8cd350f18aaa86ffd8dc"
+    "Kaithong": "8cd350f18aaa86ffd8dc",
+    "Shwepalin": "ee564b51ca10e448abb9"
 }
 CONFIG_API = "https://api.npoint.io/9898efa2a5853bf5f886"
 
