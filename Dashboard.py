@@ -79,7 +79,9 @@ BRAND_CONFIG = {
     "Spaghetti": "a1c5f81e3434b386e9b3",
     "DaddyDough": "83c8c26662e97d2a67d2",
     "DeanAndDeluca": "64ecf510fcbb2541ec33",
-    "Missmamon&Taroto": "273634731d081a1230f6"
+    "Missmamon&Taroto": "273634731d081a1230f6",
+    "Lukkaithong": "131746fdd8eca1e25881",
+    "Kaithong": "8cd350f18aaa86ffd8dc"
 }
 CONFIG_API = "https://api.npoint.io/9898efa2a5853bf5f886"
 
