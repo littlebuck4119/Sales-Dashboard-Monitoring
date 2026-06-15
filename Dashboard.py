@@ -83,7 +83,8 @@ BRAND_CONFIG = {
     "Lukkaithong": "131746fdd8eca1e25881",
     "Kaithong": "8cd350f18aaa86ffd8dc",
     "Shwepalin": "ee564b51ca10e448abb9",
-    "CocaSuki": "95fb49a8978ca4acf1ac"
+    "CocaSuki": "95fb49a8978ca4acf1ac",
+    "BaanSomtum": "71ffbd4c2491a1b2e568"
 }
 CONFIG_API = "https://api.npoint.io/9898efa2a5853bf5f886"
 
