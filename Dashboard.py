@@ -3,9 +3,8 @@ import streamlit as st
 import pandas as pd
 import requests
 import calendar
-from datetime import datetime
-from st_keyup import st_keyup
 from datetime import datetime, timedelta
+from st_keyup import st_keyup
 
 # --- 1. CONFIG & STYLES ---
 st.set_page_config(
@@ -96,7 +95,8 @@ def get_config():
     except: return {}
 
 def save_config(full_config):
-    requests.post(CONFIG_API, json=full_config)
+    try: requests.post(CONFIG_API, json=full_config, timeout=5)
+    except: pass
 
 @st.cache_data(ttl=30)
 def get_data_from_api(url):
@@ -118,8 +118,10 @@ with st.sidebar:
     now = datetime.utcnow() + timedelta(hours=7)
     current_full_config = get_config()
     monitors_config = current_full_config.get("_monitors", {})
+    
     def sort_brands_logic(b_name):
         return int(monitors_config.get(b_name, {}).get("order", 999))
+        
     brand_keys = sorted(list(BRAND_CONFIG.keys()), key=sort_brands_logic)
     DEFAULT_COLORS = ["#4CAF50", "#2196F3", "#FF9800", "#9C27B0"]
     
@@ -287,41 +289,39 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
 # --- 5. DASHBOARD VIEW ---
 header_mode_suffix = "(Real-time)" if "⚡ Real-time" in view_mode else "(History Log)"
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand} <small style='color:#666; font-size:14px;'>{header_mode_suffix}</small>", unsafe_allow_html=True)
-
 st.markdown(f"🔗 **API Source:** `https://api.npoint.io/{BRAND_CONFIG[selected_brand]}`")
 
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
 if not full_df.empty:
-    # ปุ่มกดเลือกรูปแบบการเรียงลำดับด้านบนตาราง และให้ส่งผลร่วมกันทั้งระบบ
-    sort_option = st.radio(
-        "🔀 จัดเรียงลำดับข้อมูลตาม:",
-        ["รหัสสาขา (Shop Code)", "ชื่อสาขา (Shop Name)"],
-        index=0,
-        horizontal=True,
-        key="table_sort_option"
-    )
-
-    # 🛠️ ใช้คีย์เป็นมาตรฐาน 'shop_code' (มีขีดล่างสอดคล้องตรงกับระบบหลังบ้านเรียบร้อยแล้ว)
+    # 1. แปลงคอลัมน์ให้เป็น String และเปลี่ยนพวกเลข 0 หรือ NaN ให้เป็นค่าว่างชั่วคราว
     if 'shop_code' in full_df.columns:
-        full_df['display_label'] = "[" + full_df['shop_code'].astype(str) + "] " + full_df['shop_name'].astype(str)
-        # จัดเรียงลำดับตามเงื่อนไขที่เลือก
-        if "รหัสสาขา" in sort_option:
-            sorted_unique_df = full_df.drop_duplicates('shop_name').sort_values('shop_code')
-        else:
-            sorted_unique_df = full_df.drop_duplicates('shop_name').sort_values('shop_name')
-        shops = list(sorted_unique_df['shop_name'])
-        shops_display_dict = dict(zip(sorted_unique_df['shop_name'], sorted_unique_df['display_label']))
-    else:
-        # Fallback
-        shops = sorted(full_df['shop_name'].unique())
-        shops_display_dict = {s: s for s in shops}
-
+        full_df['shop_code'] = full_df['shop_code'].astype(str).replace(['0', '0.0', 'nan', 'None'], '')
+    
+    # 2. ใช้เทคนิค Map หาคู่ Shop Name กับ Shop Code ล่าสุดที่ไม่ใช่ค่าว่าง
+    valid_codes = full_df[full_df['shop_code'] != ''].drop_duplicates('shop_name')
+    name_to_code_map = dict(zip(valid_codes['shop_name'], valid_codes['shop_code']))
+    
+    # 3. เติมรหัสสาขาให้วันเก่าๆ ที่ไม่มีข้อมูลจาก Map ที่เราสร้างไว้
+    full_df['final_shop_code'] = full_df['shop_name'].map(name_to_code_map).fillna('')
+    
+    # 4. สร้าง Label สำหรับแสดงผลในตารางและเมนูด้านข้าง
+    def make_label(row):
+        code = row['final_shop_code']
+        name = row['shop_name']
+        return f"[{code}] {name}" if code else f" {name}"
+        
+    full_df['display_label'] = full_df.apply(make_label, axis=1)
+    
+    # 💡 [แก้ไขและนิยามรายชื่อสาขาให้ลอจิกทำงานครบสมบูรณ์]
+    shops = sorted(list(full_df['shop_name'].unique()))
+    shops_display_dict = dict(zip(full_df['shop_name'], full_df['display_label']))
+    
     brand_settings = current_full_config.get(selected_brand, {})
 
     with st.sidebar:
         st.markdown("---")
-        # 🔗 [รวมระบบแก้ปุ่มค้าง + แสตมป์ข้อมูลลง API โครงสร้าง 2 ฝั่ง (Active & Sync) เรียบร้อยแล้วครับ]
+        # 🔗 จัดการ เปิด/ปิด / ดึงยอด สาขา
         with st.expander("🚫 จัดการ เปิด/ปิด / ดึงยอด สาขา", expanded=False):
             search_query = st_keyup("🔍 ค้นหาสาขา...", key=f"keyup_search_{selected_brand}").strip().lower()
             
@@ -382,7 +382,6 @@ if not full_df.empty:
             filtered_shops = [s for s in shops if search_query in shops_display_dict[s].lower()] if search_query else shops
 
             for shop in filtered_shops:
-                # 🔄 ใช้ชื่อป้ายแสดงผลคู่ รหัสสาขา + ชื่อสาขา
                 display_shop_name = shops_display_dict[shop].replace('--', '').strip()
                 
                 with st.container():
@@ -432,7 +431,6 @@ if not full_df.empty:
     _, last_day = calendar.monthrange(y, m)
     days = list(range(1, last_day + 1))
     
-    # เปลี่ยนระบบ Index ของตารางหลักให้แสดงผลเป็น [Shop Code] Shop Name คู่กันตามบรีฟ
     grid_index_labels = [shops_display_dict[s] for s in shops]
     grid_df = pd.DataFrame("N/A", index=grid_index_labels, columns=days)
 
