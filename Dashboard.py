@@ -302,18 +302,18 @@ if not full_df.empty:
         key="table_sort_option"
     )
 
-    # 🛠️ แก้ไขคีย์การดึงข้อมูลจากเดิม 'shop_code' เป็น 'shopcode' ตามจริงของ API เพื่อให้แสดงผลสำเร็จ
-    if 'shopcode' in full_df.columns:
-        full_df['display_label'] = "[" + full_df['shopcode'].astype(str) + "] " + full_df['shop_name'].astype(str)
+    # 🛠️ ใช้คีย์เป็นมาตรฐาน 'shop_code' (มีขีดล่างสอดคล้องตรงกับระบบหลังบ้านเรียบร้อยแล้ว)
+    if 'shop_code' in full_df.columns:
+        full_df['display_label'] = "[" + full_df['shop_code'].astype(str) + "] " + full_df['shop_name'].astype(str)
         # จัดเรียงลำดับตามเงื่อนไขที่เลือก
         if "รหัสสาขา" in sort_option:
-            sorted_unique_df = full_df.drop_duplicates('shop_name').sort_values('shopcode')
+            sorted_unique_df = full_df.drop_duplicates('shop_name').sort_values('shop_code')
         else:
             sorted_unique_df = full_df.drop_duplicates('shop_name').sort_values('shop_name')
         shops = list(sorted_unique_df['shop_name'])
         shops_display_dict = dict(zip(sorted_unique_df['shop_name'], sorted_unique_df['display_label']))
     else:
-        # Fallback กรณีไม่พบฟิลด์ 
+        # Fallback
         shops = sorted(full_df['shop_name'].unique())
         shops_display_dict = {s: s for s in shops}
 
@@ -325,7 +325,7 @@ if not full_df.empty:
         with st.expander("🚫 จัดการ เปิด/ปิด / ดึงยอด สาขา", expanded=False):
             search_query = st_keyup("🔍 ค้นหาสาขา...", key=f"keyup_search_{selected_brand}").strip().lower()
             
-            # 1. จัดทำข้อมูลเริ่มต้น (เปลี่ยนคีย์ไปใช้ sync_active เพื่อแสดงสีแดงเมื่อเปิด)
+            # 1. จัดทำข้อมูลเริ่มต้น
             updated_settings = {}
             for s in shops:
                 old_val = brand_settings.get(s, True)
@@ -340,7 +340,7 @@ if not full_df.empty:
                         "sync_active": old_val
                     }
 
-            # 2. Callbacks สำหรับปุ่ม Master ทั้ง 2 ฝั่งเพื่อแก้ปัญหาเรื่องปุ่มเลื่อนค้าง
+            # 2. Callbacks สำหรับปุ่ม Master ทั้ง 2 ฝั่ง
             master_act_key = f"master_act_{selected_brand}"
             master_sync_key = f"master_sync_{selected_brand}"
 
@@ -354,11 +354,11 @@ if not full_df.empty:
                 for s in shops:
                     st.session_state[f"tog_sync_{selected_brand}_{s}"] = m_val
 
-            # 3. คำนวณสถานะปุ่ม Master จากค่าใน session_state ปัจจุบัน
+            # 3. คำนวณสถานะปุ่ม Master
             all_act_on = all(st.session_state.get(f"tog_act_{selected_brand}_{s}", updated_settings[s]["active"]) for s in shops)
             all_sync_on = all(st.session_state.get(f"tog_sync_{selected_brand}_{s}", updated_settings[s]["sync_active"]) for s in shops)
 
-            # 🛠️ ด้านบน: สวิตช์ เปิด/ปิด ทั้งหมด แถวเดียวคลีนๆ คู่กัน
+            # สวิตช์ เปิด/ปิด ทั้งหมด แถวเดียวคู่กัน
             col_m_name, col_m_act, col_m_sync = st.columns([1.8, 1.1, 1.1])
             with col_m_name:
                 st.markdown("<div style='font-size: 0.8rem; font-weight: bold; color: #1e293b; padding-top: 4px;'>🔔 เปิด/ปิด ทั้งหมด</div>", unsafe_allow_html=True)
