@@ -293,14 +293,19 @@ st.markdown(f"🔗 **API Source:** `https://api.npoint.io/{BRAND_CONFIG[selected
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
 if not full_df.empty:
-    # 🆕 สร้าง Map จับคู่สำหรับแปลงชื่อร้านเป็นรหัสร้าน (ป้องกันกรณีบาง Row ข้อมูลโค้ดไม่มา จะได้มีค่า Default ไม่พัง)
+    # 👑 [BUG FIX - CLEAN KEY] ทำการถอดขีดกลางออกจากชื่อร้านทั้งหมดตั้งแต่ตอนทำระบบดึงโค้ด เพื่อป้องกันการ Match พัง
     shop_code_map = {}
     if 'shop_code' in full_df.columns:
-        # ดึงคู่ชื่อและรหัสที่ไม่เป็นค่าว่าง
-        valid_codes = full_df.dropna(subset=['shop_name', 'shop_code']).drop_duplicates('shop_name')
-        shop_code_map = dict(zip(valid_codes['shop_name'], valid_codes['shop_code']))
+        full_df['clean_name'] = full_df['shop_name'].str.replace('--', '').str.strip()
+        valid_codes = full_df.dropna(subset=['clean_name', 'shop_code']).drop_duplicates('clean_name')
+        
+        # กรองเอาเฉพาะข้อมูลรหัสจริงที่ไม่ใช่เลข 0 และไม่ว่างเปล่า
+        for _, r in valid_codes.iterrows():
+            c_val = str(r['shop_code']).strip()
+            if c_val != '0' and c_val != '0.0' and c_val != '' and c_val != 'nan':
+                shop_code_map[r['clean_name']] = c_val
 
-    # 🆕 เพิ่มปุ่มสลับการเรียงลำดับ (Sorting Options) บนพื้นที่ด้านบนตารางแดชบอร์ด
+    # เพิ่มปุ่มสลับการเรียงลำดับ (Sorting Options) บนพื้นที่ด้านบนตารางแดชบอร์ด
     sort_option = st.radio(
         "🔀 เรียงลำดับข้อมูลตาม:",
         ["รหัสสาขา (Shop Code)", "ชื่อสาขา (Shop Name)"],
@@ -308,27 +313,27 @@ if not full_df.empty:
         horizontal=True
     )
 
-    # 🆕 ฟังก์ชันจัดเรียงรายชื่อร้านค้าตามที่ผู้ใช้เลือก (นำไปคุมทั้ง Sidebar และ Heatmap)
+    # ฟังก์ชันจัดเรียงรายชื่อร้านค้าตามที่ผู้ใช้เลือก (ล้างขีดกลางออกทั้งหมดให้สะอาดตาตามบรีฟ)
     raw_shops = list(full_df['shop_name'].unique())
+    cleaned_shops = sorted(list(set([s.replace('--', '').strip() for s in raw_shops])))
+    
     if sort_option == "รหัสสาขา (Shop Code)":
-        # เรียงตามรหัสร้านค้า (ถ้าไม่มีให้ใช้รหัส 9999 เผื่อไว้)
-        shops = sorted(raw_shops, key=lambda x: str(shop_code_map.get(x, "9999")))
+        # เรียงลำดับจากรหัสสาขาจริง (ถ้าเป็นวันย้อนหลังที่ไม่มีโค้ดจะถูกปัดไปด้านล่างสุด ไม่ดันเลข 0 ขึ้นมาแทรก)
+        shops = sorted(cleaned_shops, key=lambda x: str(shop_code_map.get(x, "ZZZZ")))
     else:
-        # เรียงตามตัวอักษรของชื่อร้านค้า
-        shops = sorted(raw_shops)
+        shops = sorted(cleaned_shops)
 
     brand_settings = current_full_config.get(selected_brand, {})
 
     with st.sidebar:
         st.markdown("---")
-        # 🔗 [รวมระบบแก้ปุ่มค้าง + แสตมป์ข้อมูลลง API โครงสร้าง 2 ฝั่ง (Active & Sync) เรียบร้อยแล้วครับ]
         with st.expander("🚫 จัดการ เปิด/ปิด / ดึงยอด สาขา", expanded=False):
             search_query = st_keyup("🔍 ค้นหาสาขา...", key=f"keyup_search_{selected_brand}").strip().lower()
             
-            # 1. จัดทำข้อมูลเริ่มต้น (เปลี่ยนคีย์ไปใช้ sync_active เพื่อแสดงสีแดงเมื่อเปิด)
             updated_settings = {}
             for s in shops:
-                old_val = brand_settings.get(s, True)
+                # ปรับการดึง config เก่าให้ตรวจค้นเจอทั้งแบบมีขีดและไม่มีขีดกลาง
+                old_val = brand_settings.get(s, brand_settings.get(f"--{s}--", True))
                 if isinstance(old_val, dict):
                     updated_settings[s] = {
                         "active": old_val.get("active", True),
@@ -340,7 +345,6 @@ if not full_df.empty:
                         "sync_active": old_val
                     }
 
-            # 2. Callbacks สำหรับปุ่ม Master ทั้ง 2 ฝั่งเพื่อแก้ปัญหาเรื่องปุ่มเลื่อนค้าง
             master_act_key = f"master_act_{selected_brand}"
             master_sync_key = f"master_sync_{selected_brand}"
 
@@ -354,11 +358,9 @@ if not full_df.empty:
                 for s in shops:
                     st.session_state[f"tog_sync_{selected_brand}_{s}"] = m_val
 
-            # 3. คำนวณสถานะปุ่ม Master จากค่าใน session_state ปัจจุบัน
             all_act_on = all(st.session_state.get(f"tog_act_{selected_brand}_{s}", updated_settings[s]["active"]) for s in shops)
             all_sync_on = all(st.session_state.get(f"tog_sync_{selected_brand}_{s}", updated_settings[s]["sync_active"]) for s in shops)
 
-            # 🛠️ ด้านบน: สวิตช์ เปิด/ปิด ทั้งหมด แถวเดียวคลีนๆ คู่กัน
             col_m_name, col_m_act, col_m_sync = st.columns([1.8, 1.1, 1.1])
             with col_m_name:
                 st.markdown("<div style='font-size: 0.8rem; font-weight: bold; color: #1e293b; padding-top: 4px;'>🔔 เปิด/ปิด ทั้งหมด</div>", unsafe_allow_html=True)
@@ -369,7 +371,6 @@ if not full_df.empty:
 
             st.markdown("<hr style='margin: 8px 0; border: none; border-top: 1px dashed #cbd5e1;'>", unsafe_allow_html=True)
 
-            # หัวตารางรายสาขา
             st.markdown("""
                 <div style="display: flex; background-color: #f1f5f9; padding: 6px 4px; border-radius: 6px; margin-bottom: 8px; font-size: 0.75rem; font-weight: bold; color: #475569;">
                     <div style="flex: 1.8;">📍 ชื่อสาขา</div>
@@ -378,13 +379,15 @@ if not full_df.empty:
                 </div>
             """, unsafe_allow_html=True)
 
-            # 4. แสดงรายการสวิตช์รายสาขา
             filtered_shops = [s for s in shops if search_query in s.lower()] if search_query else shops
 
             for shop in filtered_shops:
-                # 🆕 ดึงรหัสร้านค้ามาแปะโชว์หน้าชื่อร้านใน Sidebar เพื่อให้ผู้ใช้เช็กง่ายขึ้น
-                s_code = shop_code_map.get(shop, "—")
-                display_shop_name = f"[{s_code}] {shop.replace('--', '').strip()}"
+                s_code = shop_code_map.get(shop, "")
+                # 👑 [BUG FIX - HIDE 0] หากรหัสสาขาเป็นค่าว่างหรือไม่มีข้อมูลย้อนหลัง ไม่ต้องใส่กล่องครอบ [] ให้แสดงชื่อร้านเลย
+                if s_code:
+                    display_shop_name = f"[{s_code}] {shop}"
+                else:
+                    display_shop_name = f"{shop}"
                 
                 with st.container():
                     col_name, col_act, col_sync = st.columns([1.8, 1.1, 1.1])
@@ -410,7 +413,8 @@ if not full_df.empty:
                     }
                     st.markdown("<div style='margin: 4px 0; border-bottom: 1px solid #f1f5f9;'></div>", unsafe_allow_html=True)
                     
-            st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='font-size:10px; color:#94a3b8; padding:5px;'>*สาขาที่ไม่มีรหัสในวันย้อนหลังจะซ่อนรหัสอัตโนมัติ</div>", unsafe_allow_html=True)
+            st.markdown("<div style='margin-top: 5px;'></div>", unsafe_allow_html=True)
             if st.button("💾 บันทึกการตั้งค่าสาขา", type="primary", use_container_width=True, key="save_shops"):
                 final_settings = {}
                 for s in shops:
@@ -433,42 +437,57 @@ if not full_df.empty:
     _, last_day = calendar.monthrange(y, m)
     days = list(range(1, last_day + 1))
     
-    # 🆕 ปรับ Index ของ grid_df ให้แปลงเป็นรูปแบบที่มี รหัสสาขา ด้วย เพื่อให้แกน Y ของตารางอัปเดตตามลำดับ
-    labeled_shops_index = [f"[{shop_code_map.get(s, '—')}] {s}" for s in shops]
+    # ปรับแกนอักษรด้านหน้าแถวตารางหลักให้คลีนและเช็กเงื่อนไขแสดงผล Code
+    labeled_shops_index = []
+    for s in shops:
+        s_code = shop_code_map.get(s, "")
+        if s_code:
+            labeled_shops_index.append(f"[{s_code}] {s}")
+        else:
+            labeled_shops_index.append(f"{s}")
+            
     grid_df = pd.DataFrame("N/A", index=labeled_shops_index, columns=days)
 
     if not df_filtered.empty:
         df_filtered['Day'] = df_filtered['sync_date'].dt.day
         for shop in shops:
-            s_cfg = brand_settings.get(shop, True)
+            s_cfg = brand_settings.get(shop, brand_settings.get(f"--{shop}--", True))
             is_active = s_cfg.get("active", True) if isinstance(s_cfg, dict) else s_cfg
             if not is_active: 
-                # แมปหา Index ที่มีรหัสสาขานำหน้าด้วย
-                labeled_name = f"[{shop_code_map.get(shop, '—')}] {shop}"
+                s_code = shop_code_map.get(shop, "")
+                labeled_name = f"[{s_code}] {shop}" if s_code else f"{shop}"
                 grid_df.loc[labeled_name] = "DISABLED"
         
         for _, row in df_filtered.iterrows():
-            s, d = row['shop_name'], row['Day']
+            orig_s, d = row['shop_name'], row['Day']
+            s = orig_s.replace('--', '').strip() # ทำความสะอาดข้อมูลแถวก่อนนำไปเขียนลงพิกัดตาราง
             
             if "⚡ Real-time" in view_mode:
                 st_code = row.get('status_realtime', row.get('status_code', 0))
             else:
                 st_code = row.get('status_log', row.get('status_code', 0))
 
-            labeled_name = f"[{shop_code_map.get(s, '—')}] {s}"
+            s_code = shop_code_map.get(s, "")
+            labeled_name = f"[{s_code}] {s}" if s_code else f"{s}"
             if labeled_name in grid_df.index and grid_df.at[labeled_name, d] != "DISABLED":
                 grid_df.at[labeled_name, d] = "✅" if st_code == 2 else "⚠️" if st_code == 1 else "❌" if st_code == 0 else "N/A"
 
     active_shops = []
     for s in shops:
-        s_cfg = brand_settings.get(s, True)
+        s_cfg = brand_settings.get(s, brand_settings.get(f"--{s}--", True))
         if isinstance(s_cfg, dict):
             if s_cfg.get("active", True): active_shops.append(s)
         elif s_cfg:
             active_shops.append(s)
             
-    # แมปหารายชื่อร้านที่ Active แบบมี Label รหัสสาขา
-    labeled_active_shops = [f"[{shop_code_map.get(s, '—')}] {s}" for s in active_shops]
+    labeled_active_shops = []
+    for s in active_shops:
+        s_code = shop_code_map.get(s, "")
+        if s_code:
+            labeled_active_shops.append(f"[{s_code}] {s}")
+        else:
+            labeled_active_shops.append(f"{s}")
+            
     active_grid = grid_df.loc[labeled_active_shops] if labeled_active_shops else pd.DataFrame()
 
     with summary_placeholder.container():
