@@ -20,19 +20,17 @@ st.markdown("""
     <style>
     [data-testid="stSidebarContent"] { padding-top: 0rem !important; }
     [data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: 0.8rem !important; }
-    .block-container { padding-top: 2rem !important; padding-left: 1rem !important; padding-right: 1rem !important; padding-bottom: 0rem !important; }
+    .block-container { padding-top: 1.5rem !important; padding-left: 1rem !important; padding-right: 1rem !important; padding-bottom: 0rem !important; }
     
     button[kind="primary"] { background-color: #28a745 !important; border-color: #28a745 !important; color: white !important; }
     .problem-item { font-size: 0.85rem; padding: 8px 10px; background-color: #fff5f5; border-left: 4px solid #ff4b4b; border-radius: 4px; margin-bottom: 6px; }
     footer { visibility: hidden; }
 
-    /* ปรับแต่งปุ่ม Back to Main Page */
-    div.stButton > button[key="back_to_welcome"] {
-        background-color: #1e293b !important; color: white !important; border: none !important;
-        border-radius: 6px !important; padding: 0.4rem 0.8rem !important;
-        font-weight: 600 !important; font-size: 0.8rem !important; width: 100% !important; margin-top: 10px !important;
+    /* ปรับแต่งปุ่ม Back to Main Page ให้เด่นและสวยงามบนหน้าหลัก */
+    div.stButton > button {
+        font-family: inherit;
     }
-
+    
     /* ปรับขนาดตัวอักษรในช่อง Input ของหน้า Config */
     div[data-testid="stExpander"] input { font-size: 0.9rem !important; }
 
@@ -295,10 +293,19 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
     st.stop()
 
 # --- 5. DASHBOARD VIEW ---
-header_mode_suffix = "(Real-time)" if "⚡ Real-time" in view_mode else "(History Log)"
-st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand} <small style='color:#666; font-size:14px;'>{header_mode_suffix}</small>", unsafe_allow_html=True)
+# 👑 [แก้ไขย้ายปุ่ม Back ออกมาหน้าหลักด้านบนสุด] เพื่อให้หาเจอง่าย ไม่หลบใน Sidebar
+col_title, col_back_btn = st.columns([4, 1])
 
-st.markdown(f"🔗 **API Source:** `https://api.npoint.io/{BRAND_CONFIG[selected_brand]}`")
+with col_title:
+    header_mode_suffix = "(Real-time)" if "⚡ Real-time" in view_mode else "(History Log)"
+    st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand} <small style='color:#666; font-size:14px;'>{header_mode_suffix}</small>", unsafe_allow_html=True)
+    st.markdown(f"🔗 **API Source:** `https://api.npoint.io/{BRAND_CONFIG[selected_brand]}`")
+
+with col_back_btn:
+    st.markdown("<div style='margin-top: 5px;'></div>", unsafe_allow_html=True)
+    if st.button("🔙 Back to Main Page", key="back_to_welcome", use_container_width=True, type="secondary"):
+        st.session_state.selected_brand = "🛑 SELECT BRAND 🛑"
+        st.rerun()
 
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
@@ -444,10 +451,6 @@ if not full_df.empty:
                 save_config(current_full_config)
                 st.success("บันทึกและสแตมป์สถานะ 2 ฝั่งลง API เรียบร้อย!")
                 st.rerun()
-                
-        if st.button("🔙 Back to Main Page", key="back_to_welcome", use_container_width=True):
-            st.session_state.selected_brand = "🛑 SELECT BRAND 🛑"
-            st.rerun()
 
     display_grid_labels = []
     label_to_raw_shop = {}
