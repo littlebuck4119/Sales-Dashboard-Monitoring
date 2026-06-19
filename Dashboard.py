@@ -293,7 +293,7 @@ st.markdown(f"🔗 **API Source:** `https://api.npoint.io/{BRAND_CONFIG[selected
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
 if not full_df.empty:
-    # ➕ เพิ่มปุ่มกดเลือกรูปแบบการเรียงลำดับด้านบนตาราง และให้ส่งผลร่วมกันทั้งระบ
+    # ปุ่มกดเลือกรูปแบบการเรียงลำดับด้านบนตาราง และให้ส่งผลร่วมกันทั้งระบบ
     sort_option = st.radio(
         "🔀 จัดเรียงลำดับข้อมูลตาม:",
         ["รหัสสาขา (Shop Code)", "ชื่อสาขา (Shop Name)"],
@@ -302,18 +302,18 @@ if not full_df.empty:
         key="table_sort_option"
     )
 
-    # 🛠️ ตรวจสอบโครงสร้างข้อมูลเพื่อรองรับ shop_code ควบคู่กับ shop_name
-    if 'shop_code' in full_df.columns:
-        full_df['display_label'] = "[" + full_df['shop_code'].astype(str) + "] " + full_df['shop_name'].astype(str)
+    # 🛠️ แก้ไขคีย์การดึงข้อมูลจากเดิม 'shop_code' เป็น 'shopcode' ตามจริงของ API เพื่อให้แสดงผลสำเร็จ
+    if 'shopcode' in full_df.columns:
+        full_df['display_label'] = "[" + full_df['shopcode'].astype(str) + "] " + full_df['shop_name'].astype(str)
         # จัดเรียงลำดับตามเงื่อนไขที่เลือก
         if "รหัสสาขา" in sort_option:
-            sorted_unique_df = full_df.drop_duplicates('shop_name').sort_values('shop_code')
+            sorted_unique_df = full_df.drop_duplicates('shop_name').sort_values('shopcode')
         else:
             sorted_unique_df = full_df.drop_duplicates('shop_name').sort_values('shop_name')
         shops = list(sorted_unique_df['shop_name'])
         shops_display_dict = dict(zip(sorted_unique_df['shop_name'], sorted_unique_df['display_label']))
     else:
-        # Fallback กรณีไม่มีคอลัมน์ shop_code
+        # Fallback กรณีไม่พบฟิลด์ 
         shops = sorted(full_df['shop_name'].unique())
         shops_display_dict = {s: s for s in shops}
 
