@@ -286,39 +286,38 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
     """, unsafe_allow_html=True)
     st.stop()
 
-# --- 5. DASHBOARD VIEW (เวอร์ชันดึงปุ่มเลือกสลับการเรียงลำดับกลับมา) ---
+# --- 5. DASHBOARD VIEW (เวอร์ชันแก้ไขจบปัญหาชื่อสาขาหาย + Mapping รหัสสาขาจริง) ---
 header_mode_suffix = "(Real-time)" if "⚡ Real-time" in view_mode else "(History Log)"
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand} <small style='color:#666; font-size:14px;'>{header_mode_suffix}</small>", unsafe_allow_html=True)
 
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
 if not full_df.empty:
-    # 1. คลีนข้อมูลและเตรียม Mapping รหัสสาขา
-    if 'shop_code' in full_df.columns:
-        full_df['shop_code'] = full_df['shop_code'].astype(str).replace(['0', '0.0', 'nan', 'None', '<NA>'], '')
+    # 🎯 1. เคลียร์ปัญหาตรวจสอบรหัสสาขา (เช็กทั้ง shop_id และ shop_code ตามโครงสร้าง API)
+    id_col = 'shop_id' if 'shop_id' in full_df.columns else ('shop_code' if 'shop_code' in full_df.columns else '')
+    
+    if id_col:
+        full_df['final_shop_code'] = full_df[id_col].astype(str).replace(['0', '0.0', 'nan', 'None', '<NA>'], '')
     else:
-        full_df['shop_code'] = ''
+        full_df['final_shop_code'] = ''
         
-    valid_codes = full_df[full_df['shop_code'] != ''].drop_duplicates('shop_name')
-    name_to_code_map = dict(zip(valid_codes['shop_name'], valid_codes['shop_code']))
-    full_df['final_shop_code'] = full_df['shop_name'].map(name_to_code_map).fillna('')
+    # คัดกรองคู่โครงสร้างเพื่อทำ Mapping ดึงข้อมูลรหัสมาผูกกับชื่อ
+    valid_codes = full_df[full_df['final_shop_code'] != ''].drop_duplicates('shop_name')
+    name_to_code_map = dict(zip(valid_codes['shop_name'], valid_codes['final_shop_code']))
     
-    # ฟังก์ชันสลักชื่อแสดงผลบนตาราง
-    def make_label(row):
-        code = row['final_shop_code']
-        # ถ้าเลือกแสดงผลตามรหัสสาขาให้โชว์รหัสเคียงข้าง ถ้าไม่มีรหัสให้ขึ้น [0] นำหน้าตามภาพเก่า
-        if code:
-            return f"[{code}] {row['shop_name']}"
-        else:
-            return f"[0] {row['shop_name']}"
+    # ฟังก์ชันสลักชื่อแบรนด์ลงหน้าตารางและแถบเมนูควบคุม
+    def make_label(shop_name):
+        code = name_to_code_map.get(shop_name, "")
+        return f"[{code}] {shop_name}" if code else f"[0] {shop_name}"
         
-    full_df['display_label'] = full_df.apply(make_label, axis=1)
+    # ดึงรายชื่อสาขาทั้งหมดที่มีอยู่จริง (ตัดค่าว่าง/None ออก ป้องกันตารางพังหน้าขาว)
+    shops = sorted([str(s).strip() for s in full_df['shop_name'].unique() if s and str(s).strip() != 'nan'])
     
-    raw_shops = sorted([str(s) for s in full_df['shop_name'].unique() if s is not None])
-    shops_display_dict = dict(zip(full_df['shop_name'], full_df['display_label']))
+    # สลักป้าย Dictionary เก็บข้อมูลการแสดงผลที่ถูกต้องแม่นยำ 100%
+    shops_display_dict = {s: make_label(s) for s in shops}
     brand_settings = current_full_config.get(selected_brand, {})
 
-    # 🎯 2. ดึงปุ่มตัวเลือกบนตารางกลับมาแสดงผล (Radio Button สลับรูปแบบการจัดเรียง)
+    # 2. ปุ่มตัวเลือกสลับการจัดเรียงด้านบนตาราง (Radio Button)
     st.markdown("<div style='font-size:0.85rem; font-weight:600; color:#1e293b; margin-top:5px;'>🔀 จัดเรียงลำดับข้อมูลตาม:</div>", unsafe_allow_html=True)
     sort_choice = st.radio(
         "Sort Order Choices",
@@ -329,18 +328,15 @@ if not full_df.empty:
         key=f"sort_choice_{selected_brand}"
     )
 
-    # 💡 ประมวลผลฟังก์ชันจัดเรียงตามที่ผู้ใช้กดเลือกจากปุ่มด้านบน
+    # 💡 จัดเรียงข้อมูลโดยอิงความปลอดภัยสูงสุด
     def get_sort_key(shop_name):
         if "รหัสสาขา" in sort_choice:
             code = name_to_code_map.get(shop_name, "")
-            # ถ้ามีรหัสสาขาให้เอามาเรียงลำดับหลัก หากไม่มีรหัส (ค่าว่าง) ให้จัดกลุ่มไปอยู่ท้ายสุด
             return (0, code) if code else (1, shop_name)
         else:
-            # เรียงลำดับตามตัวอักษรของชื่อสาขาโดยตรง
             return (0, shop_name)
 
-    # สั่งจัดเรียงลำดับแถวรายชื่อสาขา
-    shops = sorted(raw_shops, key=get_sort_key)
+    shops = sorted(shops, key=get_sort_key)
 
     # 3. แถบควบคุมด้านข้าง (Sidebar Expander) สำหรับจัดการ เปิด/ปิดร้าน และ เปิด/ปิดส่งยอด
     with st.sidebar:
@@ -416,4 +412,68 @@ if not full_df.empty:
             st.session_state.selected_brand = "🛑 SELECT BRAND 🛑"
             st.rerun()
 
-    # (ส่วนประมวลผลช่วงล่างดึง Grid วันที่ 1-31 และแสดงตารางคงเดิมตามเวอร์ชันก่อนหน้า)
+    # 4. จัดเตรียม Grid โครงสร้างตาราง Heatmap รายวัน
+    mask = (full_df['sync_date'].dt.month == m) & (full_df['sync_date'].dt.year == y)
+    df_filtered = full_df[mask].copy()
+    _, last_day = calendar.monthrange(y, m)
+    days = list(range(1, last_day + 1))
+    
+    # 🎯 ใช้ค่าที่มีอยู่จริงเป็น Index เพื่อล็อกไม่ให้โครงสร้างตารางว่างเปล่าหน้าขาว
+    grid_index_labels = [shops_display_dict[s] for s in shops]
+    grid_df = pd.DataFrame("N/A", index=grid_index_labels, columns=days)
+
+    if not df_filtered.empty:
+        df_filtered['Day'] = df_filtered['sync_date'].dt.day
+        for shop in shops:
+            s_cfg = brand_settings.get(shop, True)
+            is_active = s_cfg.get("active", True) if isinstance(s_cfg, dict) else s_cfg
+            if not is_active: 
+                grid_df.loc[shops_display_dict[shop]] = "DISABLED"
+        
+        for _, row in df_filtered.iterrows():
+            s, d = row['shop_name'], row['Day']
+            if s in shops_display_dict:
+                display_label = shops_display_dict[s]
+                st_code = row.get('status_realtime', row.get('status_code', 0)) if "⚡ Real-time" in view_mode else row.get('status_log', row.get('status_code', 0))
+
+                if display_label in grid_df.index and grid_df.at[display_label, d] != "DISABLED":
+                    grid_df.at[display_label, d] = "✅" if st_code == 2 else "⚠️" if st_code == 1 else "❌" if st_code == 0 else "N/A"
+
+    active_shops = [s for s in shops if (brand_settings.get(s, True).get("active", True) if isinstance(brand_settings.get(s, True), dict) else brand_settings.get(s, True))]
+    active_grid_labels = [shops_display_dict[s] for s in active_shops if s in shops_display_dict]
+    active_grid = grid_df.loc[active_grid_labels] if active_shops else pd.DataFrame()
+
+    # 5. วาดสรุปผลสถิติและตาราง Heatmap ขึ้นหน้าจอหลัก
+    with summary_placeholder.container():
+        monitor_info = monitors_config.get(selected_brand, {})
+        m1_n, m2_n = monitor_info.get("m1", ""), monitor_info.get("m2", "")
+        if m1_n or m2_n:
+            parts = [f"มือ{i+1}: <b>{p}</b>" for i, p in enumerate([x for x in [m1_n, m2_n] if x])]
+            st.markdown(f'<div style="font-size:0.75rem; color:#555; margin-bottom:4px;">👤 Monitor: {" | ".join(parts)}</div>', unsafe_allow_html=True)
+        
+        st.info(f"Monitor: **{len(active_shops)}** / **{len(shops)}** สาขา")
+        if not active_grid.empty:
+            prob_count = active_grid.isin(["⚠️", "❌"]).any(axis=1).sum()
+            col1, col2 = st.columns(2)
+            col1.metric("ปกติ ✅", len(active_shops) - prob_count)
+            col2.metric("ปัญหา ⚠️/❌", prob_count)
+
+            prob_sum = (active_grid == "❌").sum(axis=1) + (active_grid == "⚠️").sum(axis=1)
+            top_prob = prob_sum[prob_sum > 0].sort_values(ascending=False).head(3)
+            if not top_prob.empty:
+                st.markdown("---")
+                st.write("**⚠️ สาขาที่พบปัญหาบ่อยเดือนนี้:**")
+                for shop_label, count in top_prob.items():
+                    st.markdown(f'<div class="problem-item"><b>{shop_label}</b><br><span style="color:#d32f2f; font-size:0.75rem;">พบปัญหา {int(count)} ครั้ง</span></div>', unsafe_allow_html=True)
+
+    def apply_style(val):
+        if val == "✅": return 'background-color: #d4edda; color: #155724;'
+        if val == "⚠️": return 'background-color: #fff3cd; color: #856404;'
+        if val == "❌": return 'background-color: #f8d7da; color: #721c24;'
+        if val == "DISABLED": return 'background-color: #6c757d; color: transparent;'
+        return 'color: #ced4da; font-size: 10px;'
+
+    st.dataframe(grid_df.style.map(apply_style), use_container_width=True, height=800,
+                 column_config={d: st.column_config.Column(width=35) for d in days})
+else:
+    st.warning("⚠️ ไม่พบข้อมูลสำหรับแบรนด์นี้")
