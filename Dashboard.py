@@ -310,7 +310,6 @@ if not full_df.empty:
             s_name = str(r['shop_name']).strip()
             s_code_raw = ""
             if pd.notna(r['shop_code']):
-                # กรณีหลุดมาเป็น Float ทศนิยม เช่น 312.0 ให้ตัดออกเหลือแค่ String ตัวเลขจำนวนเต็มล้วน
                 raw_val = str(r['shop_code']).strip()
                 if raw_val.endswith('.0'):
                     s_code_raw = raw_val[:-2]
@@ -341,16 +340,22 @@ if not full_df.empty:
             updated_settings = {}
             for s in shops:
                 old_val = brand_settings.get(s, True)
+                
+                # กลไกเซฟตี้สกัดโครงสร้างข้อมูลระดับดิคชันนารี และรองรับ String ข้อมูลเพี้ยนจากบอทภายนอก
                 if isinstance(old_val, dict):
-                    updated_settings[s] = {
-                        "active": old_val.get("active", True),
-                        "sync_active": old_val.get("sync_active", old_val.get("active", True))
-                    }
+                    act_raw = old_val.get("active", True)
+                    sync_raw = old_val.get("sync_active", act_raw)
+                    
+                    is_act_bool = act_raw.lower() in ['true', '1', 'yes'] if isinstance(act_raw, str) else bool(act_raw)
+                    is_sync_bool = sync_raw.lower() in ['true', '1', 'yes'] if isinstance(sync_raw, str) else bool(sync_raw)
                 else:
-                    updated_settings[s] = {
-                        "active": old_val,
-                        "sync_active": old_val
-                    }
+                    is_act_bool = old_val.lower() in ['true', '1', 'yes'] if isinstance(old_val, str) else bool(old_val)
+                    is_sync_bool = is_act_bool
+
+                updated_settings[s] = {
+                    "active": is_act_bool,
+                    "sync_active": is_sync_bool
+                }
 
             master_act_key = f"master_act_{selected_brand}"
             master_sync_key = f"master_sync_{selected_brand}"
@@ -386,7 +391,6 @@ if not full_df.empty:
                 </div>
             """, unsafe_allow_html=True)
 
-            # 👑 [แก้ไขจุดที่ 3 : บั๊กปุ่มไม่แสดง] ปรับเปลี่ยนวิธีการดักกรองชื่อสาขาผ่านการ Match แบรนด์ที่ถูกต้องเพื่อป้องกันรายชื่อและปุ่มสวิตช์หลุดคิวเรนเดอร์
             filtered_shops = []
             for s in shops:
                 match_search = True
@@ -398,7 +402,6 @@ if not full_df.empty:
                     filtered_shops.append(s)
 
             for shop in filtered_shops:
-                # 👑 [แก้ไขจุดที่ 2 : บั๊กขีดหาย] เก็บตัวแปรสเปซเดิมและสัญลักษณ์ขีดคั่นกลาง '--' ของชื่อสาขาไว้เต็มรูปแบบ ไม่ไป .replace ออก
                 display_shop_name = shop.strip()
                 s_code_label = shop_code_map.get(shop, "—")
                 if s_code_label == "—" or s_code_label == "0" or s_code_label == "":
@@ -446,7 +449,6 @@ if not full_df.empty:
             st.session_state.selected_brand = "🛑 SELECT BRAND 🛑"
             st.rerun()
 
-    # ล็อคชื่อคู่รหัสในตาราง สไตล์เดิม ขีดอยู่ครบถ้วน
     display_grid_labels = []
     label_to_raw_shop = {}
     for s in shops:
@@ -466,44 +468,58 @@ if not full_df.empty:
 
     if not df_filtered.empty:
         df_filtered['Day'] = df_filtered['sync_date'].dt.day
+        
+        # 👑 [แก้ไขเซฟตี้พอยท์ระดับแบล็คเอนด์เพื่อล้างบั๊กตารางไม่โหลด] 
         for lbl in display_grid_labels:
             raw_s = label_to_raw_shop[lbl]
             s_cfg = brand_settings.get(raw_s, True)
-            is_active = s_cfg.get("active", True) if isinstance(s_cfg, dict) else s_cfg
+            
+            if isinstance(s_cfg, dict):
+                act_val = s_cfg.get("active", True)
+                is_active = act_val.lower() in ['true', '1', 'yes'] if isinstance(act_val, str) else bool(act_val)
+            else:
+                is_active = s_cfg.lower() in ['true', '1', 'yes'] if isinstance(s_cfg, str) else bool(s_cfg)
+                
             if not is_active: 
                 grid_df.loc[lbl] = "DISABLED"
         
         for _, row in df_filtered.iterrows():
-            s, d = row['shop_name'], row['Day']
+            s = row['shop_name']
+            d = row['Day']
             s_code_lbl = shop_code_map.get(s, "—")
             if s_code_lbl == "—" or s_code_lbl == "0" or s_code_lbl == "":
                  s_code_lbl = "รหัสใหม่"
             s_lbl = f"[{s_code_lbl}] {s.strip()}"
             
             if "⚡ Real-time" in view_mode:
-                st_code = row.get('status_realtime', row.get('status_code', 0))
+                st.get_value = row.get('status_realtime')
+                st_code = st.get_value if pd.notna(st.get_value) else row.get('status_code', 0)
             else:
-                st_code = row.get('status_log', row.get('status_code', 0))
+                st.get_value = row.get('status_log')
+                st_code = st.get_value if pd.notna(st.get_value) else row.get('status_code', 0)
 
             if s_lbl in grid_df.index and grid_df.at[s_lbl, d] != "DISABLED":
                 grid_df.at[s_lbl, d] = "✅" if st_code == 2 else "⚠️" if st_code == 1 else "❌" if st_code == 0 else "N/A"
 
     active_shops = []
+    active_grid_labels = []
     for s in shops:
         s_cfg = brand_settings.get(s, True)
         if isinstance(s_cfg, dict):
-            if s_cfg.get("active", True): active_shops.append(s)
-        elif s_cfg:
-            active_shops.append(s)
+            act_val = s_cfg.get("active", True)
+            is_active = act_val.lower() in ['true', '1', 'yes'] if isinstance(act_val, str) else bool(act_val)
+        else:
+            is_active = s_cfg.lower() in ['true', '1', 'yes'] if isinstance(s_cfg, str) else bool(s_cfg)
             
-    active_grid_labels = []
-    for s in active_shops:
-        s_c_lbl = shop_code_map.get(s, "—")
-        if s_c_lbl == "—" or s_c_lbl == "0" or s_c_lbl == "":
-             s_c_lbl = "รหัสใหม่"
-        active_grid_labels.append(f"[{s_c_lbl}] {s.strip()}")
-        
-    active_grid = grid_df.loc[active_grid_labels] if active_grid_labels else pd.DataFrame()
+        if is_active: 
+            active_shops.append(s)
+            s_c_lbl = shop_code_map.get(s, "—")
+            if s_c_lbl == "—" or s_c_lbl == "0" or s_c_lbl == "":
+                 s_c_lbl = "รหัสใหม่"
+            active_grid_labels.append(f"[{s_c_lbl}] {s.strip()}")
+            
+    # 👑 [จุดซ่อมแซมใหญ่] กรองตารางด้วย Index ป้ายชื่อเต็มตรงๆ ป้องกัน KeyError จากโค้ดอันเก่า
+    active_grid = grid_df.loc[active_grid_labels] if (active_grid_labels and all(idx in grid_df.index for idx in active_grid_labels)) else pd.DataFrame()
 
     with summary_placeholder.container():
         monitor_info = monitors_config.get(selected_brand, {})
@@ -535,10 +551,10 @@ if not full_df.empty:
                     )
 
     def apply_style(val):
+        if val == "DISABLED": return 'background-color: #6c757d; color: transparent;'
         if val == "✅": return 'background-color: #d4edda; color: #155724;'
         if val == "⚠️": return 'background-color: #fff3cd; color: #856404;'
         if val == "❌": return 'background-color: #f8d7da; color: #721c24;'
-        if val == "DISABLED": return 'background-color: #6c757d; color: transparent;'
         return 'color: #ced4da; font-size: 10px;'
 
     st.dataframe(grid_df.style.map(apply_style), use_container_width=True, height=800,
