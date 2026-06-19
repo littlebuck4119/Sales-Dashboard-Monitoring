@@ -286,90 +286,75 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
     """, unsafe_allow_html=True)
     st.stop()
 
-# --- 5. DASHBOARD VIEW ---
+# --- 5. DASHBOARD VIEW (เวอร์ชันแก้ไข Error sorted และปุ่มหาย) ---
 header_mode_suffix = "(Real-time)" if "⚡ Real-time" in view_mode else "(History Log)"
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand} <small style='color:#666; font-size:14px;'>{header_mode_suffix}</small>", unsafe_allow_html=True)
-st.markdown(f"🔗 **API Source:** `https://api.npoint.io/{BRAND_CONFIG[selected_brand]}`")
 
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
 if not full_df.empty:
-    # 1. แปลงคอลัมน์ให้เป็น String และเปลี่ยนพวกเลข 0 หรือ NaN ให้เป็นค่าว่างชั่วคราว
+    # 1. คลีนข้อมูลและดึง shop_code มาจับคู่กับ shop_name ป้องกันค่าว่าง/NaN
     if 'shop_code' in full_df.columns:
-        full_df['shop_code'] = full_df['shop_code'].astype(str).replace(['0', '0.0', 'nan', 'None'], '')
-    
-    # 2. ใช้เทคนิค Map หาคู่ Shop Name กับ Shop Code ล่าสุดที่ไม่ใช่ค่าว่าง
+        full_df['shop_code'] = full_df['shop_code'].astype(str).replace(['0', '0.0', 'nan', 'None', '<NA>'], '')
+    else:
+        full_df['shop_code'] = ''
+        
     valid_codes = full_df[full_df['shop_code'] != ''].drop_duplicates('shop_name')
     name_to_code_map = dict(zip(valid_codes['shop_name'], valid_codes['shop_code']))
-    
-    # 3. เติมรหัสสาขาให้วันเก่าๆ ที่ไม่มีข้อมูลจาก Map ที่เราสร้างไว้
     full_df['final_shop_code'] = full_df['shop_name'].map(name_to_code_map).fillna('')
     
-    # 4. สร้าง Label สำหรับแสดงผลในตารางและเมนูด้านข้าง
+    # ฟังก์ชันแปลงชื่อสาขาสำหรับแสดงผลในตาราง [รหัสสาขา] ชื่อสาขา
     def make_label(row):
         code = row['final_shop_code']
-        name = row['shop_name']
-        return f"[{code}] {name}" if code else f" {name}"
+        return f"[{code}] {row['shop_name']}" if code else f" {row['shop_name']}"
         
     full_df['display_label'] = full_df.apply(make_label, axis=1)
     
-    # 💡 [แก้ไขและนิยามรายชื่อสาขาให้ลอจิกทำงานครบสมบูรณ์]
-    shops = sorted(list(full_df['shop_name'].unique()))
+    # รายชื่อสาขาทั้งหมดที่มีอยู่จริงในข้อมูลดิบ
+    raw_shops = sorted([str(s) for s in full_df['shop_name'].unique() if s is not None])
     shops_display_dict = dict(zip(full_df['shop_name'], full_df['display_label']))
-    
     brand_settings = current_full_config.get(selected_brand, {})
 
+    # 💡 แก้ไขฟังก์ชัน get_sort_key ให้ปลอดภัย (ดึงรหัสสาขามาเรียงลำดับ ถ้าไม่มีให้เรียงตามชื่อ)
+    def get_sort_key(shop_name):
+        code = name_to_code_map.get(shop_name, "")
+        return (0, code) if code else (1, shop_name)
+
+    # จัดเรียงลำดับสาขาตามรหัสสาขาอย่างถูกต้อง ป้องกันปัญหา TypeError
+    shops = sorted(raw_shops, key=get_sort_key)
+
+    # 2. แถบควบคุมด้านข้าง (Sidebar Expander) สำหรับจัดการ เปิด/ปิดร้าน และ เปิด/ปิดส่งยอด
     with st.sidebar:
         st.markdown("---")
-        # 🔗 จัดการ เปิด/ปิด / ดึงยอด สาขา
         with st.expander("🚫 จัดการ เปิด/ปิด / ดึงยอด สาขา", expanded=False):
             search_query = st_keyup("🔍 ค้นหาสาขา...", key=f"keyup_search_{selected_brand}").strip().lower()
             
-            # 1. จัดทำข้อมูลเริ่มต้น
+            # โหลดสถานะ Configuration เดิม (ถ้าเป็นรูปแบบเก่าจะแปลงเป็นรูปแบบคู่ขนานอัจฉริยะ)
             updated_settings = {}
             for s in shops:
                 old_val = brand_settings.get(s, True)
                 if isinstance(old_val, dict):
-                    updated_settings[s] = {
-                        "active": old_val.get("active", True),
-                        "sync_active": old_val.get("sync_active", old_val.get("active", True))
-                    }
+                    updated_settings[s] = {"active": old_val.get("active", True), "sync_active": old_val.get("sync_active", True)}
                 else:
-                    updated_settings[s] = {
-                        "active": old_val,
-                        "sync_active": old_val
-                    }
+                    updated_settings[s] = {"active": old_val, "sync_active": old_val}
 
-            # 2. Callbacks สำหรับปุ่ม Master ทั้ง 2 ฝั่ง
             master_act_key = f"master_act_{selected_brand}"
             master_sync_key = f"master_sync_{selected_brand}"
 
             def on_master_act_change():
-                m_val = st.session_state[master_act_key]
-                for s in shops:
-                    st.session_state[f"tog_act_{selected_brand}_{s}"] = m_val
-
+                for s in shops: st.session_state[f"tog_act_{selected_brand}_{s}"] = st.session_state[master_act_key]
             def on_master_sync_change():
-                m_val = st.session_state[master_sync_key]
-                for s in shops:
-                    st.session_state[f"tog_sync_{selected_brand}_{s}"] = m_val
+                for s in shops: st.session_state[f"tog_sync_{selected_brand}_{s}"] = st.session_state[master_sync_key]
 
-            # 3. คำนวณสถานะปุ่ม Master
             all_act_on = all(st.session_state.get(f"tog_act_{selected_brand}_{s}", updated_settings[s]["active"]) for s in shops)
             all_sync_on = all(st.session_state.get(f"tog_sync_{selected_brand}_{s}", updated_settings[s]["sync_active"]) for s in shops)
 
-            # สวิตช์ เปิด/ปิด ทั้งหมด แถวเดียวคู่กัน
             col_m_name, col_m_act, col_m_sync = st.columns([1.8, 1.1, 1.1])
-            with col_m_name:
-                st.markdown("<div style='font-size: 0.8rem; font-weight: bold; color: #1e293b; padding-top: 4px;'>🔔 เปิด/ปิด ทั้งหมด</div>", unsafe_allow_html=True)
-            with col_m_act:
-                st.toggle("All Act", value=all_act_on, key=master_act_key, on_change=on_master_act_change, label_visibility="collapsed")
-            with col_m_sync:
-                st.toggle("All Sync", value=all_sync_on, key=master_sync_key, on_change=on_master_sync_change, label_visibility="collapsed")
+            col_m_name.markdown("<div style='font-size: 0.75rem; font-weight: bold; color: #1e293b; padding-top: 4px;'>🔔 เปิด/ปิด ทั้งหมด</div>", unsafe_allow_html=True)
+            col_m_act.toggle("All Act", value=all_act_on, key=master_act_key, on_change=on_master_act_change, label_visibility="collapsed")
+            col_m_sync.toggle("All Sync", value=all_sync_on, key=master_sync_key, on_change=on_master_sync_change, label_visibility="collapsed")
 
             st.markdown("<hr style='margin: 8px 0; border: none; border-top: 1px dashed #cbd5e1;'>", unsafe_allow_html=True)
-
-            # หัวตารางรายสาขา
             st.markdown("""
                 <div style="display: flex; background-color: #f1f5f9; padding: 6px 4px; border-radius: 6px; margin-bottom: 8px; font-size: 0.75rem; font-weight: bold; color: #475569;">
                     <div style="flex: 1.8;">📍 รหัส & ชื่อสาขา</div>
@@ -378,37 +363,25 @@ if not full_df.empty:
                 </div>
             """, unsafe_allow_html=True)
 
-            # 4. แสดงรายการสวิตช์รายสาขา
-            filtered_shops = [s for s in shops if search_query in shops_display_dict[s].lower()] if search_query else shops
+            filtered_shops = [s for s in shops if search_query in shops_display_dict.get(s, s).lower()] if search_query else shops
 
             for shop in filtered_shops:
-                display_shop_name = shops_display_dict[shop].replace('--', '').strip()
+                display_shop_name = shops_display_dict.get(shop, shop).replace('--', '').strip()
+                col_name, col_act, col_sync = st.columns([1.8, 1.1, 1.1])
                 
-                with st.container():
-                    col_name, col_act, col_sync = st.columns([1.8, 1.1, 1.1])
-                    
-                    with col_name:
-                        st.markdown(f"<div style='font-size: 0.8rem; font-weight: 500; line-height: 1.3; padding-top: 2px; color: #1e293b; word-break: break-word;' title='{shop}'>{display_shop_name}</div>", unsafe_allow_html=True)
-                    
-                    with col_act:
-                        t_active_key = f"tog_act_{selected_brand}_{shop}"
-                        if t_active_key not in st.session_state:
-                            st.session_state[t_active_key] = updated_settings[shop]["active"]
-                        val_active = st.toggle("Active", key=t_active_key, label_visibility="collapsed")
-                    
-                    with col_sync:
-                        t_sync_key = f"tog_sync_{selected_brand}_{shop}"
-                        if t_sync_key not in st.session_state:
-                            st.session_state[t_sync_key] = updated_settings[shop]["sync_active"]
-                        val_sync = st.toggle("Sync", key=t_sync_key, label_visibility="collapsed")
+                col_name.markdown(f"<div style='font-size: 0.8rem; font-weight: 500; padding-top: 2px; color: #1e293b;'>{display_shop_name}</div>", unsafe_allow_html=True)
+                
+                t_active_key = f"tog_act_{selected_brand}_{shop}"
+                if t_active_key not in st.session_state: st.session_state[t_active_key] = updated_settings[shop]["active"]
+                val_active = col_act.toggle("Active", key=t_active_key, label_visibility="collapsed")
+                
+                t_sync_key = f"tog_sync_{selected_brand}_{shop}"
+                if t_sync_key not in st.session_state: st.session_state[t_sync_key] = updated_settings[shop]["sync_active"]
+                val_sync = col_sync.toggle("Sync", key=t_sync_key, label_visibility="collapsed")
 
-                    updated_settings[shop] = {
-                        "active": val_active,
-                        "sync_active": val_sync
-                    }
-                    st.markdown("<div style='margin: 4px 0; border-bottom: 1px solid #f1f5f9;'></div>", unsafe_allow_html=True)
+                updated_settings[shop] = {"active": val_active, "sync_active": val_sync}
+                st.markdown("<div style='margin: 4px 0; border-bottom: 1px solid #f1f5f9;'></div>", unsafe_allow_html=True)
                     
-            st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
             if st.button("💾 บันทึกการตั้งค่าสาขา", type="primary", use_container_width=True, key="save_shops"):
                 final_settings = {}
                 for s in shops:
@@ -416,22 +389,22 @@ if not full_df.empty:
                         "active": st.session_state.get(f"tog_act_{selected_brand}_{s}", updated_settings[s]["active"]),
                         "sync_active": st.session_state.get(f"tog_sync_{selected_brand}_{s}", updated_settings[s]["sync_active"])
                     }
-                
                 current_full_config[selected_brand] = final_settings
                 save_config(current_full_config)
-                st.success("บันทึกและสแตมป์สถานะ 2 ฝั่งลง API เรียบร้อย!")
+                st.success("บันทึกเรียบร้อย!")
                 st.rerun()
                 
         if st.button("🔙 Back to Main Page", key="back_to_welcome", use_container_width=True):
             st.session_state.selected_brand = "🛑 SELECT BRAND 🛑"
             st.rerun()
 
+    # 3. จัดการโครงสร้างกริดตาราง Heatmap รายวัน
     mask = (full_df['sync_date'].dt.month == m) & (full_df['sync_date'].dt.year == y)
     df_filtered = full_df[mask].copy()
     _, last_day = calendar.monthrange(y, m)
     days = list(range(1, last_day + 1))
     
-    grid_index_labels = [shops_display_dict[s] for s in shops]
+    grid_index_labels = [shops_display_dict.get(s, s) for s in shops]
     grid_df = pd.DataFrame("N/A", index=grid_index_labels, columns=days)
 
     if not df_filtered.empty:
@@ -440,31 +413,21 @@ if not full_df.empty:
             s_cfg = brand_settings.get(shop, True)
             is_active = s_cfg.get("active", True) if isinstance(s_cfg, dict) else s_cfg
             if not is_active: 
-                grid_df.loc[shops_display_dict[shop]] = "DISABLED"
+                grid_df.loc[shops_display_dict.get(shop, shop)] = "DISABLED"
         
         for _, row in df_filtered.iterrows():
             s, d = row['shop_name'], row['Day']
             display_label = shops_display_dict.get(s, s)
-            
-            if "⚡ Real-time" in view_mode:
-                st_code = row.get('status_realtime', row.get('status_code', 0))
-            else:
-                st_code = row.get('status_log', row.get('status_code', 0))
+            st_code = row.get('status_realtime', row.get('status_code', 0)) if "⚡ Real-time" in view_mode else row.get('status_log', row.get('status_code', 0))
 
             if display_label in grid_df.index and grid_df.at[display_label, d] != "DISABLED":
                 grid_df.at[display_label, d] = "✅" if st_code == 2 else "⚠️" if st_code == 1 else "❌" if st_code == 0 else "N/A"
 
-    active_shops = []
-    for s in shops:
-        s_cfg = brand_settings.get(s, True)
-        if isinstance(s_cfg, dict):
-            if s_cfg.get("active", True): active_shops.append(s)
-        elif s_cfg:
-            active_shops.append(s)
-            
-    active_grid_labels = [shops_display_dict[s] for s in active_shops]
+    active_shops = [s for s in shops if (brand_settings.get(s, True).get("active", True) if isinstance(brand_settings.get(s, True), dict) else brand_settings.get(s, True))]
+    active_grid_labels = [shops_display_dict.get(s, s) for s in active_shops]
     active_grid = grid_df.loc[active_grid_labels] if active_shops else pd.DataFrame()
 
+    # 4. แสดงผลข้อมูลเมทริกสรุปและตาราง Heatmap
     with summary_placeholder.container():
         monitor_info = monitors_config.get(selected_brand, {})
         m1_n, m2_n = monitor_info.get("m1", ""), monitor_info.get("m2", "")
@@ -485,14 +448,7 @@ if not full_df.empty:
                 st.markdown("---")
                 st.write("**⚠️ สาขาที่พบปัญหาบ่อยเดือนนี้:**")
                 for shop_label, count in top_prob.items():
-                    try: display_count = int(count)
-                    except: display_count = 0
-                        
-                    st.markdown(
-                        f'<div class="problem-item"><b>{shop_label}</b><br>'
-                        f'<span style="color:#d32f2f; font-size:0.75rem;">พบปัญหา {display_count} ครั้ง</span></div>',
-                        unsafe_allow_html=True
-                    )
+                    st.markdown(f'<div class="problem-item"><b>{shop_label}</b><br><span style="color:#d32f2f; font-size:0.75rem;">พบปัญหา {int(count)} ครั้ง</span></div>', unsafe_allow_html=True)
 
     def apply_style(val):
         if val == "✅": return 'background-color: #d4edda; color: #155724;'
