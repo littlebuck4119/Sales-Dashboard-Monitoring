@@ -303,14 +303,21 @@ st.markdown(f"🔗 **API Source:** `https://api.npoint.io/{BRAND_CONFIG[selected
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
 if not full_df.empty:
-    # 👑 [แก้ไขจุดนี้ - บั๊กที่ 1] สกัดคีย์ดึงรหัสสาขาให้แม่นยำขึ้น ป้องกันอาการหลุดเป็น 0 หรือเป็นค่าว่างเปล่า
+    # 👑 [แก้ไขจุดที่ 1 : บั๊ก shopcode เป็น 0] ปรับปรุงกลไกสกัดข้อมูลคีย์หลักและล้าง Type ตัวแปรแบบเข้มงวดให้ได้เลขรหัสจริง
     shop_code_map = {}
     if 'shop_code' in full_df.columns:
         for _, r in full_df.dropna(subset=['shop_name']).iterrows():
             s_name = str(r['shop_name']).strip()
-            # ตรวจสอบเพิ่มว่าหากค่า shop_code เป็นตัวเลข 0, "0", หรือไม่มีค่า ให้ข้ามไปใช้ค่าอื่นที่มีตัวเลขรหัสจริง
-            s_code_raw = str(r['shop_code']).strip() if pd.notna(r['shop_code']) else ""
-            if s_code_raw and s_code_raw not in ["0", "0.0", "None"]:
+            s_code_raw = ""
+            if pd.notna(r['shop_code']):
+                # กรณีหลุดมาเป็น Float ทศนิยม เช่น 312.0 ให้ตัดออกเหลือแค่ String ตัวเลขจำนวนเต็มล้วน
+                raw_val = str(r['shop_code']).strip()
+                if raw_val.endswith('.0'):
+                    s_code_raw = raw_val[:-2]
+                else:
+                    s_code_raw = raw_val
+            
+            if s_code_raw and s_code_raw not in ["0", "0.0", "None", "nan"]:
                 if s_name not in shop_code_map:
                     shop_code_map[s_name] = s_code_raw
 
@@ -379,14 +386,22 @@ if not full_df.empty:
                 </div>
             """, unsafe_allow_html=True)
 
-            # 👑 [แก้ไขจุดนี้ - บั๊กที่ 3] แก้ไขระบบเงื่อนไข ค้นหาสาขา เพื่อไม่ให้ปุ่มสวิตช์โดนซ่อนหรือหายไปจากกล่อง
-            filtered_shops = [s for s in shops if search_query in s.lower() or shop_code_map.get(s, "").lower() in search_query] if search_query else shops
+            # 👑 [แก้ไขจุดที่ 3 : บั๊กปุ่มไม่แสดง] ปรับเปลี่ยนวิธีการดักกรองชื่อสาขาผ่านการ Match แบรนด์ที่ถูกต้องเพื่อป้องกันรายชื่อและปุ่มสวิตช์หลุดคิวเรนเดอร์
+            filtered_shops = []
+            for s in shops:
+                match_search = True
+                if search_query:
+                    s_code_current = str(shop_code_map.get(s, "")).lower()
+                    if (search_query not in s.lower()) and (search_query not in s_code_current):
+                        match_search = False
+                if match_search:
+                    filtered_shops.append(s)
 
             for shop in filtered_shops:
-                # 👑 [แก้ไขจุดนี้ - บั๊กที่ 2] ห้ามทำการลบเครื่องหมาย '--' ออกเพื่อให้ขีดของ shopname แสดงผลเหมือนเดิมครบถ้วน
+                # 👑 [แก้ไขจุดที่ 2 : บั๊กขีดหาย] เก็บตัวแปรสเปซเดิมและสัญลักษณ์ขีดคั่นกลาง '--' ของชื่อสาขาไว้เต็มรูปแบบ ไม่ไป .replace ออก
                 display_shop_name = shop.strip()
                 s_code_label = shop_code_map.get(shop, "—")
-                if s_code_label == "—" or s_code_label == "0":
+                if s_code_label == "—" or s_code_label == "0" or s_code_label == "":
                      s_code_label = "รหัสใหม่"
                 
                 with st.container():
@@ -436,7 +451,7 @@ if not full_df.empty:
     label_to_raw_shop = {}
     for s in shops:
         s_code_label = shop_code_map.get(s, "—")
-        if s_code_label == "—" or s_code_label == "0":
+        if s_code_label == "—" or s_code_label == "0" or s_code_label == "":
              s_code_label = "รหัสใหม่"
         lbl = f"[{s_code_label}] {s.strip()}"
         display_grid_labels.append(lbl)
@@ -461,7 +476,7 @@ if not full_df.empty:
         for _, row in df_filtered.iterrows():
             s, d = row['shop_name'], row['Day']
             s_code_lbl = shop_code_map.get(s, "—")
-            if s_code_lbl == "—" or s_code_lbl == "0":
+            if s_code_lbl == "—" or s_code_lbl == "0" or s_code_lbl == "":
                  s_code_lbl = "รหัสใหม่"
             s_lbl = f"[{s_code_lbl}] {s.strip()}"
             
@@ -484,7 +499,7 @@ if not full_df.empty:
     active_grid_labels = []
     for s in active_shops:
         s_c_lbl = shop_code_map.get(s, "—")
-        if s_c_lbl == "—" or s_c_lbl == "0":
+        if s_c_lbl == "—" or s_c_lbl == "0" or s_c_lbl == "":
              s_c_lbl = "รหัสใหม่"
         active_grid_labels.append(f"[{s_c_lbl}] {s.strip()}")
         
