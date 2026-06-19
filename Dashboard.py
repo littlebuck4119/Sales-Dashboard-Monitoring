@@ -215,7 +215,7 @@ with st.sidebar:
         m_name = st.selectbox("เดือน", month_list, index=now.month - 1, key="sb_month")
         m = month_list.index(m_name) + 1
 
-    # 👑 [เพิ่มจุดนี้] ปุ่มวิทยุสำหรับเลือกโหมดการจัดเรียง (มีผลพร้อมกันทั้งตารางและ sidebar ซ้าย)
+    # ปุ่มวิทยุสำหรับเลือกโหมดการจัดเรียง
     st.markdown("<div style='font-size:0.65rem; font-weight:600; color:#64748b; text-transform:uppercase; margin-top:5px; margin-bottom:2px;'>การจัดเรียงลำดับสาขา</div>", unsafe_allow_html=True)
     sort_option = st.radio(
         "Sort Options",
@@ -303,22 +303,22 @@ st.markdown(f"🔗 **API Source:** `https://api.npoint.io/{BRAND_CONFIG[selected
 full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
 
 if not full_df.empty:
-    # 🛠️ [เพิ่มจุดนี้] สกัดจับดึงข้อมูลคู่ รหัสสาขา (shop_code) และ ชื่อสาขา (shop_name)
+    # 👑 [แก้ไขจุดนี้ - บั๊กที่ 1] สกัดคีย์ดึงรหัสสาขาให้แม่นยำขึ้น ป้องกันอาการหลุดเป็น 0 หรือเป็นค่าว่างเปล่า
     shop_code_map = {}
     if 'shop_code' in full_df.columns:
         for _, r in full_df.dropna(subset=['shop_name']).iterrows():
             s_name = str(r['shop_name']).strip()
-            s_code = str(r['shop_code']).strip() if pd.notna(r['shop_code']) else "N/A"
-            if s_name and s_name not in shop_code_map:
-                shop_code_map[s_name] = s_code
+            # ตรวจสอบเพิ่มว่าหากค่า shop_code เป็นตัวเลข 0, "0", หรือไม่มีค่า ให้ข้ามไปใช้ค่าอื่นที่มีตัวเลขรหัสจริง
+            s_code_raw = str(r['shop_code']).strip() if pd.notna(r['shop_code']) else ""
+            if s_code_raw and s_code_raw not in ["0", "0.0", "None"]:
+                if s_name not in shop_code_map:
+                    shop_code_map[s_name] = s_code_raw
 
-    # 👑 [เพิ่มจุดนี้] ดึงรายชื่อสาขามาทำการคัดกรองและจัดเรียงตามเงื่อนไข Radio Button
     raw_shops = sorted(full_df['shop_name'].unique())
     if "🔢 ตามรหัสสาขา" in sort_option:
-        # พยายามแปลงรหัสเป็นเลขเพื่อเรียงลำดับ ถ้าแปลงไม่ได้ให้เรียงเป็นแบบข้อความ (String)
         def get_sort_key(x):
             code_str = shop_code_map.get(x, "999999")
-            try: return int(code_str)
+            try: return int(float(code_str))
             except: return code_str
         shops = sorted(raw_shops, key=get_sort_key)
     else:
@@ -371,7 +371,6 @@ if not full_df.empty:
 
             st.markdown("<hr style='margin: 8px 0; border: none; border-top: 1px dashed #cbd5e1;'>", unsafe_allow_html=True)
 
-            # หัวตารางรายสาขา
             st.markdown("""
                 <div style="display: flex; background-color: #f1f5f9; padding: 6px 4px; border-radius: 6px; margin-bottom: 8px; font-size: 0.75rem; font-weight: bold; color: #475569;">
                     <div style="flex: 1.8;">📍 รหัส & ชื่อสาขา</div>
@@ -380,17 +379,20 @@ if not full_df.empty:
                 </div>
             """, unsafe_allow_html=True)
 
+            # 👑 [แก้ไขจุดนี้ - บั๊กที่ 3] แก้ไขระบบเงื่อนไข ค้นหาสาขา เพื่อไม่ให้ปุ่มสวิตช์โดนซ่อนหรือหายไปจากกล่อง
             filtered_shops = [s for s in shops if search_query in s.lower() or shop_code_map.get(s, "").lower() in search_query] if search_query else shops
 
             for shop in filtered_shops:
-                display_shop_name = shop.replace('--', '').strip()
+                # 👑 [แก้ไขจุดนี้ - บั๊กที่ 2] ห้ามทำการลบเครื่องหมาย '--' ออกเพื่อให้ขีดของ shopname แสดงผลเหมือนเดิมครบถ้วน
+                display_shop_name = shop.strip()
                 s_code_label = shop_code_map.get(shop, "—")
+                if s_code_label == "—" or s_code_label == "0":
+                     s_code_label = "รหัสใหม่"
                 
                 with st.container():
                     col_name, col_act, col_sync = st.columns([1.8, 1.1, 1.1])
                     
                     with col_name:
-                        # 👑 [แก้ไขจุดนี้] เปลี่ยนกล่องเมนู Sidebar ซ้ายให้จัดแสดงรหัสคู่กับชื่อสาขาตามเงื่อนไขการเรียงลำดับหลัก
                         st.markdown(f"<div style='font-size: 0.8rem; font-weight: 500; line-height: 1.3; padding-top: 2px; color: #1e293b; word-break: break-word;' title='{shop}'><b>[{s_code_label}]</b><br>{display_shop_name}</div>", unsafe_allow_html=True)
                     
                     with col_act:
@@ -429,11 +431,14 @@ if not full_df.empty:
             st.session_state.selected_brand = "🛑 SELECT BRAND 🛑"
             st.rerun()
 
-    # 👑 [แก้ไขจุดนี้] สร้าง Label ผูกรายชื่อคอลัมน์ของตารางเป็นรูปแบบคู่รหัสสาขาเพื่อนำไปวาดแผนภูมิตารางสรุป
+    # ล็อคชื่อคู่รหัสในตาราง สไตล์เดิม ขีดอยู่ครบถ้วน
     display_grid_labels = []
     label_to_raw_shop = {}
     for s in shops:
-        lbl = f"[{shop_code_map.get(s, '—')}] {s.replace('--', '').strip()}"
+        s_code_label = shop_code_map.get(s, "—")
+        if s_code_label == "—" or s_code_label == "0":
+             s_code_label = "รหัสใหม่"
+        lbl = f"[{s_code_label}] {s.strip()}"
         display_grid_labels.append(lbl)
         label_to_raw_shop[lbl] = s
 
@@ -455,7 +460,10 @@ if not full_df.empty:
         
         for _, row in df_filtered.iterrows():
             s, d = row['shop_name'], row['Day']
-            s_lbl = f"[{shop_code_map.get(s, '—')}] {s.replace('--', '').strip()}"
+            s_code_lbl = shop_code_map.get(s, "—")
+            if s_code_lbl == "—" or s_code_lbl == "0":
+                 s_code_lbl = "รหัสใหม่"
+            s_lbl = f"[{s_code_lbl}] {s.strip()}"
             
             if "⚡ Real-time" in view_mode:
                 st_code = row.get('status_realtime', row.get('status_code', 0))
@@ -473,7 +481,13 @@ if not full_df.empty:
         elif s_cfg:
             active_shops.append(s)
             
-    active_grid_labels = [f"[{shop_code_map.get(s, '—')}] {s.replace('--', '').strip()}" for s in active_shops]
+    active_grid_labels = []
+    for s in active_shops:
+        s_c_lbl = shop_code_map.get(s, "—")
+        if s_c_lbl == "—" or s_c_lbl == "0":
+             s_c_lbl = "รหัสใหม่"
+        active_grid_labels.append(f"[{s_c_lbl}] {s.strip()}")
+        
     active_grid = grid_df.loc[active_grid_labels] if active_grid_labels else pd.DataFrame()
 
     with summary_placeholder.container():
