@@ -84,7 +84,8 @@ BRAND_CONFIG = {
     "Shwepalin": "ee564b51ca10e448abb9",
     "CocaSuki": "95fb49a8978ca4acf1ac",
     "BaanSomtum": "71ffbd4c2491a1b2e568",
-    "HormCafe": "2a34ab9d789677ee8ba2"
+    "HormCafe": "2a34ab9d789677ee8ba2",
+    "Bangkok Air": "ee1cbbde6b7473cf98ce"
 }
 CONFIG_API = "https://api.npoint.io/9898efa2a5853bf5f886"
 
