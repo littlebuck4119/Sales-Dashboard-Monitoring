@@ -291,10 +291,33 @@ if selected_brand == "🛑 SELECT BRAND 🛑":
 header_mode_suffix = "(Real-time)" if "⚡ Real-time" in view_mode else "(History Log)"
 st.markdown(f"### 📊 Sales Monitoring Heatmap : {selected_brand} <small style='color:#666; font-size:14px;'>{header_mode_suffix}</small>", unsafe_allow_html=True)
 
-full_df = get_data_from_api(f"https://api.npoint.io/{BRAND_CONFIG[selected_brand]}")
+# 🌐 [แทรกเพิ่ม] ประกาศตัวแปร URL เต็มไว้ตรงนี้เพื่อเอาไปโชว์ และเอาไปใช้ยิง API
+brand_api_id = BRAND_CONFIG.get(selected_brand)
+full_api_url = f"https://api.npoint.io/{brand_api_id}"
+
+# 🛠️ [แทรกเพิ่ม] แบ่ง 2 คอลัมน์ให้ ปุ่มจัดเรียง กับ กล่อง URL อยู่บรรทัดเดียวกันข้างบนตาราง
+col_sort_radio, col_url_show = st.columns([1.5, 2.5])
+
+with col_sort_radio:
+    st.markdown("<div style='font-size:0.85rem; font-weight:600; color:#1e293b; margin-top:5px;'>🔀 จัดเรียงลำดับข้อมูลตาม:</div>", unsafe_allow_html=True)
+    sort_choice = st.radio(
+        "Sort Order Choices",
+        ["รหัสสาขา (Shop Code)", "ชื่อสาขา (Shop Name)"],
+        index=0,
+        horizontal=True,
+        label_visibility="collapsed",
+        key=f"sort_choice_{selected_brand}"
+    )
+
+with col_url_show:
+    st.markdown("<div style='font-size:0.85rem; font-weight:600; color:#1e293b; margin-top:5px;'>🌐 Current API URL:</div>", unsafe_allow_html=True)
+    st.code(full_api_url, language="text") # โชว์ URL เต็มๆ แถวเดียวกับปุ่มจัดเรียงตามบรีฟเลยครับ
+
+# 📥 เปลี่ยนมาใช้ตัวแปร full_api_url ที่ประกาศไว้ด้านบน ยิงดึงข้อมูลเหมือนเดิม
+full_df = get_data_from_api(full_api_url)
 
 if not full_df.empty:
-    # 🎯 1. เคลียร์ปัญหาตรวจสอบรหัสสาขา (เช็กทั้ง shop_id และ shop_code ตามโครงสร้าง API)
+    # 🎯 1. เคลียร์ปัญหาตรวจสอบรหัสสาขา (เช็กทั้ง shop_id และ shop_code ตามโครงสร้าง API) -> อยู่ครบ!
     id_col = 'shop_id' if 'shop_id' in full_df.columns else ('shop_code' if 'shop_code' in full_df.columns else '')
     
     if id_col:
@@ -302,22 +325,24 @@ if not full_df.empty:
     else:
         full_df['final_shop_code'] = ''
         
-    # คัดกรองคู่โครงสร้างเพื่อทำ Mapping ดึงข้อมูลรหัสมาผูกกับชื่อ
+    # คัดกรองคู่โครงสร้างเพื่อทำ Mapping ดึงข้อมูลรหัสมาผูกกับชื่อ -> อยู่ครบ!
     valid_codes = full_df[full_df['final_shop_code'] != ''].drop_duplicates('shop_name')
     name_to_code_map = dict(zip(valid_codes['shop_name'], valid_codes['final_shop_code']))
     
-    # ฟังก์ชันสลักชื่อแบรนด์ลงหน้าตารางและแถบเมนูควบคุม
+    # ฟังก์ชันสลักชื่อแบรนด์ลงหน้าตารางและแถบเมนูควบคุม -> อยู่ครบ!
     def make_label(shop_name):
         code = name_to_code_map.get(shop_name, "")
         return f"[{code}] {shop_name}" if code else f"[0] {shop_name}"
         
-    # ดึงรายชื่อสาขาทั้งหมดที่มีอยู่จริง (ตัดค่าว่าง/None ออก ป้องกันตารางพังหน้าขาว)
+    # ดึงรายชื่อสาขาทั้งหมดที่มีอยู่จริง (ตัดค่าว่าง/None ออก ป้องกันตารางพังหน้าขาว) -> อยู่ครบ!
     shops = sorted([str(s).strip() for s in full_df['shop_name'].unique() if s and str(s).strip() != 'nan'])
     
-    # สลักป้าย Dictionary เก็บข้อมูลการแสดงผลที่ถูกต้องแม่นยำ 100%
+    # สลักป้าย Dictionary เก็บข้อมูลการแสดงผลที่ถูกต้องแม่นยำ 100% -> อยู่ครบ!
     shops_display_dict = {s: make_label(s) for s in shops}
     brand_settings = current_full_config.get(selected_brand, {})
-
+    
+    # (หลังจากนี้ก็จะเป็น Logic เรียงลำดับ shops และวาดตาราง Heatmap ทำงานต่อได้เนียนๆ เลยครับ)
+    
     # 2. ปุ่มตัวเลือกสลับการจัดเรียงด้านบนตาราง (Radio Button)
     st.markdown("<div style='font-size:0.85rem; font-weight:600; color:#1e293b; margin-top:5px;'>🔀 จัดเรียงลำดับข้อมูลตาม:</div>", unsafe_allow_html=True)
     sort_choice = st.radio(
