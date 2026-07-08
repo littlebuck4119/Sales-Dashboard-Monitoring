@@ -169,7 +169,7 @@ with st.sidebar:
     )
     st.markdown("<div style='margin-bottom:15px;'></div>", unsafe_allow_html=True)
 
-    # --- 2. Brand selector ---
+# --- 2. Brand selector ---
     st.markdown("<div style='font-size:0.65rem; font-weight:600; color:#64748b; text-transform:uppercase; margin-bottom:4px;'>เลือกแบรนด์</div>", unsafe_allow_html=True)
 
     selected_brand = st.session_state.selected_brand
@@ -188,15 +188,34 @@ with st.sidebar:
         m2 = cfg.get("m2", "")
         monitors_text = " / ".join([x for x in [m1, m2] if x]) or "—"
         
+        # 🔍 [ADDED LOGIC] ดึง Config รายสาขามาเช็คว่าถูก "ปิดใช้งานทั้งหมด" หรือไม่
+        brand_shops_cfg = current_full_config.get(brand, {})
+        is_all_disabled = False
+        if brand_shops_cfg and isinstance(brand_shops_cfg, dict):
+            # ตรวจสอบว่าทุกสาขาถูกปิดทั้ง active และ sync_active หรือไม่
+            all_disabled_checks = []
+            for s_name, s_val in brand_shops_cfg.items():
+                if isinstance(s_val, dict):
+                    # ถ้าค่าทั้งสองเป็น False (ปิดใช้งาน) จะนับว่าเป็น True ในการ disabled
+                    all_disabled_checks.append(not s_val.get("active", True) and not s_val.get("sync_active", True))
+                else:
+                    all_disabled_checks.append(not s_val)
+            
+            if all_disabled_checks and all(all_disabled_checks):
+                is_all_disabled = True
+
         is_active = (selected_brand == brand)
         bg = f"{color}25" if is_active else f"{color}10"
         border_w = "4px" if is_active else "2px"
         
         col_band, col_btn = st.columns([5, 1.2])
         with col_band:
+            # 💡 ปรับแต่ง HTML: ถ้าทุกสาขาถูกปิด ให้พ่วงข้อความสีแดงเตือน (ปิดการ Monitor ยอดขาย)
+            disabled_suffix = ' <span style="color:#dc3545; font-size:0.75rem; font-weight:700;">(ปิดการ Monitor ยอดขาย)</span>' if is_all_disabled else ''
+            
             st.markdown(
                 f'<div style="border-left:{border_w} solid {color}; background:{bg}; padding:4px 8px; border-radius:0 6px 6px 0; margin:2px 0;">'
-                f'<div style="font-size:0.9rem; font-weight:{"700" if is_active else "500"}; color:{"#0f172a" if is_active else "#475569"}; line-height:1.2;">{brand}</div>'
+                f'<div style="font-size:0.9rem; font-weight:{"700" if is_active else "500"}; color:{"#0f172a" if is_active else "#475569"}; line-height:1.2;">{brand}{disabled_suffix}</div>'
                 f'<div style="font-size:0.75rem; color:{color}; font-weight:600;">{monitors_text}</div>'
                 f'</div>', unsafe_allow_html=True
             )
@@ -205,7 +224,6 @@ with st.sidebar:
             if st.button(btn_label, key=f"brand_btn_{brand}", use_container_width=True):
                 st.session_state.selected_brand = brand
                 st.rerun()
-
     selected_brand = st.session_state.selected_brand
 
     # 3. ปี / เดือน
