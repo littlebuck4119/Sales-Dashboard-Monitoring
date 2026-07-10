@@ -335,6 +335,13 @@ with col_url_show:
 # 📥 ดึงข้อมูลผ่าน full_api_url
 full_df = get_data_from_api(full_api_url)
 
+# 📌 เพิ่มตรงนี้: ถ้าเลือกแบรนด์แหลมเจริญ ให้กรองตัดร้านที่รหัสขึ้นต้นด้วย EAT ออกไปจากข้อมูลดิบ
+if selected_brand == "Laem Charoen Seafood" and not full_df.empty:
+    if 'shop_code' in full_df.columns:
+        full_df = full_df[~full_df['shop_code'].astype(str).str.startswith('EAT')]
+    elif 'shop_id' in full_df.columns:
+        full_df = full_df[~full_df['shop_id'].astype(str).str.startswith('EAT')]
+
 if not full_df.empty:
     # 🎯 1. ตรวจสอบรหัสสาขา (เช็กทั้ง shop_id และ shop_code ตามโครงสร้าง API) -> อยู่ครบ!
     id_col = 'shop_id' if 'shop_id' in full_df.columns else ('shop_code' if 'shop_code' in full_df.columns else '')
