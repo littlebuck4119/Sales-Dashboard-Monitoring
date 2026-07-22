@@ -86,7 +86,8 @@ BRAND_CONFIG = {
     "BaanSomtum": "71ffbd4c2491a1b2e568",
     "HormCafe": "2a34ab9d789677ee8ba2",
     "Bangkok Air": "ee1cbbde6b7473cf98ce",
-    "Thammachart Seafood": "95e72607fa28e0c397ad"
+    "Thammachart Seafood": "95e72607fa28e0c397ad",
+    "Bangkok Pulse": "24764a46342bb8363fac"
 }
 CONFIG_API = "https://api.npoint.io/9898efa2a5853bf5f886"
 
