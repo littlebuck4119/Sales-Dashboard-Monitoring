@@ -87,7 +87,8 @@ BRAND_CONFIG = {
     "HormCafe": "2a34ab9d789677ee8ba2",
     "Bangkok Air": "ee1cbbde6b7473cf98ce",
     "Thammachart Seafood": "95e72607fa28e0c397ad",
-    "Bangkok Pulse": "24764a46342bb8363fac"
+    "Bangkok Pulse": "24764a46342bb8363fac",
+    "ThayEkamai": "98dcc8a6bff476d57201"
 }
 CONFIG_API = "https://api.npoint.io/9898efa2a5853bf5f886"
 
