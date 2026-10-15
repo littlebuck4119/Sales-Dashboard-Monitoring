@@ -363,7 +363,9 @@ if not full_df.empty:
         return f"[{code}] {shop_name}" if code else f"[0] {shop_name}"
         
     # ดึงรายชื่อสาขาทั้งหมดที่มีอยู่จริง (ตัดค่าว่าง/None ออก ป้องกันตารางพังหน้าขาว) -> อยู่ครบ!
-    shops = sorted([str(s).strip() for s in full_df['shop_name'].unique() if s and str(s).strip() != 'nan'])
+    shops_from_api = [str(s).strip() for s in full_df['shop_name'].unique() if s and str(s).strip() != 'nan'] if not full_df.empty else []
+    shops_from_config = [str(s).strip() for s in current_full_config.get(selected_brand, {}).keys() if s and not s.startswith("_")]
+    shops = sorted(list(set(shops_from_api + shops_from_config)))
     
     # สลักป้าย Dictionary เก็บข้อมูลการแสดงผลที่ถูกต้องแม่นยำ 100% -> อยู่ครบ!
     shops_display_dict = {s: make_label(s) for s in shops}
